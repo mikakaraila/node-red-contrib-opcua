@@ -1,0 +1,152 @@
+<!--
+ *
+ * Copyright 2014 Metso Automation Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<!--
+ NodeRed node with support for OPC UA items read,write & browse invocation based on node-opcua
+
+ @author <a href="mailto:mika.karaila@metso.com">Mika Karaila</a> (Process Automation Systems, Metso)
+-->
+
+<script type="text/x-red" data-template-name="OpcUaBrowse">
+
+<!--
+    <div class="form-row">
+        <label for="node-input-endpoint"><i class="fa fa-globe"></i> Endpoint</label>
+        <input type="text" id="node-input-endpoint" placeholder="opc.tcp://localhost:4334">
+    </div>
+    <div class="form-row">
+        <label for="node-input-root"><i class="fa fa-globe"></i> Root to start browse</label>
+        <input type="text" id="node-input-root" placeholder="RootFolder">
+    </div>
+-->
+     <!-- Item -->
+    <div class="form-row" id="node-input-item-row">
+        <label for="node-input-item"><i class="icon-tag"></i> Item</label>
+        <select type="text" id="node-input-item" style="display: inline-block; vertical-align: middle; width:60%;">
+            <option selected disabled value="" >Choose a Item</option>
+        </select>
+        <div class="form-tips" id="node-input-item" style="margin-top:5px">
+            <div>Select one of the item offered by browsing OPC UA address space.</div>
+        </div>
+    </div>
+        <div class="form-row" id="node-input-datatype-row">
+        <label for="node-input-datatype"><i class="icon-tag"></i> Type</label>
+        <select type="text" id="node-input-datatype" style="display: inline-block; vertical-align: middle; width:60%;">
+            <option selected disabled value="" >Choose a Type</option>
+            <option selected value="opcua.DataType.Double" >Double</option>
+            <option selected value="opcua.DataType.String" >String</option>
+        </select>
+        <div class="form-tips" id="node-input-item" style="margin-top:5px">
+            <div>Select one of the OPC UA data types.</div>
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-value"><i class="icon-tasks"></i> Value</label>
+        <input type="text" id="node-input-value" placeholder="">
+        <div class="form-tips" id="node-input-value" style="margin-top:5px">
+            <div>Use value only if you want to write it.</div>
+        </div>
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="OpcUaBrowse">
+    <p>Connect to endpoint: opc.tcp://host:port/UA/EndpointName.</p>
+    <p>Item can be defined in input msg object:</p>
+    <p><b>topic</b> contains OPC UA address and 
+    <p><b>datatype></b> contains valid OPC UA type.</p>
+    <p>If <b>payload</b> is empty value will be read from the OPC UA server otherwise value will be written to the server.</p>
+</script>
+<!-- TODO embed browse action async calls inside node configuration phase
+<script src="node_modules/node-opcua"></script> 
+-->
+<script type="text/javascript">
+    RED.nodes.registerType('OpcUaBrowse',{
+        category: 'advanced-function',
+        color:"#3FADB5",
+        defaults: {
+            // endpoint: {value:"",required:true}, // OPC UA server endpoint to open session
+            // root: {value:"RootFolder", required:true}, // start folder / object, example "ns=1;i=1000"
+            // Below selected / configured parameter values for item msg
+            item: {value:"",required:true},
+            datatype: {value:""},
+            value: {value:""}
+        },
+        inputs:1,
+        outputs:1,
+        align: "right",
+        icon: "arrow-in.png",
+        label: function() {
+            return this.item;
+        },
+        labelStyle: function() {
+            return this.item?"node_label_italic":"";
+        },
+        oneditprepare: function() {
+            var form = this;
+            /*
+            $("#node-input-item").hide();
+            var url = $("#node-input-endpoint").val();
+            if (url != undefined && url != "") {
+                $("#node-input-item").show();
+            }
+            $("#node-input-root").hide();
+            var st = $("#node-input-root").val();
+            if (st != undefined && st != "") {
+                $("#node-input-root").show();
+            }
+            */
+            // Always create list
+            var client = new XMLHttpRequest();
+            client.open('GET', 'Address.txt');  // Under node-red root directory public
+            client.onreadystatechange = function() {
+                if (client.readyState==4) {
+                    t = client.response 
+                    t = t.split('\n');
+                    var listbox;
+                    var item;
+                    // Skip first line is header
+                    for(i=1;i<t.length;i++){
+                        // Address contains: browseName | address
+                        item = t[i].split('|');
+                        if (item.length==2) {
+                            listbox +='<option value="'+item[1]+'">'+t[i]+'</option>';
+                        }
+                    }
+                    $("#node-input-item").append(listbox);
+                }
+            }
+            client.send();
+            // Endpoint Updated
+            /*
+            $("#node-input-endpoint").change(function() {
+                var url = $("#node-input-endpoint").val();
+                if (url != undefined && url != "") {
+                    $("#node-input-item").show();
+                }
+            });
+            $("#node-input-root").change(function() {
+                var st = $("#node-input-root").val();
+                if (st != undefined && st != "") {
+                    $("#node-input-root").show();
+                }
+            });
+            */
+        }
+    });
+</script>
+
+
