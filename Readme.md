@@ -23,7 +23,7 @@ Use OpcUaClient to read / write / subscribe / browse OPC UA server.
 
 You can specify a time for subscription or use interval in read requests.
 
-![node-red-opcua-flow](https://cloud.githubusercontent.com/assets/4464231/5672613/02c030dc-97a3-11e4-90c8-45385801d63b.png)
+![node-red-opcua-flow] (example.png)
 
 Example Node-RED flow:
 

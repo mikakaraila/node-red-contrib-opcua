@@ -182,6 +182,11 @@ module.exports = function(RED) {
         node.on("close", function() {
             console.log(node.name+" closing session (close)");
             if (node.session) {
+                var subs;
+                while (node.subscriptions.length>0) {
+                    subs=node.subscriptions.pop();
+                    subs.terminate();
+                }
                 node.session.close(function(err){
                     console.log(" Session closed");
                     node.status({fill:"red",shape:"ring",text:"disconnected"});
