@@ -1,4 +1,4 @@
-node-red-contrib-bmp085
+node-red-contrib-opcua
 ========================
 
 A <a href="http://nodered.org" target="_new">Node-RED</a> node to communicate [OPC UA](https://www.npmjs.com/package/node-opcua).
@@ -6,9 +6,9 @@ A <a href="http://nodered.org" target="_new">Node-RED</a> node to communicate [O
 Install
 -------
 
-Run command on Node-RED installation directory
+Run command on Node-RED installation directory. Note: not yet in npm registry.
 
-	npm install node-red-contrib-opcua
+	npm install
 
 Pre-reqs
 --------

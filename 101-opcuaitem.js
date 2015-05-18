@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Metso Automation Inc.
+ * Copyright 2015 Valmet Automation Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  NodeRed node with support for OPC UA items read,write & browse invocation based on node-opcua
 
- @author <a href="mailto:mika.karaila@metso.com">Mika Karaila</a> (Process Automation Systems, Metso)
+ @author <a href="mailto:mika.karaila@valmet.com">Mika Karaila</a> (Valmet Automation Inc.)
 **/
 
 module.exports = function(RED) {
@@ -37,7 +37,10 @@ module.exports = function(RED) {
         node.on("input", function(msg) {
             msg.topic = node.item;
             msg.datatype = node.datatype;
-            msg.payload = node.value;
+            if (msg.payload=="") {
+                msg.payload = node.value;
+            }
+            node.log("Msg value:"+msg.payload);
             msg.browseName = node.name;
             node.send(msg);
         });

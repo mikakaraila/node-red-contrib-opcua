@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Metso Automation Inc.
+ * Copyright 2015 Valmet Automation Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  NodeRed node with support for OPC UA items read,write & browse invocation based on node-opcua
 
- @author <a href="mailto:mika.karaila@metso.com">Mika Karaila</a> (Process Automation Systems, Metso)
+ @author <a href="mailto:mika.karaila@valmet.com">Mika Karaila</a> (Valmet Automation Inc.)
 **/
 
 module.exports = function(RED) {
@@ -36,7 +36,7 @@ module.exports = function(RED) {
         var node = this;
         var msg = {};
         var items=[];
-        var subscriptions=[];
+        var subscriptions= new Array();
         
         if (node.client==null) {
             node.client = new opcua.OPCUAClient();
@@ -77,13 +77,29 @@ module.exports = function(RED) {
             {
                 if (node.action && node.action=="write")
                 {
-                    var nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, 1001,1);
+                    //var nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, 1001,1);
+                    var ns=msg.topic.substring(3,4);
+                    var s=msg.topic.substring(7);
+                    node.log("namespace="+ns);
+                    node.log("string="+s);
+                    node.log("value="+msg.payload);
+                    var nodeid = new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
                     node.log(nodeid.toString());
-                    var nValue = new opcua.Variant({dataType: opcua.DataType.Double, value: parseFloat(msg.payload) })
+                    var nValue = new opcua.Variant({dataType: opcua.DataType.Double, value: 0.0 })
+                    if (msg.datatype=="Double") {
+                        node.log("Double");
+                        nValue = new opcua.Variant({dataType: opcua.DataType.Double, value: parseFloat(msg.payload) })
+                    }
+                    if (msg.datatype=="Boolean") {
+                        node.log("Boolean");
+                        if (msg.payload==0) msg.payload=false;
+                        if (msg.payload==1) msg.payload=true;
+                        nValue = new opcua.Variant({dataType: opcua.DataType.Boolean, value: msg.payload })
+                    }
                     // node.session.writeSingleNode(nodeid, {dataType: opcua.DataType.Double, value: parseFloat(msg.payload)}, function(err) {
                     node.session.writeSingleNode(nodeid, nValue, function(err) {
                         if (err) {
-                            node.error("Cannot write value to item:" + msg.topic);
+                            node.error(node.name+" Cannot write value ("+msg.payload+") to item:" + msg.topic+" error:"+err);
                         }
                     });
                 }
@@ -120,12 +136,14 @@ module.exports = function(RED) {
                         publishingEnabled: true,
                         priority: 10
                     });
+                    node.subscriptions.push(the_subscription);
                     the_subscription.on("started", function () {
                         console.log("started", the_subscription);
                     }).on("keepalive", function () {
                         console.log("keepalive");
                     }).on("terminated", function () {
                         console.log("terminated");
+                        node.subscriptions.pop();
                     });
                     var monitoredItem = the_subscription.monitor(
                         {   nodeId: msg.topic, attributeId: 13    },
