@@ -17,8 +17,8 @@
 	},
 	"node-red": {
 		"nodes": {
-			"OpcUaItem": "101-opcuaitem.js"
-            "OpcUaClient": "102-opcuaclient.js"
+			"OpcUaItem": "101-opcuaitem.js",
+            "OpcUaClient": "102-opcuaclient.js",
             "OpcUaBrowse": "103-opcua.js"
 		}
 	},
