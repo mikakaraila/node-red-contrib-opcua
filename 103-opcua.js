@@ -21,7 +21,7 @@
 **/
 
 module.exports = function(RED) {
-    //"use strict";
+    "use strict";
     var RED = require(process.env.NODE_RED_HOME+"/red/red");
     var opcua = require('node-opcua');
     var nodeId = require('node-opcua/lib/datamodel/nodeid');

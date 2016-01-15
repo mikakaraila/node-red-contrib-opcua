@@ -1,0 +1,58 @@
+<!--
+ *
+ * Copyright 2015 Valmet Automation Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<!--
+ NodeRed node with support for OPC UA items read,write & browse invocation based on node-opcua
+
+ @author <a href="mailto:mika.karaila@valmet.com">Mika Karaila</a> (Valmet Automation Inc.)
+-->
+
+<script type="text/x-red" data-template-name="OpcUaServer">
+    <div class="form-row">
+        <label for="node-input-port"><i class="icon-tasks"></i> Port</label>
+        <input type="text" id="node-input-port" placeholder="1234">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tasks"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="OpcUaServer">
+    <p>Creates OPC UA server with own variables to endpoint: opc.tcp://host:port/UA/EndpointName.</p>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('OpcUaServer',{
+        category: 'advanced-function',
+        color:"#3FADB5",
+        defaults: {
+            port: {value:"1234",required:true},
+            name: {value:""}
+        },
+        inputs:1,
+        outputs:1,
+        align: "right",
+        icon: "arrow-in.png",
+        label: function() {
+            return this.name;
+        },
+        labelStyle: function() {
+            return this.name?"node_label_italic":"";
+        }
+    });
+</script>

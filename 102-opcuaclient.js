@@ -21,11 +21,26 @@
 **/
 
 module.exports = function(RED) {
-    //"use strict";
-    var RED = require(process.env.NODE_RED_HOME+"/red/red");
+    "use strict";
     var opcua = require('node-opcua');
     var nodeId = require('node-opcua/lib/datamodel/nodeid');
+    var browse_service = require("node-opcua/lib/services/browse_service");
+    var BrowseDirection = browse_service.BrowseDirection;
     var async = require("async");
+    var treeify = require('treeify');
+
+    function dumpItemResult(item, node) {
+        var msg = {topic: "", payload: ""};
+        //console.log("ITEM:"+item.browseName.name + (item.isForward ? "->" : "<-") + item.nodeId.displayText());
+        // console.log(item);
+        msg.topic=item.nodeId.toString();
+        /*
+        if (item.nodeId.displayText() && item.nodeId.displayText().length>0) {
+            msg.payload=item.nodeId.displayText();
+        }
+        */
+        node.send(msg);
+    }
 
     function OpcUaClientNode(n) {
         RED.nodes.createNode(this,n);
@@ -37,7 +52,7 @@ module.exports = function(RED) {
         var msg = {};
         var items=[];
         var subscriptions= new Array();
-        
+
         if (node.client==null) {
             node.client = new opcua.OPCUAClient();
             node.items=items;
@@ -50,56 +65,92 @@ module.exports = function(RED) {
                 console.log(node.name+" connecting to", node.endpoint);
                 node.client.connect(node.endpoint,callback);
             },
-            // Create session
             function(callback) {
                 node.client.createSession(function (err,session){
                     if (!err) {
                         node.session = session;
                         node.status({fill:"green",shape:"dot",text:"session active"});
-                        console.log(node.name+" session active");
+                        console.log(node.name+"session active");
+                        callback();
                     }
+					else {
+						callback(err);
+					}
                 });
+
+            },
+            // Empty subscription in session to keep session alive
+            function(callback) {
+                if (node.session) {
+                    if (RED.settings.verbose) { console.log(node.name+" session keepalive..."); }
+                    var keepalive = new opcua.ClientSubscription(node.session, {
+                        requestedPublishingInterval: 500,
+                        //  requestedLifetimeCount: 100,
+                        //  requestedMaxKeepAliveCount: 200,
+                        maxNotificationsPerPublish: 10,
+                        publishingEnabled: true,
+                        priority: 10
+                    });
+                    node.subscriptions.push(keepalive);
+                    callback();
+                }
+                else {
+                    console.log("Session not existing!");
+                }
             }
         ],function(err){
             if (err) {
-                node.log(node.name+" client : process terminated with an error");
-                node.log(" error : " , err) ;
-                node.log(err.stack);
-                node.status({fill:"red",shape:"ring",text:"Error:"+err.stack});
+                node.error(err.stack,err);
+                node.status({fill:"red",shape:"ring",text:"Error"});
                 node.session=null;
                 node.client=null;
             }
-        });   
-        
+        });
+
         node.on("input", function(msg) {
             console.log("Action:"+node.action);
             if (node.session!==null)
             {
                 if (node.action && node.action=="write")
                 {
-                    //var nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, 1001,1);
-                    var ns=msg.topic.substring(3,4);
-                    var s=msg.topic.substring(7);
-                    node.log("namespace="+ns);
-                    node.log("string="+s);
-                    node.log("value="+msg.payload);
+                    if (RED.settings.verbose) {console.log("NODE:"+node.name+" writing");}
+                    // Topic value: ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT
+                    var ns=msg.topic.substring(3,4); // Parse namespace, ns=2
+                    var s=msg.topic.substring(7);    // Parse nodeId string, s=1:PST-007-Alarm-Level@Training?SETPOINT
                     var nodeid = new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
-                    node.log(nodeid.toString());
-                    var nValue = new opcua.Variant({dataType: opcua.DataType.Double, value: 0.0 })
+                    if (RED.settings.verbose) {
+                        node.log("namespace="+ns);
+                        node.log("string="+s);
+                        node.log("value="+msg.payload);
+                        node.log(nodeid.toString());
+                    }
+                    var nValue = new opcua.Variant({dataType: opcua.DataType.Float, value: 0.0 })
+                    // TODO implement basic types that can be written to server
+                    if (msg.datatype=="Float") {
+                        if (RED.settings.verbose) {node.log("Float");}
+                        nValue = new opcua.Variant({dataType: opcua.DataType.Float, value: parseFloat(msg.payload) })
+                    }
                     if (msg.datatype=="Double") {
-                        node.log("Double");
+                        if (RED.settings.verbose) {node.log("Double");}
                         nValue = new opcua.Variant({dataType: opcua.DataType.Double, value: parseFloat(msg.payload) })
                     }
+                    if (msg.datatype=="UInt16") {
+                        if (RED.settings.verbose) {node.log("UInt16");}
+                        nValue = new opcua.Variant({dataType: opcua.DataType.UInt16, value: parseInt(msg.payload) })
+                    }
                     if (msg.datatype=="Boolean") {
-                        node.log("Boolean");
+                        if (RED.settings.verbose) {node.log("Boolean");}
                         if (msg.payload==0) msg.payload=false;
                         if (msg.payload==1) msg.payload=true;
                         nValue = new opcua.Variant({dataType: opcua.DataType.Boolean, value: msg.payload })
                     }
-                    // node.session.writeSingleNode(nodeid, {dataType: opcua.DataType.Double, value: parseFloat(msg.payload)}, function(err) {
+
                     node.session.writeSingleNode(nodeid, nValue, function(err) {
                         if (err) {
                             node.error(node.name+" Cannot write value ("+msg.payload+") to item:" + msg.topic+" error:"+err);
+                        }
+                        else {
+                            if (RED.settings.verbose) { node.log("Value written!"); }
                         }
                     });
                 }
@@ -107,21 +158,23 @@ module.exports = function(RED) {
                 {
                     items[0]=msg.topic; // TODO support for multiple item reading
                     node.session.readVariableValue(items, function (err, dataValues, diagnostics) {
-                        console.log("DIAG:"+diagnostics);
                         if (err) {
                             node.log(err);
                         } else {
                             for (var i = 0; i < dataValues.length; i++) {
                                 var dataValue = dataValues[i];
-                                console.log("           Node : ", (items[i]).cyan.bold);
-                                if (dataValue.value) {
-                                    console.log("           type : ", dataValue.value.dataType.key);
-                                    console.log("           value: ", dataValue.value.value);
-                                    msg.payload=dataValue.value.value;
-                                    node.send(msg);
+                                if (RED.settings.verbose) { console.log("           Node : ", (items[i]).cyan.bold); }
+                                if (dataValue) {
+                                    try {
+                                        if (RED.settings.verbose) { console.log("          value : ", dataValue.value.value); }
+                                        msg.payload=dataValue.value.value; //.toString();
+                                        node.send(msg);
+                                    }
+                                    catch(e) {
+                                        node.error("Bad read: "+dataValue.statusCode,msg);
+                                    }
                                 }
-                                console.log("      statusCode: ", dataValue.statusCode.toString(16));
-                                // console.log(" sourceTimestamp: ", dataValue.sourceTimestamp, dataValue.sourcePicoseconds);
+                                if (RED.settings.verbose) { console.log("      statusCode: ", dataValue.statusCode.toString(16)); }
                             }
                         }
                     });
@@ -129,74 +182,106 @@ module.exports = function(RED) {
                 if (node.action && node.action=="subscribe")
                 {
                     var the_subscription = new opcua.ClientSubscription(node.session, {
-                        requestedPublishingInterval: 100,
-                        requestedLifetimeCount: 100,
-                        requestedMaxKeepAliveCount: 200,
+                        requestedPublishingInterval: node.time,
+                      //  requestedLifetimeCount: 100,
+                      //  requestedMaxKeepAliveCount: 200,
                         maxNotificationsPerPublish: 10,
                         publishingEnabled: true,
                         priority: 10
                     });
                     node.subscriptions.push(the_subscription);
                     the_subscription.on("started", function () {
-                        console.log("started", the_subscription);
+                        console.log("subscribed");
+                        if (RED.settings.verbose) { console.log(the_subscription); }
                     }).on("keepalive", function () {
-                        console.log("keepalive");
+                        if (RED.settings.verbose) { console.log("keepalive"); }
                     }).on("terminated", function () {
                         console.log("terminated");
                         node.subscriptions.pop();
                     });
                     var monitoredItem = the_subscription.monitor(
-                        {   nodeId: msg.topic, attributeId: 13    },
+                        {   nodeId: msg.topic, attributeId: 13    },  // 13 == attribute value
                         {
-                            clientHandle: 13,
+                            // clientHandle: 13,
                             samplingInterval: 500,
-                            //xx filter:  { parameterTypeId: 'ns=0;i=0',  encodingMask: 0 },
                             queueSize: 1,
                             discardOldest: true
                         }
                     );
                     monitoredItem.on("initialized", function () {
-                        console.log("monitoredItem initialized");
+                        console.log("initialized",msg.topic);
                     });
                     monitoredItem.on("changed", function (dataValue) {
                         console.log(msg.topic, " value has changed to " + dataValue.value.value);
                         msg.payload=dataValue.value.value;
                         node.send(msg);
                     });
-                    setTimeout(function () {
+                    /*
+                    setTimeout(function() {
                         the_subscription.terminate();
+                        node.session.close(function(err) {
+                            console.log(" Subscription and session closed");
+                            node.status({fill:"red",shape:"ring",text:"disconnected"});
+                            node.session=null;
+                        });
                     }, node.time); // Default 10000 msecs to parameter in node dialog
+                    */
                 }
                 if (node.action && node.action=="browse")
                 {
-                    console.log("Browsing address space:");
-                    //node.session.browse(["RootFolder", "ObjectsFolder"],function (err, itemResults,diagnostics) {
-                    node.session.browse( {nodeId: msg.topic},function (err, itemResults,diagnostics) { //v0.7 OK
-                        if (err) {
-                            console.log(err);
-                            console.log(itemResults);
-                            console.log(diagnostics);
-                        } else {
-                            function dumpItemResult(item) {
-                                str = "ITEM:"+item.browseName.name + (item.isForward ? "->" : "<-") + item.nodeId.displayText();
-                                //console.log(str);
-                                msg.topic=item.nodeId.toString();
-                                msg.browseName=item.browseName.name;
-                                msg.payload=item.browseName.name;
-                                node.send(msg);
-                            }
+                    node.log("Browsing address space, root given in msg.topic:"+msg.topic);
+                    var NodeCrawler = opcua.NodeCrawler;
+                    var crawler = new NodeCrawler(node.session);
+                    //crawler.on("browsed", function (element) {
+                    //  console.log("->",element.browseName.name,element.nodeId.toString());
+                    //});
 
+                    crawler.read(msg.topic, function (err, obj) {
+                        var msg = {topic: "", browseName: "", payload: ""};
+                        if (!err) {
+                            treeify.asLines(obj, true, true, function (line) {
+                                if (RED.settings.verbose) { console.log(line); }
+                                if (line.indexOf("browseName")>0) {
+                                    msg.browseName=line.substring(line.indexOf("browseName"));
+                                }
+                                if (line.indexOf("nodeId")>0) {
+                                    msg.topic=line.substring(line.indexOf("nodeId")+8);
+                                    // &#x2F;
+                                    msg.topic=msg.topic.replace("&#x2F;","\/");
+                                }
+                                if (msg.topic.length>0 && msg.browseName.length>0) {
+                                    node.send(msg);
+                                    msg.topic="";
+                                    msg.browseName="";
+                                }
+                            });
+                        }
+                    });
+
+                    /*
+                    node.session.browse( {nodeId: msg.topic,
+                                          browseDirection: BrowseDirection.Both,
+                                          includeSubType: true,
+                                          nodeClassMask: browse_service.makeNodeClassMask("Object") // Variable
+                                          },function (err, itemResults,diagnostics) { //v0.7 OK
+                        if (err) {
+                            node.log(err);
+                            node.log(itemResults);
+                            node.log(diagnostics);
+                        } else {
                             for (var i = 0; i < itemResults.length; i++) {
-                                // console.log("Item: ", items[i]);
-                                // console.log(" StatusCode =", itemResults[i].statusCode.toString(16));
-                                itemResults[i].references.forEach(dumpItemResult);
+                                // node.log(" StatusCode =", itemResults[i].statusCode.toString(16));
+                                for (var j=0; j<itemResults[i].references.length; j++) {
+                                    dumpItemResult(itemResults[i].references[j], node);
+                                }
                             }
                         }
                     });
+                    */
                 }
             }
         });
-        
+
         node.on("close", function() {
             console.log(node.name+" closing session (close)");
             if (node.session) {
@@ -209,7 +294,7 @@ module.exports = function(RED) {
                     console.log(" Session closed");
                     node.status({fill:"red",shape:"ring",text:"disconnected"});
                     node.session=null;
-                    if (node.client) {  
+                    if (node.client) {
                         node.client.disconnect(function(){
                             node.client=null;
                             console.log("  Client disconnected!");
@@ -218,7 +303,7 @@ module.exports = function(RED) {
                 });
             }
         });
-        
+
         node.on("error", function() {
             console.log(node.name+" closing session (error)");
             if (node.session) {
@@ -226,7 +311,7 @@ module.exports = function(RED) {
                     console.log(" Session closed");
                     node.status({fill:"red",shape:"ring",text:"disconnected"});
                     node.session=null;
-                    if (node.client) {  
+                    if (node.client) {
                         node.client.disconnect(function(){
                             node.client=null;
                             console.log("  Client disconnected!");
