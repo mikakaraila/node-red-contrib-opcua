@@ -23,7 +23,7 @@ Use OpcUaClient to read / write / subscribe / browse OPC UA server.
 
 Subscription interval is not anymore used in read requests, but left in UI.
 
-![node-red-opcua-flow] (example.png)
+![node-red-opcua-flow] (Example.png)
 
 Example Node-RED flow:
 
