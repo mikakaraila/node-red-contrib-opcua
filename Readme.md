@@ -6,7 +6,7 @@ A <a href="http://nodered.org" target="_new">Node-RED</a> node to communicate [O
 Install
 -------
 
-Run command on Node-RED installation directory. Note: not yet in npm registry.
+Run command on Node-RED installation directory.
 
 	npm install
 
@@ -21,7 +21,7 @@ Usage
 Use OpcUaItem to define variables.
 Use OpcUaClient to read / write / subscribe / browse OPC UA server.
 
-You can specify a time for subscription or use interval in read requests.
+Subscription interval is not anymore used in read requests, but left in UI.
 
 ![node-red-opcua-flow] (example.png)
 
