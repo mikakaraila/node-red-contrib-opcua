@@ -26,14 +26,17 @@ Use OpcUaClient to read / write / subscribe / browse OPC UA server.
 
 Subscription interval is not anymore used in read requests, but left in UI.
 
+Here you got some ready to use examples.
+You can use the Import in Node-RED in the right upper corner menu.
+
 ![node-red-opcua-flow] (Example.png)
 
 Example Node-RED flow:
 
-![node-red-opcua-flow export] (ExampleFlow.json)
+![node-red-opcua-flow-export] (ExampleFlow.json)
 
 Example Prosys OPC UA Simulation Server Node-RED flow:
 
-![node-red-opcua-flow export Prosys] (SYSopcuaFlow.json)
+![node-red-opcua-flow-export-Prosys] (SYSopcuaFlow.json)
 
-![node-red-opcua-flow Prosys] (PROSYS-OPC-UA-EXAMPLE.png)
+![node-red-opcua-flow-Prosys] (PROSYS-OPC-UA-EXAMPLE.png)

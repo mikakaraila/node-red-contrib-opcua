@@ -94,7 +94,7 @@
   {
     "id": "a71dd6a0.58e228",
     "type": "OpcUaClient",
-    "endpoint": "opc.tcp://192.168.1.34:53530/OPCUA/SimulationServer",
+    "endpoint": "opc.tcp://localhost:53530/OPCUA/SimulationServer",
     "action": "read",
     "time": "",
     "name": "Test server (read items)",
@@ -229,7 +229,7 @@
   {
     "id": "ba56a04b.45a96",
     "type": "OpcUaClient",
-    "endpoint": "opc.tcp://192.168.1.34:53530/OPCUA/SimulationServer",
+    "endpoint": "opc.tcp://localhost:53530/OPCUA/SimulationServer",
     "action": "browse",
     "time": "",
     "name": "Test server (browse)",
@@ -246,7 +246,7 @@
   {
     "id": "36a1f027.c95e1",
     "type": "OpcUaClient",
-    "endpoint": "opc.tcp://192.168.1.34:53530/OPCUA/SimulationServer",
+    "endpoint": "opc.tcp://localhost:53530/OPCUA/SimulationServer",
     "action": "subscribe",
     "time": "60000",
     "name": "Test server (subscribe item)",
@@ -420,7 +420,7 @@
   {
     "id": "79e03766.17284",
     "type": "OpcUaClient",
-    "endpoint": "opc.tcp://192.168.1.34:53530/OPCUA/SimulationServer",
+    "endpoint": "opc.tcp://localhost:53530/OPCUA/SimulationServer",
     "action": "browse",
     "time": "",
     "name": "browse SimulationServer",

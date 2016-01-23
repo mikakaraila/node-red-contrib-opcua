@@ -34,8 +34,7 @@ module.exports = function (RED) {
         var node = this;
 		node.status({fill: "red", shape: "ring", text: "Not running"});
 		
-		//var xmlFile = "../../node_modules/node-opcua/nodesets/Opc.Ua.NodeSet2.xml"; //  __dirname +
-		var xmlFile = "./Opc.Ua.NodeSet2.xml";
+		var xmlFile = "./public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml";
 		node.warn("node set:" + xmlFile);
 		
 		var server = new opcua.OPCUAServer({port: node.port, nodeset_filename: xmlFile});
