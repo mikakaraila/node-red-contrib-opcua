@@ -30,10 +30,10 @@ Subscription interval is not anymore used in read requests, but left in UI.
 
 Example Node-RED flow:
 
-![node-red-opcua-flow] (ExampleFlow.json)
+![node-red-opcua-flow export] (ExampleFlow.json)
 
 Example Prosys OPC UA Simulation Server Node-RED flow:
 
-![node-red-opcua-flow] (SYSopcuaFlow.json)
+![node-red-opcua-flow export Prosys] (SYSopcuaFlow.json)
 
-![node-red-opcua-flow] (PROSYS-OPC-UA-EXAMPLE.png)
+![node-red-opcua-flow Prosys] (PROSYS-OPC-UA-EXAMPLE.png)
