@@ -46,7 +46,7 @@ module.exports = function(RED) {
 
     function OpcUaBrowseNode(n) {
         RED.nodes.createNode(this,n);
-        this.endpoint = n.endpoint;
+        //this.endpoint = n.endpoint;
         this.item = n.item;         // OPC UA address: ns=2;i=4 OR ns=3;s=MyVariable
         this.datatype = n.datatype; // opcua.DataType.String;
         this.value = n.value;       // 66.6
