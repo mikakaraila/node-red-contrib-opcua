@@ -16,7 +16,7 @@
 -->
 
 <!--
- NodeRed node that will actually just use server side address.txt file to select opc ua variable.
+ NodeRed node that will actually just use server side ./public/address.txt file to select opc ua variable.
  Simplified code and example flow to test functionality.
 
  @author <a href="mailto:mika.karaila@valmet.com">Mika Karaila</a> (Valmet Automation Inc.)
@@ -92,7 +92,6 @@
                         listbox +='<option value="'+addresses[i]+'">'+addresses[i]+'</option>\n';
                     }
                     $("#node-input-item").append(listbox);
-
 				}
 			};
 			xmlhttp.open("GET", url, true);
