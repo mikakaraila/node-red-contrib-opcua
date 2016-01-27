@@ -16,24 +16,13 @@
 -->
 
 <!--
- NodeRed node with support for OPC UA items read,write & browse invocation based on node-opcua
+ NodeRed node that will actually just use server side ./public/address.txt file to select opc ua variable.
+ Simplified code and example flow to test functionality.
 
  @author <a href="mailto:mika.karaila@valmet.com">Mika Karaila</a> (Valmet Automation Inc.)
 -->
 
 <script type="text/x-red" data-template-name="OpcUaBrowse">
-
-<!--
-    <div class="form-row">
-        <label for="node-input-endpoint"><i class="fa fa-globe"></i> Endpoint</label>
-        <input type="text" id="node-input-endpoint" placeholder="opc.tcp://localhost:4334">
-    </div>
-    <div class="form-row">
-        <label for="node-input-root"><i class="fa fa-globe"></i> Root to start browse</label>
-        <input type="text" id="node-input-root" placeholder="RootFolder">
-    </div>
--->
-     <!-- Item -->
     <div class="form-row" id="node-input-item-row">
         <label for="node-input-item"><i class="icon-tag"></i> Item</label>
         <select type="text" id="node-input-item" style="display: inline-block; vertical-align: middle; width:60%;">
@@ -70,17 +59,12 @@
     <p><b>datatype></b> contains valid OPC UA type.</p>
     <p>If <b>payload</b> is empty value will be read from the OPC UA server otherwise value will be written to the server.</p>
 </script>
-<!-- TODO embed browse action async calls inside node configuration phase
-<script src="node_modules/node-opcua"></script> 
--->
+
 <script type="text/javascript">
     RED.nodes.registerType('OpcUaBrowse',{
         category: 'advanced-function',
         color:"#3FADB5",
         defaults: {
-            // endpoint: {value:"",required:true}, // OPC UA server endpoint to open session
-            // root: {value:"RootFolder", required:true}, // start folder / object, example "ns=1;i=1000"
-            // Below selected / configured parameter values for item msg
             item: {value:"",required:true},
             datatype: {value:""},
             value: {value:""}
@@ -96,55 +80,22 @@
             return this.item?"node_label_italic":"";
         },
         oneditprepare: function() {
-            var form = this;
-            /*
-            $("#node-input-item").hide();
-            var url = $("#node-input-endpoint").val();
-            if (url != undefined && url != "") {
-                $("#node-input-item").show();
-            }
-            $("#node-input-root").hide();
-            var st = $("#node-input-root").val();
-            if (st != undefined && st != "") {
-                $("#node-input-root").show();
-            }
-            */
-            // Always create list
-            var client = new XMLHttpRequest();
-            client.open('GET', 'Address.txt');  // Under node-red root directory public
-            client.onreadystatechange = function() {
-                if (client.readyState==4) {
-                    t = client.response 
-                    t = t.split('\n');
-                    var listbox;
-                    var item;
-                    // Skip first line is header
-                    for(i=1;i<t.length;i++){
-                        // Address contains: browseName | address
-                        item = t[i].split('|');
-                        if (item.length==2) {
-                            listbox +='<option value="'+item[1]+'">'+t[i]+'</option>';
-                        }
+			var xmlhttp = new XMLHttpRequest();
+			var url = "Address.txt";
+			xmlhttp.onreadystatechange = function() {
+				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+					var addresses = xmlhttp.response;
+					addresses = addresses.split('\n');
+					var listbox = "";
+					$("#node-input-item").append( '<option selected disabled value="" >Choose a Item</option>\n');
+					for(i=0;i<addresses.length;i++){
+                        listbox +='<option value="'+addresses[i]+'">'+addresses[i]+'</option>\n';
                     }
                     $("#node-input-item").append(listbox);
-                }
-            }
-            client.send();
-            // Endpoint Updated
-            /*
-            $("#node-input-endpoint").change(function() {
-                var url = $("#node-input-endpoint").val();
-                if (url != undefined && url != "") {
-                    $("#node-input-item").show();
-                }
-            });
-            $("#node-input-root").change(function() {
-                var st = $("#node-input-root").val();
-                if (st != undefined && st != "") {
-                    $("#node-input-root").show();
-                }
-            });
-            */
+				}
+			};
+			xmlhttp.open("GET", url, true);
+			xmlhttp.send();
         }
     });
 </script>
