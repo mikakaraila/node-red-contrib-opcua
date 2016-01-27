@@ -18,6 +18,7 @@
  NodeRed node with support for OPC UA items read,write & browse invocation based on node-opcua
 
  @author <a href="mailto:mika.karaila@valmet.com">Mika Karaila</a> (Valmet Automation Inc.)
+ @author <a href="mailto:klaus.landsdorf@bianco-royal.eu">Klaus Landsdorf</a> (Bianco Royal)
 **/
 
 module.exports = function (RED) {
@@ -34,13 +35,13 @@ module.exports = function (RED) {
         var node = this;
 		node.status({fill: "red", shape: "ring", text: "Not running"});
 		
-		var xmlFile = "./public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml";
-		node.warn("node set:" + xmlFile);
+		var xmlFiles = ["./public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml", "./public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml"];
+		node.warn("node set:" + xmlFiles.toString());
 		
-		var server = new opcua.OPCUAServer({port: node.port, nodeset_filename: xmlFile});
+		var server = new opcua.OPCUAServer({port: node.port, nodeset_filename: xmlFiles});
 		server.buildInfo.productName = "IBM Bluemix OPC UA server";
 		server.buildInfo.buildNumber = "1";
-		server.buildInfo.buildDate = new Date(2015, 7, 7);
+		server.buildInfo.buildDate = new Date(2016, 1, 27);
 		node.warn("init next...");
 		
 		server.initialize(function () {

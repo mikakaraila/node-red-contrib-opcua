@@ -18,6 +18,7 @@
  NodeRed node with support for OPC UA items read,write & browse invocation based on node-opcua
 
  @author <a href="mailto:mika.karaila@valmet.com">Mika Karaila</a> (Valmet Automation Inc.)
+ @author <a href="mailto:klaus.landsdorf@bianco-royal.eu">Klaus Landsdorf</a> (Bianco Royal)
 **/
 
 module.exports = function(RED) {
@@ -156,7 +157,8 @@ module.exports = function(RED) {
                 }
                 if (node.action && node.action=="read")
                 {
-                    items[0]=msg.topic; // TODO support for multiple item reading
+                    console.log("TODO support for multiple item reading of this:" + msg.topic)
+                    items[0] = msg.topic; // TODO support for multiple item reading
                     node.session.readVariableValue(items, function (err, dataValues, diagnostics) {
                         if (err) {
                             node.log(err);

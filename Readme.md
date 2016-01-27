@@ -32,13 +32,8 @@ You can use the Import in Node-RED in the right upper corner menu.
 
 ![node-red-opcua-flow] (Example.png)
 
-Example Node-RED flow, look OPC UA from:
-
-http://flows.nodered.org/
-
-Example Prosys OPC UA Simulation Server Node-RED flow:
-
-![node-red-opcua-flow-export-Prosys] (SYSopcuaFlow.json)
+Examples are available for Schneider IGSS and Prosys Simulation Server as Node-RED flow.
+Search for OPC UA on: http://flows.nodered.org/
 
 ![node-red-opcua-flow-Prosys] (PROSYS-OPC-UA-EXAMPLE.png)
 
