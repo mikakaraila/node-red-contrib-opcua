@@ -35,7 +35,8 @@ module.exports = function (RED) {
         var node = this;
 		node.status({fill: "red", shape: "ring", text: "Not running"});
 		
-		var xmlFiles = ["./public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml", "./public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml"];
+		var xmlFiles = ["node-red-contrib-opcua/public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml",
+                        "node-red-contrib-opcua/public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml"];
 		node.warn("node set:" + xmlFiles.toString());
 		
 		var server = new opcua.OPCUAServer({port: node.port, nodeset_filename: xmlFiles});
