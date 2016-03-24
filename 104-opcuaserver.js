@@ -36,6 +36,7 @@ module.exports = function (RED) {
         var node = this;
 
         var equipmentCounter = 0;
+        var physicalAssetCounter = 0;
         var counterValue = 0;
         var equipment;
         var physicalAssets;
@@ -217,8 +218,6 @@ module.exports = function (RED) {
         //######################################################################################
         node.on("input", function (msg) {
 
-            var msgObject = msg.payload;
-
             if (server == undefined || !initialized)
                 return false;
 
@@ -244,14 +243,16 @@ module.exports = function (RED) {
 
             }
 
-            if (contains_messageType(msgObject)) {
-                read_message(msgObject);
+            var payload = msg.payload;
+
+            if (contains_messageType(payload)) {
+                read_message(payload);
                 node.send(msg);
                 return true;
             }
 
-            if (contains_opcua_command()) {
-                execute_opcua_command();
+            if (contains_opcua_command(payload)) {
+                execute_opcua_command(payload);
                 node.send(msg);
                 return true;
             }
@@ -265,20 +266,20 @@ module.exports = function (RED) {
             });
         }
 
-        function contains_messageType(msgObject) {
-            return msgObject.hasOwnProperty('messageType');
+        function contains_messageType(payload) {
+            return payload.hasOwnProperty('messageType');
         }
 
-        function read_message(msgObject) {
+        function read_message(payload) {
 
-            switch (msgObject.messageType) {
+            switch (payload.messageType) {
 
                 case 'Variable':
-                    if (msgObject.variableName == "Counter") {
+                    if (payload.variableName == "Counter") {
                         // Code for the Node-RED function to send the data by an inject
                         // msg = { payload : { "messageType" : "Variable", "variableName": "Counter", "variableValue": msg.payload }};
                         // return msg;
-                        counterValue = msgObject.variableValue[0];
+                        counterValue = payload.variableValue[0];
                     }
                     break;
                 default:
@@ -286,34 +287,57 @@ module.exports = function (RED) {
             }
         }
 
-        function contains_opcua_command(msgObject) {
-            return msgObject.hasOwnProperty('opcuaCommand');
+        function contains_opcua_command(payload) {
+            return payload.hasOwnProperty('opcuaCommand');
         }
 
-        function execute_opcua_command(msgObject) {
+        function execute_opcua_command(payload) {
 
             var addressSpace = server.engine.addressSpace;
+            var name;
 
-            switch (msgObject.opcuaCommand) {
+            switch (payload.opcuaCommand) {
 
                 case "restartOPCUAServer":
                     restart_server();
                     break;
 
                 case "addEquipment":
-
+                    node.warn("adding Node".concat(payload.nodeName));
                     equipmentCounter++;
-                    var name = "Equipment".concat(equipmentCounter);
+                    name = payload.nodeName.concat(equipmentCounter);
 
                     addressSpace.addObject({
                         organizedBy: addressSpace.findNode(equipment.nodeId),
-                        nodeId: "n=4;s=".concat(name),
-                        browseName: "Equipment".concat(equipmentCounter)
+                        nodeId: "ns=4;s=".concat(name),
+                        browseName: name
+                    });
+                    break;
+
+                case "addPhysicalAsset":
+                    node.warn("adding Node".concat(payload.nodeName));
+                    physicalAssetCounter++;
+                    name = payload.nodeName.concat(physicalAssetCounter);
+
+                    addressSpace.addObject({
+                        organizedBy: addressSpace.findNode(physicalAssets.nodeId),
+                        nodeId: "ns=4;s=".concat(name),
+                        browseName: name
                     });
                     break;
 
                 case "deleteNode":
-                    addressSpace.deleteNode(msgObject.nodeId);
+                    if (addressSpace === undefined) {
+                        node.error("addressSpace undefinded");
+                        return false;
+                    }
+
+                    var searchedNode = addressSpace.findNode(payload.nodeId);
+                    if (searchedNode === undefined) {
+                        node.warn("can not find Node in addressSpace")
+                    } else {
+                        addressSpace.deleteNode(searchedNode);
+                    }
                     break;
 
                 default:
