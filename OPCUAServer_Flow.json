@@ -1,39 +1,30 @@
 [
   {
     "type": "tab",
-    "id": "44dd936b.c6446c",
-    "label": "OPC UA Sever Tests"
+    "id": "30ded7dc.266628",
+    "label": "OPC UA Server"
   },
   {
-    "id": "e04a11c0.d9d6c",
-    "type": "OpcUaServer",
-    "z": "44dd936b.c6446c",
-    "port": "53580",
-    "name": "OPCServer",
-    "x": 489,
-    "y": 158,
+    "id": "446f5fbe.6a2f5",
+    "type": "function",
+    "z": "30ded7dc.266628",
+    "name": "Translation",
+    "func": "msg = { payload : { \"messageType\" : \"Variable\", \"variableName\": \"Counter\", \"variableValue\": msg.payload }};\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 306.5,
+    "y": 313,
     "wires": [
       [
-        "b7baec2c.87179"
+        "ca2018be.485a88",
+        "11682102.b5b9af"
       ]
     ]
   },
   {
-    "id": "b7baec2c.87179",
-    "type": "debug",
-    "z": "44dd936b.c6446c",
-    "name": "",
-    "active": false,
-    "console": "false",
-    "complete": "false",
-    "x": 692,
-    "y": 158,
-    "wires": []
-  },
-  {
-    "id": "f64253a1.47557",
+    "id": "2505192d.62a3b6",
     "type": "inject",
-    "z": "44dd936b.c6446c",
+    "z": "30ded7dc.266628",
     "name": "restartOPCUAServer",
     "topic": "",
     "payload": "{ \"opcuaCommand\": \"restartOPCUAServer\" }",
@@ -41,18 +32,18 @@
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 192,
-    "y": 114,
+    "x": 288,
+    "y": 379,
     "wires": [
       [
-        "e04a11c0.d9d6c"
+        "11682102.b5b9af"
       ]
     ]
   },
   {
-    "id": "1d2e98f1.1cb3d7",
+    "id": "bc372e70.a26b9",
     "type": "inject",
-    "z": "44dd936b.c6446c",
+    "z": "30ded7dc.266628",
     "name": "addEquipment",
     "topic": "",
     "payload": "{ \"opcuaCommand\": \"addEquipment\", \"nodeName\": \"Machine\" }",
@@ -60,37 +51,37 @@
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 201,
-    "y": 156,
+    "x": 297,
+    "y": 421,
     "wires": [
       [
-        "e04a11c0.d9d6c"
+        "11682102.b5b9af"
       ]
     ]
   },
   {
-    "id": "f942d325.dda5e",
+    "id": "80c2cece.aa922",
     "type": "inject",
-    "z": "44dd936b.c6446c",
-    "name": "deleteNode",
+    "z": "30ded7dc.266628",
+    "name": "deleteNode PhysicalAsset2",
     "topic": "",
     "payload": "{ \"opcuaCommand\": \"deleteNode\", \"nodeId\": \"ns=4;s=PhysicalAsset2\" }",
     "payloadType": "json",
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 209,
-    "y": 197,
+    "x": 257,
+    "y": 464,
     "wires": [
       [
-        "e04a11c0.d9d6c"
+        "11682102.b5b9af"
       ]
     ]
   },
   {
-    "id": "544bb533.74497c",
+    "id": "8e45ca73.8181b8",
     "type": "inject",
-    "z": "44dd936b.c6446c",
+    "z": "30ded7dc.266628",
     "name": "addPhysicalAsset",
     "topic": "",
     "payload": "{ \"opcuaCommand\": \"addPhysicalAsset\", \"nodeName\": \"PhysicalAsset\" }",
@@ -98,11 +89,75 @@
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 189.5,
-    "y": 240,
+    "x": 285.5,
+    "y": 505,
     "wires": [
       [
-        "e04a11c0.d9d6c"
+        "11682102.b5b9af"
+      ]
+    ]
+  },
+  {
+    "id": "940275a6.743d68",
+    "type": "inject",
+    "z": "30ded7dc.266628",
+    "name": "addPerson",
+    "topic": "",
+    "payload": "{ \"opcuaCommand\": \"addPerson\", \"nodeName\": \"Person\" }",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 315,
+    "y": 546,
+    "wires": [
+      [
+        "11682102.b5b9af"
+      ]
+    ]
+  },
+  {
+    "id": "ca2018be.485a88",
+    "type": "debug",
+    "z": "30ded7dc.266628",
+    "name": "",
+    "active": false,
+    "console": "false",
+    "complete": "false",
+    "x": 784.5,
+    "y": 313,
+    "wires": []
+  },
+  {
+    "id": "11682102.b5b9af",
+    "type": "OpcUaServer",
+    "z": "30ded7dc.266628",
+    "port": "53880",
+    "name": "",
+    "x": 563.5,
+    "y": 422,
+    "wires": [
+      [
+        "ca2018be.485a88"
+      ]
+    ]
+  },
+  {
+    "id": "e84c479e.595818",
+    "type": "inject",
+    "z": "30ded7dc.266628",
+    "name": "",
+    "topic": "",
+    "payload": "12",
+    "payloadType": "num",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 131.5,
+    "y": 313,
+    "wires": [
+      [
+        "446f5fbe.6a2f5"
       ]
     ]
   }

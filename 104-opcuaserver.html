@@ -46,10 +46,18 @@
 
         Examples: <br />
         <pre>
-            { "opcuaCommand": "restartOPCUAServer" }
-            { "opcuaCommand": "addEquipment", "nodeName": "Machine" }
-            { "opcuaCommand": "addPhysicalAsset", "nodeName": "PhysicalAsset" }
-            { "opcuaCommand": "deleteNode", "nodeId": "ns=4;s=PhysicalAsset2" }
+        { "opcuaCommand": "restartOPCUAServer" }
+        { "opcuaCommand": "addEquipment", "nodeName": "Machine" }
+        { "opcuaCommand": "addPhysicalAsset", "nodeName": "PhysicalAsset" }
+        { "opcuaCommand": "deleteNode", "nodeId": "ns=4;s=PhysicalAsset2" }
+        </pre>
+    </p>
+
+    <p>
+        OPC UA message type to set variable Counter
+
+        <pre>
+        { payload : { "messageType" : "Variable", "variableName": "Counter", "variableValue": msg.payload }};
         </pre>
     </p>
 </script>
