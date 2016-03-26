@@ -18,32 +18,38 @@
  NodeRed node with support for OPC UA items read,write & browse invocation based on node-opcua
 
  @author <a href="mailto:mika.karaila@valmet.com">Mika Karaila</a> (Valmet Automation Inc.)
-**/
+ **/
 
-module.exports = function(RED) {
+module.exports = function (RED) {
     "use strict";
-    var RED = require(process.env.NODE_RED_HOME+"/red/red");
     var opcua = require('node-opcua');
 
     function OpcUaItemNode(n) {
-        RED.nodes.createNode(this,n);
+
+        RED.nodes.createNode(this, n);
+
         this.item = n.item;         // OPC UA address: ns=2;i=4 OR ns=3;s=MyVariable
-        this.datatype = n.datatype; // opcua.DataType.String;
+        this.datatype = n.datatype; // String;
         this.value = n.value;       // 66.6
         this.name = n.name;         // browseName shall be put here
+
         var node = this;
-        var msg = {};
-        
-        node.on("input", function(msg) {
+
+        node.on("input", function (msg) {
+
             msg.topic = node.item;
             msg.datatype = node.datatype;
-            if (msg.payload=="") {
+
+            if (msg.payload == "") {
                 msg.payload = node.value;
             }
-            node.log("Msg value:"+msg.payload);
+
+            node.log("Msg value:" + msg.payload);
             msg.browseName = node.name;
+
             node.send(msg);
         });
     }
-    RED.nodes.registerType("OpcUaItem",OpcUaItemNode);
-}
+
+    RED.nodes.registerType("OpcUaItem", OpcUaItemNode);
+};
