@@ -1,0 +1,109 @@
+[
+  {
+    "type": "tab",
+    "id": "44dd936b.c6446c",
+    "label": "OPC UA Sever Tests"
+  },
+  {
+    "id": "e04a11c0.d9d6c",
+    "type": "OpcUaServer",
+    "z": "44dd936b.c6446c",
+    "port": "53580",
+    "name": "OPCServer",
+    "x": 489,
+    "y": 158,
+    "wires": [
+      [
+        "b7baec2c.87179"
+      ]
+    ]
+  },
+  {
+    "id": "b7baec2c.87179",
+    "type": "debug",
+    "z": "44dd936b.c6446c",
+    "name": "",
+    "active": false,
+    "console": "false",
+    "complete": "false",
+    "x": 692,
+    "y": 158,
+    "wires": []
+  },
+  {
+    "id": "f64253a1.47557",
+    "type": "inject",
+    "z": "44dd936b.c6446c",
+    "name": "restartOPCUAServer",
+    "topic": "",
+    "payload": "{ \"opcuaCommand\": \"restartOPCUAServer\" }",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 192,
+    "y": 114,
+    "wires": [
+      [
+        "e04a11c0.d9d6c"
+      ]
+    ]
+  },
+  {
+    "id": "1d2e98f1.1cb3d7",
+    "type": "inject",
+    "z": "44dd936b.c6446c",
+    "name": "addEquipment",
+    "topic": "",
+    "payload": "{ \"opcuaCommand\": \"addEquipment\", \"nodeName\": \"Machine\" }",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 201,
+    "y": 156,
+    "wires": [
+      [
+        "e04a11c0.d9d6c"
+      ]
+    ]
+  },
+  {
+    "id": "f942d325.dda5e",
+    "type": "inject",
+    "z": "44dd936b.c6446c",
+    "name": "deleteNode",
+    "topic": "",
+    "payload": "{ \"opcuaCommand\": \"deleteNode\", \"nodeId\": \"ns=4;s=PhysicalAsset2\" }",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 209,
+    "y": 197,
+    "wires": [
+      [
+        "e04a11c0.d9d6c"
+      ]
+    ]
+  },
+  {
+    "id": "544bb533.74497c",
+    "type": "inject",
+    "z": "44dd936b.c6446c",
+    "name": "addPhysicalAsset",
+    "topic": "",
+    "payload": "{ \"opcuaCommand\": \"addPhysicalAsset\", \"nodeName\": \"PhysicalAsset\" }",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 189.5,
+    "y": 240,
+    "wires": [
+      [
+        "e04a11c0.d9d6c"
+      ]
+    ]
+  }
+]
