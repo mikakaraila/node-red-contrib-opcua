@@ -250,14 +250,10 @@ module.exports = function (RED) {
 
             if (contains_messageType(payload)) {
                 read_message(payload);
-                node.send(msg);
-                return true;
             }
 
             if (contains_opcua_command(payload)) {
                 execute_opcua_command(payload);
-                node.send(msg);
-                return true;
             }
 
             node.send(msg);
