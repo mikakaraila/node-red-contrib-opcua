@@ -43,6 +43,7 @@ module.exports = function (RED) {
         var vendorName;
         var equipmentNotFound = true;
         var initialized = false;
+        var server = null;
 
         node.status({fill: "red", shape: "ring", text: "Not running"});
 
@@ -53,18 +54,14 @@ module.exports = function (RED) {
         function initNewServer() {
 
             initialized = false;
-
-            var opcuaServer = new opcua.OPCUAServer({port: node.port, nodeset_filename: xmlFiles});
-            opcuaServer.buildInfo.productName = node.name.concat("OPC UA server");
-            opcuaServer.buildInfo.buildNumber = "112";
-            opcuaServer.buildInfo.buildDate = new Date(2016, 3, 24);
+            node.warn("create Server from XML ...");
+            server = new opcua.OPCUAServer({port: node.port, nodeset_filename: xmlFiles});
+            server.buildInfo.productName = node.name.concat("OPC UA server");
+            server.buildInfo.buildNumber = "112";
+            server.buildInfo.buildDate = new Date(2016, 3, 24);
             node.warn("init next...");
-
-            return opcuaServer;
+            server.initialize(post_initialize);
         }
-
-        var server = initNewServer();
-
 
         function construct_my_address_space(addressSpace) {
 
@@ -190,30 +187,36 @@ module.exports = function (RED) {
         }
 
         function post_initialize() {
-            node.warn("initialized");
 
-            var addressSpace = server.engine.addressSpace;
-            construct_my_address_space(addressSpace);
+            if (server) {
 
-            node.warn("Next server start...");
+                var addressSpace = server.engine.addressSpace;
+                construct_my_address_space(addressSpace);
 
-            server.start(function () {
-                node.warn("Server is now listening ... ( press CTRL+C to stop)");
-                server.endpoints[0].endpointDescriptions().forEach(function (endpoint) {
-                    var endpointUrl = server.endpoints[0].endpointDescriptions()[0].endpointUrl;
-                    console.log(" the primary server endpoint url is ", endpointUrl);
+                node.warn("Next server start...");
+
+                server.start(function () {
+                    node.warn("Server is now listening ... ( press CTRL+C to stop)");
+                    server.endpoints[0].endpointDescriptions().forEach(function (endpoint) {
+                        var endpointUrl = server.endpoints[0].endpointDescriptions()[0].endpointUrl;
+                        console.log(" the primary server endpoint url is ", endpointUrl);
+                    });
                 });
-            });
-            node.status({fill: "green", shape: "dot", text: "running"});
-
-            initialized = true;
+                node.status({fill: "green", shape: "dot", text: "running"});
+                initialized = true;
+                node.warn("server initialized");
+            }
+            else {
+                node.status({fill: "gray", shape: "dot", text: "not running"});
+                node.error("server is not initialized")
+            }
         }
-
-        server.initialize(post_initialize);
 
         function available_memory() {
             return os.freemem() / os.totalmem() * 100.0;
         }
+
+        initNewServer();
 
         //######################################################################################
         node.on("input", function (msg) {
@@ -348,10 +351,24 @@ module.exports = function (RED) {
 
         function restart_server() {
             node.warn("Restart OPC UA Server");
-            close_server();
-            server = initNewServer();
-            server.initialize(post_initialize);
-            node.warn("Restart OPC UA Server done");
+            if (server) {
+                server.shutdown(function () {
+                    server = null;
+                    vendorName = null;
+                    initNewServer();
+                });
+
+            } else {
+                server = null;
+                vendorName = null;
+                initNewServer();
+            }
+
+            if (server) {
+                node.warn("Restart OPC UA Server done");
+            } else {
+                node.error("can not restart OPC UA Server");
+            }
         }
 
         node.on("close", function () {
