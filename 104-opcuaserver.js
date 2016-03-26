@@ -278,7 +278,7 @@ module.exports = function (RED) {
                         // Code for the Node-RED function to send the data by an inject
                         // msg = { payload : { "messageType" : "Variable", "variableName": "Counter", "variableValue": msg.payload }};
                         // return msg;
-                        counterValue = payload.variableValue[0];
+                        counterValue = payload.variableValue;
                     }
                     break;
                 default:
