@@ -18,7 +18,6 @@
  NodeRed node with support for OPC UA items read,write & browse invocation based on node-opcua
 
  @author <a href="mailto:mika.karaila@valmet.com">Mika Karaila</a> (Valmet Automation Inc.)
- @author <a href="mailto:klaus.landsdorf@bianco-royal.eu">Klaus Landsdorf</a> (Bianco Royal)
  **/
 
 module.exports = function (RED) {
@@ -93,7 +92,7 @@ module.exports = function (RED) {
                 componentOf: vendorName,
                 nodeId: "ns=4;s=MyVariable2",
                 browseName: "MyVariable2",
-                dataType: "Double",
+                dataType: opcua.DataType.Double,
 
                 value: {
                     get: function () {
@@ -112,7 +111,7 @@ module.exports = function (RED) {
                 componentOf: vendorName,
                 nodeId: "ns=4;s=FreeMemory",
                 browseName: "FreeMemory",
-                dataType: "Double",
+                dataType: opcua.DataType.Double,
 
                 value: {
                     get: function () {
@@ -127,11 +126,11 @@ module.exports = function (RED) {
                 componentOf: vendorName,
                 nodeId: "ns=4;s=Counter",
                 browseName: "Counter",
-                dataType: "Double",
+                dataType: opcua.DataType.UInt16,
 
                 value: {
                     get: function () {
-                        return new opcua.Variant({dataType: opcua.DataType.Double, value: counterValue});
+                        return new opcua.Variant({dataType: opcua.DataType.UInt16, value: counterValue});
                     }
                 }
             });

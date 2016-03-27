@@ -39,13 +39,11 @@ module.exports = function (RED) {
 
             msg.topic = node.item;
             msg.datatype = node.datatype;
+            msg.browseName = node.name;
 
-            if (msg.payload == "") {
+            if (node.value) {
                 msg.payload = node.value;
             }
-
-            node.log("Msg value:" + msg.payload);
-            msg.browseName = node.name;
 
             node.send(msg);
         });
