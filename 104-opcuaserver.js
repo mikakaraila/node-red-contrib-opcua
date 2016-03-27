@@ -44,27 +44,39 @@ module.exports = function (RED) {
         var initialized = false;
         var server = null;
 
+        function verbose_warn(logMessage) {
+            if (RED.settings.verbose) {
+                node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaServerNode: ' + logMessage);
+            }
+        }
+
+        function verbose_log(logMessage) {
+            if (RED.settings.verbose) {
+                node.log(logMessage);
+            }
+        }
+
         node.status({fill: "red", shape: "ring", text: "Not running"});
 
         var xmlFiles = [path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml'),
             path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')];
-        node.warn("node set:" + xmlFiles.toString());
+        verbose_warn("node set:" + xmlFiles.toString());
 
         function initNewServer() {
 
             initialized = false;
-            node.warn("create Server from XML ...");
+            verbose_warn("create Server from XML ...");
             server = new opcua.OPCUAServer({port: node.port, nodeset_filename: xmlFiles});
             server.buildInfo.productName = node.name.concat("OPC UA server");
             server.buildInfo.buildNumber = "112";
             server.buildInfo.buildDate = new Date(2016, 3, 24);
-            node.warn("init next...");
+            verbose_warn("init next...");
             server.initialize(post_initialize);
         }
 
         function construct_my_address_space(addressSpace) {
 
-            node.warn('Server add VendorName ...');
+            verbose_warn('Server add VendorName ...');
 
             vendorName = addressSpace.addObject({
                 organizedBy: addressSpace.rootFolder.objects,
@@ -84,7 +96,7 @@ module.exports = function (RED) {
                 browseName: "Physical Assets"
             });
 
-            node.warn('Server add MyVariable2 ...');
+            verbose_warn('Server add MyVariable2 ...');
 
             var variable2 = 10.0;
 
@@ -105,7 +117,7 @@ module.exports = function (RED) {
                 }
             });
 
-            node.warn('Server add FreeMemory ...');
+            verbose_warn('Server add FreeMemory ...');
 
             addressSpace.addVariable({
                 componentOf: vendorName,
@@ -120,7 +132,7 @@ module.exports = function (RED) {
                 }
             });
 
-            node.warn('Server add Counter ...');
+            verbose_warn('Server add Counter ...');
 
             addressSpace.addVariable({
                 componentOf: vendorName,
@@ -164,8 +176,8 @@ module.exports = function (RED) {
                 var nbBarks = inputArguments[0].value;
                 var volume = inputArguments[1].value;
 
-                console.log("Hello World ! I will bark ", nbBarks, " times");
-                console.log("the requested volume is ", volume, "");
+                verbose_log("Hello World ! I will bark ", nbBarks, " times");
+                verbose_log("the requested volume is ", volume, "");
                 var sound_volume = new Array(volume).join("!");
 
                 var barks = [];
@@ -192,18 +204,18 @@ module.exports = function (RED) {
                 var addressSpace = server.engine.addressSpace;
                 construct_my_address_space(addressSpace);
 
-                node.warn("Next server start...");
+                verbose_warn("Next server start...");
 
                 server.start(function () {
-                    node.warn("Server is now listening ... ( press CTRL+C to stop)");
+                    verbose_warn("Server is now listening ... ( press CTRL+C to stop)");
                     server.endpoints[0].endpointDescriptions().forEach(function (endpoint) {
                         var endpointUrl = server.endpoints[0].endpointDescriptions()[0].endpointUrl;
-                        console.log(" the primary server endpoint url is ", endpointUrl);
+                        verbose_log(" the primary server endpoint url is ", endpointUrl);
                     });
                 });
                 node.status({fill: "green", shape: "dot", text: "running"});
                 initialized = true;
-                node.warn("server initialized");
+                verbose_warn("server initialized");
             }
             else {
                 node.status({fill: "gray", shape: "dot", text: "not running"});
@@ -236,11 +248,11 @@ module.exports = function (RED) {
                 var references = rootFolder.findReferences("Organizes", true);
 
                 if (findReference(references, equipment.nodeId)) {
-                    node.warn("Equipment Reference found in VendorName");
+                    verbose_warn("Equipment Reference found in VendorName");
                     equipmentNotFound = false;
                 }
                 else {
-                    node.warn("Equipment Reference not found in VendorName");
+                    verbose_warn("Equipment Reference not found in VendorName");
                 }
 
             }
@@ -301,7 +313,7 @@ module.exports = function (RED) {
                     break;
 
                 case "addEquipment":
-                    node.warn("adding Node".concat(payload.nodeName));
+                    verbose_warn("adding Node".concat(payload.nodeName));
                     equipmentCounter++;
                     name = payload.nodeName.concat(equipmentCounter);
 
@@ -313,7 +325,7 @@ module.exports = function (RED) {
                     break;
 
                 case "addPhysicalAsset":
-                    node.warn("adding Node".concat(payload.nodeName));
+                    verbose_warn("adding Node".concat(payload.nodeName));
                     physicalAssetCounter++;
                     name = payload.nodeName.concat(physicalAssetCounter);
 
@@ -332,7 +344,7 @@ module.exports = function (RED) {
 
                     var searchedNode = addressSpace.findNode(payload.nodeId);
                     if (searchedNode === undefined) {
-                        node.warn("can not find Node in addressSpace")
+                        verbose_warn("can not find Node in addressSpace")
                     } else {
                         addressSpace.deleteNode(searchedNode);
                     }
@@ -345,7 +357,7 @@ module.exports = function (RED) {
         }
 
         function restart_server() {
-            node.warn("Restart OPC UA Server");
+            verbose_warn("Restart OPC UA Server");
             if (server) {
                 server.shutdown(function () {
                     server = null;
@@ -360,14 +372,14 @@ module.exports = function (RED) {
             }
 
             if (server) {
-                node.warn("Restart OPC UA Server done");
+                verbose_warn("Restart OPC UA Server done");
             } else {
                 node.error("can not restart OPC UA Server");
             }
         }
 
         node.on("close", function () {
-            node.warn("closing...");
+            verbose_warn("closing...");
             close_server();
         });
 

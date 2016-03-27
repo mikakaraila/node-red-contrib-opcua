@@ -43,14 +43,21 @@ module.exports = function (RED) {
         var subscriptions = [];
         var monitoredItems = [];
 
+        function verbose_warn(logMessage) {
+            if (RED.settings.verbose) {
+                node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage);
+            }
+        }
+
         function verbose_log(logMessage) {
             if (RED.settings.verbose) {
-                console.log('OpcUaClient ' + node.name + ': ' + logMessage);
+                node.log(logMessage);
             }
         }
 
         if (node.client == null) {
 
+            verbose_warn("create Client ...");
             node.client = new opcua.OPCUAClient();
             node.items = items;
             node.subscriptions = subscriptions;
@@ -211,7 +218,7 @@ module.exports = function (RED) {
             if (node.action == "read") {
 
                 if (!msg.topic) {
-                    node.warn("can't read with empty Topic");
+                    verbose_warn("can't read with empty Topic");
                     node.send(msg);
                     return;
                 }
@@ -302,7 +309,7 @@ module.exports = function (RED) {
                 }
 
                 if (!the_subscription) {
-                    node.warn("can't get any subscription");
+                    verbose_warn("can't get any subscription");
                     node.emit("close");
                     return;
                 }
@@ -401,7 +408,7 @@ module.exports = function (RED) {
         node.on("close", function () {
 
             verbose_log("closing session (close)");
-
+            verbose_warn("closing Client ...");
             if (node.session) {
                 var subs;
                 while (node.subscriptions.length > 0) {
@@ -425,6 +432,7 @@ module.exports = function (RED) {
         node.on("error", function () {
 
             verbose_log("closing session (error)");
+            verbose_warn("closing Client on error ...");
 
             if (node.session) {
                 node.session.close(function (err) {
