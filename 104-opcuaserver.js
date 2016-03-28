@@ -209,9 +209,11 @@ module.exports = function (RED) {
                 server.start(function () {
                     verbose_warn("Server is now listening ... ( press CTRL+C to stop)");
                     server.endpoints[0].endpointDescriptions().forEach(function (endpoint) {
-                        var endpointUrl = server.endpoints[0].endpointDescriptions()[0].endpointUrl;
-                        verbose_log(" the primary server endpoint url is ", endpointUrl);
+                        verbose_warn("Server endpointUrl: " + endpoint.endpointUrl + ' securityMode: ' + endpoint.securityMode.toString() + ' securityPolicyUri: ' + endpoint.securityPolicyUri.toString());
                     });
+
+                    var endpointUrl = server.endpoints[0].endpointDescriptions()[0].endpointUrl;
+                    verbose_log(" the primary server endpoint url is " + endpointUrl);
                 });
                 node.status({fill: "green", shape: "dot", text: "running"});
                 initialized = true;
