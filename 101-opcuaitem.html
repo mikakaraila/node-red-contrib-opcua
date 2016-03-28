@@ -26,7 +26,14 @@
     </div>
     <div class="form-row">
         <label for="node-input-datatype"><i class="icon-tasks"></i> Type</label>
-        <input type="text" id="node-input-datatype" placeholder="string">
+        <select type="text" id="node-input-datatype">
+            <option value="Integer">Integer</option>
+            <option value="Float">Float</option>
+            <option value="Double">Double</option>
+            <option value="UInt16">unsigned Int16</option>
+            <option value="Boolean">Boolean</option>
+            <option value="String">String</option>
+        </select>
     </div>
     <div class="form-row">
         <label for="node-input-value"><i class="icon-tag"></i> Value</label>
@@ -41,7 +48,7 @@
 <script type="text/x-red" data-help-name="OpcUaItem">
     <p>Defines OPC UA item, type and value.</p>
     <p>Item contains valid OPC UA address like ns=2;i=4 OR ns=3;s=MyVariable</p>
-    <p>Type must be valid OPC UA datatype</p>
+    <p>There are not all Types possible for now, but you can select some.</p>
     <p>Value is needed only if item will be written to OPC UA server.</p>
 </script>
 

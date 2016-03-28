@@ -29,10 +29,10 @@
      <div class="form-row">
         <label for="node-input-action"><i class="fa fa-tasks"></i> Action</label>
         <select type="text" id="node-input-action" style="width:72%;">
-        <option value="read">READ</option>
-        <option value="write">WRITE</option>
-        <option value="browse">BROWSE</option>
-        <option value="subscribe">SUBSCRIBE</option>
+            <option selected value="read">READ</option>
+            <option value="write">WRITE</option>
+            <option value="browse">BROWSE</option>
+            <option value="subscribe">SUBSCRIBE</option>
         </select>
     </div>
     <div class="form-row">
@@ -49,8 +49,9 @@
     <p>Connect to endpoint: opc.tcp://host:port/UA/EndpointName.</p>
     <p>Action is read, write or browse.</p>
     <p>Item can be defined in input msg object:</p>
-    <p><b>topic</b> contains OPC UA address and </p>
-    <p><b>datatype></b> contains valid OPC UA type.</p>
+    <p>Inject your OPC UA address by the <strong>Topic</strong> of an Inject node or with the OpcUaItem cotrolled by an Inject node.</p>
+    <p>To read inject the Topic for every reading.</p>
+    <p>Inject the Topic only once on Subscribe and you got the changing value.</p>
     <p>If <b>payload</b> is empty value will be read from the OPC UA server otherwise value will be written to the server.</p>
 </script>
 

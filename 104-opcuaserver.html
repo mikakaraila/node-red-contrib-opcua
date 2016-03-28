@@ -24,7 +24,8 @@
 <script type="text/x-red" data-template-name="OpcUaServer">
     <div class="form-row">
         <label for="node-input-port"><i class="icon-tasks"></i> Port</label>
-        <input type="text" id="node-input-port" placeholder="1234">
+        <!-- dynamic Ports from 49152 to 65535 (c000hex bis FFFFhex) -->
+        <input type="text" id="node-input-port" placeholder="Ports 49152 bis 65535 (c000hex bis FFFFhex)">
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tasks"></i> Name</label>
@@ -33,7 +34,32 @@
 </script>
 
 <script type="text/x-red" data-help-name="OpcUaServer">
-    <p>Creates OPC UA server with own variables to endpoint: opc.tcp://host:port/UA/EndpointName.</p>
+    <p>Creates OPC UA server with own variables, object structures and methods to endpoint: opc.tcp://hostname.local:53880/</p>
+    <p>
+        OPC UA server commands:
+        <ul>
+            <li>restartOPCUAServer</li>
+            <li>addEquipment</li>
+            <li>addPhysicalAsset</li>
+            <li>deleteNode</li>
+        </ul>
+
+        Examples: <br />
+        <pre>
+        { "opcuaCommand": "restartOPCUAServer" }
+        { "opcuaCommand": "addEquipment", "nodeName": "Machine" }
+        { "opcuaCommand": "addPhysicalAsset", "nodeName": "PhysicalAsset" }
+        { "opcuaCommand": "deleteNode", "nodeId": "ns=4;s=PhysicalAsset2" }
+        </pre>
+    </p>
+
+    <p>
+        OPC UA message type to set variable Counter
+
+        <pre>
+        { payload : { "messageType" : "Variable", "variableName": "Counter", "variableValue": msg.payload }};
+        </pre>
+    </p>
 </script>
 
 <script type="text/javascript">
@@ -41,7 +67,7 @@
         category: 'advanced-function',
         color:"#3FADB5",
         defaults: {
-            port: {value:"1234",required:true},
+            port: {value: "53880", required: true},
             name: {value:""}
         },
         inputs:1,
@@ -49,7 +75,7 @@
         align: "right",
         icon: "arrow-in.png",
         label: function() {
-            return this.name;
+            return this.name || "OPC UA server";
         },
         labelStyle: function() {
             return this.name?"node_label_italic":"";
