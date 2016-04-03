@@ -1,6 +1,8 @@
 node-red-contrib-opcua
 ========================
 
+![opcuanode] (images/opcuanode.png)
+
 A <a href="http://nodered.org" target="_new">Node-RED</a> node to communicate or serve via [OPC UA](https://www.npmjs.com/package/node-opcua).
 
 based on [node-opcua](http://node-opcua.github.io/)

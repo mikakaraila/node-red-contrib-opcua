@@ -13,8 +13,8 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
- 
-**/
+
+ **/
 
 module.exports = function (RED) {
     "use strict";
@@ -28,6 +28,8 @@ module.exports = function (RED) {
 
         this.name = n.name;
         this.port = n.port;
+        this.endpoint = n.endpoint;
+
         var node = this;
 
         var equipmentCounter = 0;
@@ -62,7 +64,13 @@ module.exports = function (RED) {
 
             initialized = false;
             verbose_warn("create Server from XML ...");
-            server = new opcua.OPCUAServer({port: node.port, nodeset_filename: xmlFiles});
+
+            server = new opcua.OPCUAServer({
+                port: node.port,
+                nodeset_filename: xmlFiles,
+                resourcePath: node.endpoint || "UA/SimpleNodeRedServer"
+            });
+
             server.buildInfo.productName = node.name.concat("OPC UA server");
             server.buildInfo.buildNumber = "112";
             server.buildInfo.buildDate = new Date(2016, 3, 24);

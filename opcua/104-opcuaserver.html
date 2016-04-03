@@ -22,12 +22,13 @@ limitations under the License.
         color:"#3FADB5",
         defaults: {
             port: {value: "53880", required: true},
-            name: {value:""}
+            name: {value:""},
+            endpoint: {vlaue: ""}
         },
         inputs:1,
         outputs:1,
         align: "right",
-        icon: "nodeopcua-logo.png",
+        icon: "opcuanode.png",
         label: function() {
             return this.name || "OPC UA server";
         },
@@ -48,6 +49,10 @@ limitations under the License.
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tasks"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="">
+    </div>
+        <div class="form-row">
+        <label for="node-input-endpoint"><i class="icon-tasks"></i> Endpoint</label>
+        <input type="text" id="node-input-endpoint" placeholder="UA/SimpleNodeRedServer">
     </div>
 </script>
 
