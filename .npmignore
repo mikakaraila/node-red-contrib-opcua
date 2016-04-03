@@ -1,0 +1,10 @@
+.git
+.idea
+test
+examples
+
+.gitignore
+*.iml
+Example.png
+*EXAMPLE.png
+*.conf.js

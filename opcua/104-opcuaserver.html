@@ -1,0 +1,92 @@
+<!--
+
+Copyright 2015 Valmet Automation Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-->
+
+<script type="text/javascript">
+    RED.nodes.registerType('OpcUa-Server',{
+        category: 'opcua',
+        color:"#3FADB5",
+        defaults: {
+            port: {value: "53880", required: true},
+            name: {value:""}
+        },
+        inputs:1,
+        outputs:1,
+        align: "right",
+        icon: "nodeopcua-logo.png",
+        label: function() {
+            return this.name || "OPC UA server";
+        },
+        labelStyle: function() {
+            return this.name?"node_label_italic":"";
+        }
+    });
+</script>
+
+
+
+<script type="text/x-red" data-template-name="OpcUa-Server">
+    <div class="form-row">
+        <label for="node-input-port"><i class="icon-tasks"></i> Port</label>
+        <!-- dynamic Ports from 49152 to 65535 (c000hex bis FFFFhex) -->
+        <input type="text" id="node-input-port" placeholder="Ports 49152 bis 65535 (c000hex bis FFFFhex)">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tasks"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="">
+    </div>
+</script>
+
+
+
+<script type="text/x-red" data-help-name="OpcUa-Server">
+    <p>Creates OPC UA server with own variables, object structures and methods to endpoint: opc.tcp://hostname.local:53880/</p>
+    <p>
+        OPC UA server commands:
+        <ul>
+            <li>restartOPCUAServer</li>
+            <li>addEquipment</li>
+            <li>addPhysicalAsset</li>
+            <li>deleteNode</li>
+        </ul>
+
+        Examples JSON Injects: <br />
+        <pre>
+        { "opcuaCommand":
+          "restartOPCUAServer" }
+
+        { "opcuaCommand": "addEquipment",
+          "nodeName": "Machine" }
+
+        { "opcuaCommand": "addPhysicalAsset",
+          "nodeName": "PhysicalAsset" }
+
+        { "opcuaCommand": "deleteNode",
+          "nodeId": "ns=4;s=PhysicalAsset2" }
+        </pre>
+    </p>
+
+    <p>
+        OPC UA message type to set variable Counter by JSON Inject
+
+        <pre>
+        { payload : { "messageType" : "Variable",
+          "variableName": "Counter",
+          "variableValue": msg.payload }};
+        </pre>
+    </p>
+</script>
