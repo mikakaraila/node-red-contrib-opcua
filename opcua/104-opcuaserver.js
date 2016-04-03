@@ -365,7 +365,7 @@ module.exports = function (RED) {
         function restart_server() {
             verbose_warn("Restart OPC UA Server");
             if (server) {
-                server.shutdown(10000, function () {
+                server.shutdown(0, function () {
                     server = null;
                     vendorName = null;
                     initNewServer();
@@ -391,7 +391,7 @@ module.exports = function (RED) {
 
         function close_server() {
             if (server) {
-                server.shutdown(10000, function () {
+                server.shutdown(0, function () {
                     server = null;
                     vendorName = null;
                 });
