@@ -1,0 +1,10 @@
+.git
+.idea
+test
+examples
+node_modules
+.gitignore
+*.iml
+Example.png
+*EXAMPLE.png
+*.conf.js
