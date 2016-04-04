@@ -53,7 +53,6 @@ module.exports = function (RED) {
         }
 
         if (node.client == null) {
-
             verbose_warn("create Client ...");
             node.client = new opcua.OPCUAClient();
             node.items = items;
@@ -102,14 +101,16 @@ module.exports = function (RED) {
 
                     keepaliveSubscription.on("started", function () {
                         verbose_log("subscribed");
-                        verbose_log(keepaliveSubscription);
+                        node.status({fill: "green", shape: "dot", text: "subscribed"});
                     }).on("keepalive", function () {
                         verbose_log("keepalive");
+                        node.status({fill: "green", shape: "dot", text: "keepalive"});
                     }).on("terminated", function () {
                         verbose_log("terminated");
                         if (node.subscriptions.length > 0) {
                             node.subscriptions.pop();
                         }
+                        node.status({fill: "red", shape: "ring", text: "terminated"});
                         node.emit("close");
                     });
 
@@ -185,6 +186,8 @@ module.exports = function (RED) {
                 return;
             }
 
+            node.status({fill: "green", shape: "dot", text: "session active"});
+
             if (node.action == "write") {
 
                 verbose_log("writing");
@@ -229,6 +232,7 @@ module.exports = function (RED) {
                         verbose_log(diagnostics);
                         node.log(err);
                     } else {
+
                         for (var i = 0; i < dataValues.length; i++) {
                             var dataValue = dataValues[i];
                             verbose_log("\tNode : " + (items[i]).cyan.bold);
@@ -287,14 +291,16 @@ module.exports = function (RED) {
 
                     the_subscription.on("started", function () {
                         verbose_log("subscribed");
-                        verbose_log(the_subscription);
+                        node.status({fill: "green", shape: "dot", text: "subscribed"});
                     }).on("keepalive", function () {
                         verbose_log("keepalive");
+                        node.status({fill: "green", shape: "dot", text: "keepalive"});
                     }).on("terminated", function () {
                         verbose_log("terminated");
                         if (node.subscriptions.length > 0) {
                             node.subscriptions.pop();
                         }
+                        node.status({fill: "red", shape: "ring", text: "terminated"});
                         node.emit("close");
                     });
                 }
