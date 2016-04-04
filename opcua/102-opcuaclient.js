@@ -37,7 +37,7 @@ module.exports = function (RED) {
         var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
 
         var items = [];
-        var subscription;
+        var subscriptions = [];
         var monitoredItems = [];
 
         function verbose_warn(logMessage) {
@@ -56,7 +56,6 @@ module.exports = function (RED) {
             verbose_warn("create Client ...");
             node.client = new opcua.OPCUAClient();
             node.items = items;
-            subscription = null;
         }
 
         node.status({fill: "red", shape: "ring", text: "disconnected"});
@@ -82,17 +81,6 @@ module.exports = function (RED) {
                         callback(err);
                     }
                 });
-            },
-            // Empty subscription in session to keep session alive
-            function (callback) {
-                if (node.session && node.action == "subscribe") {
-                    verbose_log("async series - create ClientSubscription ...");
-                    subscription = make_subscription();
-                }
-                else {
-                    verbose_log("async series - session ClientSubscription not active");
-                    callback();
-                }
             }
         ], function (err) {
             if (err) {
@@ -103,11 +91,12 @@ module.exports = function (RED) {
             }
         });
 
-        function make_subscription() {
+        function make_subscription(callback, msg) {
 
             var newSubscription = null;
 
-            if(!node.session) {
+            if (!node.session) {
+                verbose_log("Subscription without session");
                 return newSubscription;
             }
 
@@ -121,20 +110,28 @@ module.exports = function (RED) {
                 priority: 10
             });
 
+            newSubscription.on("initialized", function () {
+                verbose_log("Subscription initialized");
+                node.status({fill: "green", shape: "ring", text: "initialized"});
+            });
+
             newSubscription.on("started", function () {
-                verbose_log("subscribed");
+                verbose_log("Subscription subscribed ID: " + newSubscription.subscriptionId);
                 node.status({fill: "green", shape: "dot", text: "subscribed"});
+                callback(newSubscription, msg);
             });
 
             newSubscription.on("keepalive", function () {
-                verbose_log("keepalive");
+                verbose_log("Subscription keepalive ID: " + newSubscription.subscriptionId);
                 node.status({fill: "green", shape: "dot", text: "keepalive"});
             });
 
             newSubscription.on("terminated", function () {
-                verbose_log("terminated");
+                verbose_log("Subscription terminated ID: " + newSubscription.subscriptionId);
                 node.status({fill: "red", shape: "dot", text: "terminated"});
-                subscription = null;
+                if (subscriptions.length > 0) {
+                    subscriptions.splice(subscriptions.indexOf(newSubscription), 1);
+                }
             });
 
             return newSubscription;
@@ -197,6 +194,12 @@ module.exports = function (RED) {
                 return;
             }
 
+            if (!msg.topic) {
+                verbose_warn("can't work without OPC UA NodeId - msg.topic");
+                node.send(msg);
+                return;
+            }
+
             verbose_log("Action on input:" + node.action + " Item from Topic: " + msg.topic);
 
             switch (node.action) {
@@ -221,11 +224,7 @@ module.exports = function (RED) {
 
         function read_action_input(msg) {
 
-            if (!msg.topic) {
-                verbose_warn("can't read with empty Topic");
-                node.send(msg);
-                return;
-            }
+            verbose_log("reading");
 
             items[0] = msg.topic; // TODO support for multiple item reading
 
@@ -296,25 +295,18 @@ module.exports = function (RED) {
 
         function subscribe_action_input(msg) {
 
-            if (!node.session) {
-                node.send(msg);
-                return;
+            verbose_log("subscribing");
+
+            var sub = make_subscription(subscribe_monitoredItem, msg);
+
+            if (sub) {
+                subscriptions.push(sub);
             }
-
-            verbose_log("Session Status: " + node.session.status);
-
-            if (!subscription) {
-                subscription = make_subscription();
-            }
-
-            verbose_log("subscribed to session with subscriptionId: " + subscription.subscriptionId);
-
-            subscribe_monitoredItem(msg);
         }
 
-        function subscribe_monitoredItem(msg) {
+        function subscribe_monitoredItem(subscription, msg) {
 
-            verbose_log("Session subscriptionId: " + subscription.subscriptionId + " monitored msg.topic: " + msg.topic);
+            verbose_log("Session subscriptionId: " + subscription.subscriptionId);
 
             var monitoredItem = subscription.monitor(
                 {nodeId: msg.topic, attributeId: opcua.AttributeIds.Value},
@@ -328,13 +320,13 @@ module.exports = function (RED) {
             monitoredItems.push(monitoredItem);
 
             monitoredItem.on("initialized", function () {
-                verbose_log("initialized monitored msg.topic on " + msg.topic);
+                verbose_log("initialized monitoredItem on " + msg.topic);
             });
 
             monitoredItem.on("changed", function (dataValue) {
                 verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
 
-                if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
+                if (dataValue.statusCode === opcua.StatusCodes.Good) {
                     verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
                 }
                 else {
@@ -346,12 +338,14 @@ module.exports = function (RED) {
             });
 
             monitoredItem.on("keepalive", function () {
-                verbose_log("keepalive monitored msg.topic on " + item);
+                verbose_log("keepalive monitoredItem on " + msg.topic);
             });
 
             monitoredItem.on("terminated", function () {
-                verbose_log("terminated monitored msg.topic on " + msg.topic);
-                monitoredItems.splice(list.indexOf(monitoredItem), 1);
+                verbose_log("terminated monitoredItem on " + msg.topic);
+                if (monitoredItems.length > 0) {
+                    monitoredItems.splice(monitoredItems.indexOf(monitoredItem), 1);
+                }
             });
 
             return monitoredItem;
@@ -359,7 +353,7 @@ module.exports = function (RED) {
 
         function browse_action_input(msg) {
 
-            verbose_log("Browsing address space, root given in msg.topic:" + msg.topic);
+            verbose_log("browsing");
 
             var NodeCrawler = opcua.NodeCrawler;
             var crawler = new NodeCrawler(node.session);
@@ -402,22 +396,26 @@ module.exports = function (RED) {
                 }
 
             });
+
         }
 
         node.on("close", function () {
 
-            verbose_log("closing session (close)");
-            verbose_warn("closing Client ...");
-
             if (node.session) {
 
-                if (subscription) {
-                    subscription.terminate();
+                while (subscriptions.length > 0) {
+                    var sub = subscriptions.pop();
+                    if (sub) {
+                        sub.terminate();
+                    }
                 }
 
                 node.session.close(function (err) {
 
-                    verbose_log(" Session closed " + err);
+                    verbose_log("Session closed");
+                    if (err) {
+                        node.error(err);
+                    }
 
                     node.session = null;
 
@@ -436,18 +434,21 @@ module.exports = function (RED) {
 
         node.on("error", function () {
 
-            verbose_log("closing session (error)");
-            verbose_warn("closing Client on error ...");
-
             if (node.session) {
 
-                if (subscription) {
-                    subscription.terminate();
+                while (subscriptions.length > 0) {
+                    var sub = subscriptions.pop();
+                    if (sub) {
+                        sub.terminate();
+                    }
                 }
 
                 node.session.close(function (err) {
 
-                    verbose_log("Session closed " + err);
+                    verbose_log("Session closed on error emit");
+                    if (err) {
+                        node.error(err);
+                    }
 
                     node.session = null;
 
