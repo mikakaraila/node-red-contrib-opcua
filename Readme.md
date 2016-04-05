@@ -1,3 +1,5 @@
+[![OPC UA](http://b.repl.ca/v1/OPC-UA-blue.png)](http://opcfoundation.org/)
+
 node-red-contrib-opcua
 ========================
 
