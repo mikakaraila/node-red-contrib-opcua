@@ -328,10 +328,19 @@ module.exports = function (RED) {
             var monitoredItem = monitoredItems.get({"topicName": msg.topic});
 
             if (!monitoredItem) {
+
+                var interval = 100;
+
+                if (typeof msg.payload === 'number') {
+                    interval = Number(msg.payload);
+                }
+
+                verbose_log(msg.topic + " samplingInterval " + interval);
+
                 monitoredItem = subscription.monitor(
                     {nodeId: msg.topic, attributeId: opcua.AttributeIds.Value},
                     {
-                        samplingInterval: msg.payload,
+                        samplingInterval: interval,
                         queueSize: 10,
                         discardOldest: true
                     }
