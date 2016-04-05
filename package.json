@@ -33,9 +33,9 @@
     }
   },
   "dependencies": {
-    "async": "1.5.*",
-    "node-opcua": "0.0.53",
-    "treeify": "1.0.*"
+    "async": "^2.0.0-rc.2",
+    "node-opcua": "^0.0.52",
+    "treeify": "^1.0.1"
   },
   "homepage": "https://github.com/mikakaraila/node-red-contrib-opcua#readme"
 }
