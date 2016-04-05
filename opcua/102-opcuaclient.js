@@ -23,6 +23,7 @@ module.exports = function (RED) {
     var browse_service = require("node-opcua/lib/services/browse_service");
     var async = require("async");
     var treeify = require('treeify');
+    var Set = require("collections/set");
 
     function OpcUaClientNode(n) {
 
@@ -37,8 +38,14 @@ module.exports = function (RED) {
         var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
 
         var items = [];
-        var subscriptions = [];
-        var monitoredItems = [];
+
+        var subscription; // only one subscription needed to hold multiple monitored Items
+
+        var monitoredItems = new Set(null, function (a, b) {
+            return a.topicName === b.topicName;
+        }, function (object) {
+            return object.topicName;
+        }); // multiple monitored Items should be registered only once
 
         function verbose_warn(logMessage) {
             if (RED.settings.verbose) {
@@ -129,9 +136,8 @@ module.exports = function (RED) {
             newSubscription.on("terminated", function () {
                 verbose_log("Subscription terminated ID: " + newSubscription.subscriptionId);
                 node.status({fill: "red", shape: "dot", text: "terminated"});
-                if (subscriptions.length > 0) {
-                    subscriptions.splice(subscriptions.indexOf(newSubscription), 1);
-                }
+                subscription = null;
+                monitoredItems.clear();
             });
 
             return newSubscription;
@@ -141,7 +147,8 @@ module.exports = function (RED) {
             var uint16 = x;
 
             if (uint16 >= Math.pow(2, 15)) {
-                return uint16 - Math.pow(2, 16);
+                uint16 = x - Math.pow(2, 16);
+                return uint16;
             }
             else {
                 return uint16;
@@ -297,10 +304,20 @@ module.exports = function (RED) {
 
             verbose_log("subscribing");
 
-            var sub = make_subscription(subscribe_monitoredItem, msg);
-
-            if (sub) {
-                subscriptions.push(sub);
+            if (!subscription) {
+                // first build and start subscription and subscribe on its started event by callback
+                subscription = make_subscription(subscribe_monitoredItem, msg);
+            }
+            else {
+                // otherwise check if its terminated start to renew the subscription
+                if (subscription.subscriptionId != "terminated") {
+                    subscribe_monitoredItem(subscription, msg);
+                }
+                else {
+                    subscription = null;
+                    monitoredItems.clear();
+                    node.status({fill: "red", shape: "ring", text: "terminated"});
+                }
             }
         }
 
@@ -308,45 +325,49 @@ module.exports = function (RED) {
 
             verbose_log("Session subscriptionId: " + subscription.subscriptionId);
 
-            var monitoredItem = subscription.monitor(
-                {nodeId: msg.topic, attributeId: opcua.AttributeIds.Value},
-                {
-                    samplingInterval: 100,
-                    queueSize: 10,
-                    discardOldest: true
-                }
-            );
+            var monitoredItem = monitoredItems.get({"topicName": msg.topic});
 
-            monitoredItems.push(monitoredItem);
+            if (!monitoredItem) {
+                monitoredItem = subscription.monitor(
+                    {nodeId: msg.topic, attributeId: opcua.AttributeIds.Value},
+                    {
+                        samplingInterval: msg.payload,
+                        queueSize: 10,
+                        discardOldest: true
+                    }
+                );
 
-            monitoredItem.on("initialized", function () {
-                verbose_log("initialized monitoredItem on " + msg.topic);
-            });
+                monitoredItems.add({"topicName": msg.topic, mItem: monitoredItem});
 
-            monitoredItem.on("changed", function (dataValue) {
-                verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
+                monitoredItem.on("initialized", function () {
+                    verbose_log("initialized monitoredItem on " + msg.topic);
+                });
 
-                if (dataValue.statusCode === opcua.StatusCodes.Good) {
-                    verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
-                }
-                else {
-                    verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16));
-                }
+                monitoredItem.on("changed", function (dataValue) {
+                    verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
 
-                msg.payload = dataValue.value.value;
-                node.send(msg);
-            });
+                    if (dataValue.statusCode === opcua.StatusCodes.Good) {
+                        verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
+                    }
+                    else {
+                        verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16));
+                    }
 
-            monitoredItem.on("keepalive", function () {
-                verbose_log("keepalive monitoredItem on " + msg.topic);
-            });
+                    msg.payload = dataValue.value.value;
+                    node.send(msg);
+                });
 
-            monitoredItem.on("terminated", function () {
-                verbose_log("terminated monitoredItem on " + msg.topic);
-                if (monitoredItems.length > 0) {
-                    monitoredItems.splice(monitoredItems.indexOf(monitoredItem), 1);
-                }
-            });
+                monitoredItem.on("keepalive", function () {
+                    verbose_log("keepalive monitoredItem on " + msg.topic);
+                });
+
+                monitoredItem.on("terminated", function () {
+                    verbose_log("terminated monitoredItem on " + msg.topic);
+                    if (monitoredItems.get({"topicName": msg.topic})) {
+                        monitoredItems.delete({"topicName": msg.topic});
+                    }
+                });
+            }
 
             return monitoredItem;
         }
@@ -361,12 +382,12 @@ module.exports = function (RED) {
             crawler.read(msg.topic, function (err, obj) {
 
                 var newMessage = {
-                    topic: msg.topic,
-                    nodeId: "",
-                    browseName: "",
-                    nodeClass: "",
-                    typeDefinition: "",
-                    payload: ""
+                    "topic": msg.topic,
+                    "nodeId": "",
+                    "browseName": "",
+                    "nodeClassType": "",
+                    "typeDefinition": "",
+                    "payload": ""
                 };
 
                 if (!err) {
@@ -383,7 +404,7 @@ module.exports = function (RED) {
                             newMessage.nodeId = newMessage.nodeId.replace("&#x2F;", "\/");
                         }
                         if (line.indexOf("nodeClass") > 0) {
-                            newMessage.nodeClass = line.substring(line.indexOf("nodeClass") + 11);
+                            newMessage.nodeClassType = line.substring(line.indexOf("nodeClass") + 11);
                         }
                         if (line.indexOf("typeDefinition") > 0) {
                             newMessage.typeDefinition = line.substring(line.indexOf("typeDefinition") + 16);
@@ -403,11 +424,9 @@ module.exports = function (RED) {
 
             if (node.session) {
 
-                while (subscriptions.length > 0) {
-                    var sub = subscriptions.pop();
-                    if (sub) {
-                        sub.terminate();
-                    }
+                if (subscription) {
+                    subscription.terminate();
+                    // subscription becomes null by its terminated event
                 }
 
                 node.session.close(function (err) {
@@ -436,11 +455,9 @@ module.exports = function (RED) {
 
             if (node.session) {
 
-                while (subscriptions.length > 0) {
-                    var sub = subscriptions.pop();
-                    if (sub) {
-                        sub.terminate();
-                    }
+                if (subscription) {
+                    subscription.terminate();
+                    // subscription becomes null by its terminated event
                 }
 
                 node.session.close(function (err) {
