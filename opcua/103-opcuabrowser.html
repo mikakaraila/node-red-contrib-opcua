@@ -1,0 +1,147 @@
+<!--
+
+Copyright 2015 Valmet Automation Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-->
+
+<script type="text/javascript">
+
+    RED.nodes.registerType('OpcUa-Browser', {
+        category: 'opcua',
+        color: "#3FADB5",
+        defaults: {
+            endpoint: {value: "", required: true, type: "OpcUa-Endpoint"},
+            item: {value: ""},
+            datatype: {value: ""},
+            topic: {value: ""},
+            items: {value: []}
+        },
+        inputs: 1,
+        outputs: 1,
+        align: "right",
+        icon: "opcuanode.png",
+        label: function () {
+            return this.item || "OPC UA Browser";
+        },
+        labelStyle: function () {
+            return this.item ? "node_label_italic" : "";
+        },
+        onpaletteadd: function () {
+
+        },
+        oneditprepare: function () {
+            try {
+                var node = this;
+
+                var inputEndpoint = $('#node-input-endpoint');
+                var inputItem = $("#node-input-item");
+
+                if (!node.items.length) {
+                    $('.node-input-info').hide();
+                }
+                else {
+                    $('.node-input-info').show();
+                }
+
+                $('.node-input-error').hide();
+
+                inputItem.append('<option selected disabled value="">Choose a Item</option>\n');
+
+                $('#node-input-item-text').append(' Items: ' + node.items.length);
+
+                function setupClient(callback) {
+                    node.items.forEach(function (item) {
+                        inputItem.append(item);
+                    });
+                    callback();
+                }
+
+                $('#node-input-browsebtn').click(function () {
+                    check_endpoint();
+                });
+
+                function check_endpoint() {
+                    var url = inputEndpoint.val();
+
+                    if (url) {
+                        setupClient(function (err) {
+                            if (!err) {
+                                $('.node-input-info').show();
+                                $('.node-input-error').hide();
+                            } else {
+                                $('.node-input-info').hide();
+                                $('.node-input-error').show();
+                            }
+                        });
+                    }
+                    else {
+                        $('.node-input-error').show();
+                    }
+                }
+            } catch (err) {
+                console.log(err);
+            }
+            finally {
+                console.log("finally");
+            }
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="OpcUa-Browser">
+    <div class="form-row" style="min-width:640px">
+        <label for="node-input-endpoint"><i class="icon-bookmark"></i> Endpoint</label>
+        <input type="text" id="node-input-endpoint">
+        <button type="button" id="node-input-browsebtn" class="btn"><i class="icon-search"></i></button>
+    </div>
+    <div class="form-tips node-input-info" id="node-input-item" style="margin-top:5px">
+        <div id="node-input-item-text">Now you should able to select an Item.</div>
+    </div>
+    <div class="form-error node-input-error" id="node-input-erroritem" style="margin-top:5px">
+        <div id="node-input-error-text">You are'nt able to select an Item. Update OPC UA settings!</div>
+    </div>
+    <div class="form-row" id="node-input-item-row">
+        <label for="node-input-item"><i class="icon-tag"></i> Item</label>
+        <select type="text" id="node-input-item" style="display: inline-block; vertical-align: middle; width:60%;">
+            <option selected disabled value="" >Choose a Item</option>
+        </select>
+    </div>
+        <div class="form-row" id="node-input-datatype-row">
+        <label for="node-input-datatype"><i class="icon-tag"></i> Type</label>
+        <select type="text" id="node-input-datatype" style="display: inline-block; vertical-align: middle; width:60%;">
+            <option selected disabled value="" >Choose a Type</option>
+            <option value="Integer">Integer</option>
+            <option value="Float">Float</option>
+            <option selected value="Double">Double</option>
+            <option value="UInt16">unsigned Int16</option>
+            <option value="Boolean">Boolean</option>
+            <option value="String">String</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-topic"><i class="icon-search"></i> Topic</label>
+        <input type="text" id="node-input-topic">
+    </div>
+</script>
+
+
+
+<script type="text/x-red" data-help-name="OpcUa-Browser">
+    <p>Connect to endpoint: opc.tcp://host:port/UA/EndpointName.</p>
+    <p>Item can be defined in input msg object:</p>
+    <p><b>topic</b> contains OPC UA address and
+    <p><b>datatype></b> contains valid OPC UA type.</p>
+    <p>If <b>payload</b> is empty value will be read from the OPC UA server otherwise value will be written to the server.</p>
+</script>
