@@ -37,5 +37,8 @@
     "node-opcua": "^0.0.52",
     "treeify": "^1.0.1"
   },
-  "homepage": "https://github.com/mikakaraila/node-red-contrib-opcua#readme"
+  "homepage": "https://github.com/mikakaraila/node-red-contrib-opcua#readme",
+  "scripts": {
+    "test": "karma start opcua.conf.js --log-level debug --single-run"
+  }
 }

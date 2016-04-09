@@ -91,6 +91,7 @@ module.exports = function (RED) {
                 case "active browsing":
                 case "session active":
                 case "subscribed":
+                case "browse done":
                     fillValue = "green";
                     shapeValue = "dot";
                     break;
@@ -262,7 +263,8 @@ module.exports = function (RED) {
                 return;
             }
 
-            verbose_log("Action on input:" + node.action + " Item from Topic: " + msg.topic);
+            verbose_log("Action on input:" + node.action
+                + " Item from Topic: " + msg.topic + " session Id: " + node.session.sessionId);
 
             switch (node.action) {
                 case "read":
@@ -293,11 +295,11 @@ module.exports = function (RED) {
             node.session.readVariableValue(items, function (err, dataValues, diagnostics) {
                 if (err) {
                     verbose_log(diagnostics);
-                    node.log(err);
+                    node.error(err.message);
                     set_node_status_to("error");
                 } else {
 
-                    set_node_status_to("active read");
+                    set_node_status_to("active reading");
 
                     for (var i = 0; i < dataValues.length; i++) {
                         var dataValue = dataValues[i];
@@ -487,9 +489,12 @@ module.exports = function (RED) {
                             node.send(newMessage);
                         }
 
+                        set_node_status_to("browse done");
+
                     });
                 }
                 else {
+                    node.error(err.message);
                     set_node_status_to("error browsing");
                 }
 
