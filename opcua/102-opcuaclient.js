@@ -88,6 +88,7 @@ module.exports = function (RED) {
                 case "active reading":
                 case "active writing":
                 case "active subscribing":
+                case "active subscribed":
                 case "active browsing":
                 case "session active":
                 case "subscribed":
