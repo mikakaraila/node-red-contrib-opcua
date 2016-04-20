@@ -14,31 +14,35 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 
-**/
+ **/
 
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
     var async = require("async");
 
-    function OpcUaBrowserNode(n) {
+    function OpcUaBrowserNode(config) {
 
-        RED.nodes.createNode(this, n);
+        RED.nodes.createNode(this, config);
 
-        this.item = n.item;         // OPC UA address: ns=2;i=4 OR ns=3;s=MyVariable
-        this.datatype = n.datatype; // String;
-        this.topic = n.topic;       // ns=3;s=MyVariable from input
-        this.items = n.items;
+        this.item = config.item;         // OPC UA address: ns=2;i=4 OR ns=3;s=MyVariable
+        this.datatype = config.datatype; // String;
+        this.topic = config.topic;       // ns=3;s=MyVariable from input
+        this.items = config.items;
 
         var node = this;
 
         var browseTopic = "ns=0;i=85";
 
-        node.items = [];
-
-        var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
+        var opcuaEndpoint = RED.nodes.getNode(config.endpoint);
 
         node.status({fill: "gray", shape: "dot", text: "no Items"});
+
+        node.add_item = function (item) {
+            if (item) {
+                node.items.add({'item': item});
+            }
+        };
 
         function setupClient(url, callback) {
 
@@ -66,18 +70,12 @@ module.exports = function (RED) {
                 },
                 // step 3 : browse
                 function (callback) {
-
+                    node.warn("browseTopic:" + browseTopic);
                     browseSession.browse(browseTopic, function (err, browse_result) {
                         if (!err) {
                             browse_result.forEach(function (result) {
                                 result.references.forEach(function (reference) {
-                                    node.items.add(reference.nodeId.toString());
-                                    node.send({
-                                        "payload": {
-                                            "browseName": reference.browseName.toString(),
-                                            "nodeId": reference.nodeId.toString()
-                                        }
-                                    });
+                                    node.add_item(reference);
                                 });
                             });
                         }
@@ -89,6 +87,11 @@ module.exports = function (RED) {
                 },
                 // close session
                 function (callback) {
+
+                    node.warn("sending items " + node.items.length);
+                    var msg = {payload: node.items, endpoint: opcuaEndpoint.endpoint};
+                    node.send(msg);
+
                     browseSession.close(function (err) {
                         if (err) {
                             node.error("session closed failed on browse");
@@ -116,17 +119,42 @@ module.exports = function (RED) {
 
         node.on("input", function (msg) {
 
-            node.items = []; // clear items - TODO: may it becomes usable in Edit window of the node
+            browseTopic = null;
 
-            if (!node.topic && msg.topic) {
-                if (!msg.topic) {
-                    browseTopic = "ns=0;i=85";
-                } else {
-                    browseTopic = msg.topic;
+            node.warn("input browser");
+
+            if (msg.payload.hasOwnProperty('actiontype')) {
+
+                switch (msg.payload.actiontype) {
+                    case 'browse':
+                        if (msg.payload.hasOwnProperty('root')) {
+                            if (msg.payload.root && msg.payload.root.hasOwnProperty('item')) {
+                                if (msg.payload.root.item.hasOwnProperty('nodeId')) {
+                                    browseTopic = browse_by_item(msg.payload.root.item.nodeId);
+                                }
+                            }
+                        }
+                        break;
+
+                    default:
+                        break;
                 }
             }
             else {
-                browseTopic = node.topic;
+                if (!node.topic && msg.topic) {
+                    if (msg.topic) {
+                        browseTopic = msg.topic;
+                    }
+                }
+                else {
+                    browseTopic = node.topic;
+                }
+            }
+
+            node.items = []; // clear items - TODO: may it becomes usable in Edit window of the node
+
+            if (!browseTopic) {
+                browseTopic = browse_to_root();
             }
 
             setupClient(opcuaEndpoint.endpoint, function (err) {
@@ -139,10 +167,20 @@ module.exports = function (RED) {
 
             msg.endpoint = opcuaEndpoint.endpoint;
             msg.payload = node.items;
-            n.items = node.items;
 
             node.send(msg);
         });
+
+        function browse_by_item(nodeId) {
+            node.log("Browse to root " + nodeId);
+            return nodeId;
+        }
+
+
+        function browse_to_root() {
+            node.warn("Browse to root Objects");
+            return "ns=0;i=85"; // OPC UA Root Folder Objects
+        }
     }
 
     RED.nodes.registerType("OpcUa-Browser", OpcUaBrowserNode);
