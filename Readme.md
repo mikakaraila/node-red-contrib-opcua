@@ -41,3 +41,21 @@ Testing
 ------
 
     karma start opcua.conf.js --log-level debug --single-run
+
+TBD List
+-----
+
+| __**Nodes**__      | __**Function**__          | __**Done**__              |
+|--------------------|---------------------------|---------------------------|
+|  All               |                           |                           |
+|                    | project structure         | :white_check_mark:        |
+|                    | async calls               | :waxing_crescent_moon:    |
+|                    | UnitTesting               | :new_moon:                |
+|  Browser           |                           |                           |
+|                    |                           |                           |
+|  Client            |                           |                           |
+|                    |                           |                           |
+|  Item              |                           |                           |
+|                    |                           |                           |
+|  Server            |                           |                           |
+|                    |                           |                           |

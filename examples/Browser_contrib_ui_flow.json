@@ -1,0 +1,63 @@
+[
+  {
+    "id": "4f4fb6ea.24c528",
+    "type": "ui_tab",
+    "z": "81ced71a.e3a748",
+    "name": "Home",
+    "icon": "dashboard",
+    "order": "1"
+  },
+  {
+    "id": "fba2b2fa.7ca55",
+    "type": "OpcUa-Endpoint",
+    "z": "81ced71a.e3a748",
+    "endpoint": "opc.tcp://opcua.demo-this.com:51210/UA/SampleServer",
+    "login": false
+  },
+  {
+    "id": "96a00705.6bc878",
+    "type": "OpcUa-Browser",
+    "z": "81ced71a.e3a748",
+    "endpoint": "fba2b2fa.7ca55",
+    "item": "",
+    "datatype": "",
+    "topic": "ns=4;i=1241",
+    "items": [],
+    "x": 250,
+    "y": 140,
+    "wires": [
+      [
+        "6c3938e3.35a4d8"
+      ]
+    ]
+  },
+  {
+    "id": "6c3938e3.35a4d8",
+    "type": "ui_template",
+    "z": "81ced71a.e3a748",
+    "tab": "4f4fb6ea.24c528",
+    "name": "",
+    "group": "OPC UA",
+    "order": 1,
+    "format": "<div layout=\"row\" layout-align=\"space-between\">\n    <select ng-model=\"item\" ng-options=\"items.item.displayName.text for items in msg.payload\">\n        <option value=\"\">-- Objects Root --</option>\n    </select>\n    <button ng-click=\"send({payload: {actiontype: 'browse', root: item}})\">\n        Browse\n    </button>\n</div>\n<div layout=\"row\" layout-align=\"space-between\">\n    <ul>\n        <li ng-repeat=\"items in msg.payload\">\n          {{items.item.displayName.text}}: {{items.item.nodeId}}\n        </li>\n    </ul>\n</div>\n",
+    "storeOutMessages": false,
+    "fwdInMessages": false,
+    "x": 240,
+    "y": 60,
+    "wires": [
+      [
+        "96a00705.6bc878",
+        "8913e6ff.e9c3f8"
+      ]
+    ]
+  },
+  {
+    "id": "8913e6ff.e9c3f8",
+    "type": "ui_toast",
+    "z": "81ced71a.e3a748",
+    "name": "",
+    "x": 450,
+    "y": 60,
+    "wires": []
+  }
+]

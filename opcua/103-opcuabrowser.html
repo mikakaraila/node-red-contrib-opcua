@@ -38,9 +38,6 @@ limitations under the License.
         labelStyle: function () {
             return this.item ? "node_label_italic" : "";
         },
-        onpaletteadd: function () {
-
-        },
         oneditprepare: function () {
             try {
                 var node = this;
@@ -63,12 +60,13 @@ limitations under the License.
 
                 function setupClient(callback) {
                     node.items.forEach(function (item) {
-                        inputItem.append(item);
+                        inputItem.append('<option value="' + item + '">' + item + '</option>\n');
                     });
                     callback();
                 }
 
                 $('#node-input-browsebtn').click(function () {
+                    node.get_items();
                     check_endpoint();
                 });
 

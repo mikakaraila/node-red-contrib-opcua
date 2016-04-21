@@ -63,36 +63,93 @@ module.exports = function (RED) {
             verbose_warn("create Client ...");
             node.client = new opcua.OPCUAClient();
             node.items = items;
+            set_node_status_to("create client");
         }
 
-        node.status({fill: "red", shape: "ring", text: "disconnected"});
+        function set_node_status_to(statusValue) {
+
+            verbose_log("Client status: " + statusValue);
+
+            var fillValue = "red";
+            var shapeValue = "dot";
+
+            switch (statusValue) {
+
+                case "create client":
+                case "connecting":
+                case "connected":
+                case "initialized":
+                case "keepalive":
+                    fillValue = "green";
+                    shapeValue = "ring";
+                    break;
+
+                case "active":
+                case "active reading":
+                case "active writing":
+                case "active subscribing":
+                case "active subscribed":
+                case "active browsing":
+                case "session active":
+                case "subscribed":
+                case "browse done":
+                    fillValue = "green";
+                    shapeValue = "dot";
+                    break;
+
+                case "disconnected":
+                case "terminated":
+                    fillValue = "red";
+                    shapeValue = "ring";
+                    break;
+
+                default:
+                    if (!statusValue) {
+                        fillValue = "blue";
+                        statusValue = "waiting ...";
+                    }
+                    break;
+            }
+
+            node.status({fill: fillValue, shape: shapeValue, text: statusValue});
+        }
 
         async.series([
             // First connect to server´s endpoint
             function (callback) {
                 verbose_log("async series - connecting ", opcuaEndpoint.endpoint);
-                node.client.connect(opcuaEndpoint.endpoint, callback);
+                try {
+                    set_node_status_to("connecting");
+                    node.client.connect(opcuaEndpoint.endpoint, callback);
+                } catch (err) {
+                    callback(err);
+                }
             },
             function (callback) {
                 verbose_log("async series - create session ...");
-
-                node.client.createSession(function (err, session) {
-                    if (!err) {
-                        node.session = session;
-                        node.session.timeout = 10000;
-                        node.status({fill: "green", shape: "dot", text: "session active"});
-                        verbose_log("session active");
-                        callback();
-                    }
-                    else {
-                        callback(err);
-                    }
-                });
+                try {
+                    node.client.createSession(function (err, session) {
+                        if (!err) {
+                            node.session = session;
+                            node.session.timeout = 10000;
+                            verbose_log("session active");
+                            set_node_status_to("session active");
+                            callback();
+                        }
+                        else {
+                            set_node_status_to("session error");
+                            callback(err);
+                        }
+                    });
+                } catch (err) {
+                    callback(err);
+                }
             }
         ], function (err) {
             if (err) {
-                node.error(err.stack, err);
-                node.status({fill: "red", shape: "ring", text: "Error"});
+                node.error(node.name + " OPC UA connection error: " + err.message);
+                verbose_log(err);
+                set_node_status_to("connection error");
                 node.session = null;
                 node.client = null;
             }
@@ -119,23 +176,23 @@ module.exports = function (RED) {
 
             newSubscription.on("initialized", function () {
                 verbose_log("Subscription initialized");
-                node.status({fill: "green", shape: "ring", text: "initialized"});
+                set_node_status_to("initialized");
             });
 
             newSubscription.on("started", function () {
                 verbose_log("Subscription subscribed ID: " + newSubscription.subscriptionId);
-                node.status({fill: "green", shape: "dot", text: "subscribed"});
+                set_node_status_to("subscribed");
                 callback(newSubscription, msg);
             });
 
             newSubscription.on("keepalive", function () {
                 verbose_log("Subscription keepalive ID: " + newSubscription.subscriptionId);
-                node.status({fill: "green", shape: "dot", text: "keepalive"});
+                set_node_status_to("keepalive");
             });
 
             newSubscription.on("terminated", function () {
                 verbose_log("Subscription terminated ID: " + newSubscription.subscriptionId);
-                node.status({fill: "red", shape: "dot", text: "terminated"});
+                set_node_status_to("terminated");
                 subscription = null;
                 monitoredItems.clear();
             });
@@ -207,7 +264,8 @@ module.exports = function (RED) {
                 return;
             }
 
-            verbose_log("Action on input:" + node.action + " Item from Topic: " + msg.topic);
+            verbose_log("Action on input:" + node.action
+                + " Item from Topic: " + msg.topic + " session Id: " + node.session.sessionId);
 
             switch (node.action) {
                 case "read":
@@ -238,8 +296,11 @@ module.exports = function (RED) {
             node.session.readVariableValue(items, function (err, dataValues, diagnostics) {
                 if (err) {
                     verbose_log(diagnostics);
-                    node.log(err);
+                    node.error(err.message);
+                    set_node_status_to("error");
                 } else {
+
+                    set_node_status_to("active reading");
 
                     for (var i = 0; i < dataValues.length; i++) {
                         var dataValue = dataValues[i];
@@ -292,9 +353,11 @@ module.exports = function (RED) {
 
             node.session.writeSingleNode(nodeid, opcuaVariant, function (err) {
                 if (err) {
+                    set_node_status_to("error");
                     node.error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
                 }
                 else {
+                    set_node_status_to("active writing");
                     verbose_log("Value written!");
                 }
             });
@@ -311,12 +374,13 @@ module.exports = function (RED) {
             else {
                 // otherwise check if its terminated start to renew the subscription
                 if (subscription.subscriptionId != "terminated") {
+                    set_node_status_to("active subscribing");
                     subscribe_monitoredItem(subscription, msg);
                 }
                 else {
                     subscription = null;
                     monitoredItems.clear();
-                    node.status({fill: "red", shape: "ring", text: "terminated"});
+                    set_node_status_to("terminated");
                 }
             }
         }
@@ -353,6 +417,9 @@ module.exports = function (RED) {
                 });
 
                 monitoredItem.on("changed", function (dataValue) {
+
+                    set_node_status_to("active subscribed");
+
                     verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
 
                     if (dataValue.statusCode === opcua.StatusCodes.Good) {
@@ -401,6 +468,8 @@ module.exports = function (RED) {
 
                 if (!err) {
 
+                    set_node_status_to("active browsing");
+
                     treeify.asLines(obj, true, true, function (line) {
 
                         verbose_log(line);
@@ -421,8 +490,13 @@ module.exports = function (RED) {
                             node.send(newMessage);
                         }
 
-                    });
+                        set_node_status_to("browse done");
 
+                    });
+                }
+                else {
+                    node.error(err.message);
+                    set_node_status_to("error browsing");
                 }
 
             });
@@ -441,8 +515,9 @@ module.exports = function (RED) {
                 node.session.close(function (err) {
 
                     verbose_log("Session closed");
+                    set_node_status_to("session closed");
                     if (err) {
-                        node.error(err);
+                        node.error(node.name + " " + err);
                     }
 
                     node.session = null;
@@ -457,7 +532,7 @@ module.exports = function (RED) {
                 });
             }
 
-            node.status({fill: "red", shape: "ring", text: "disconnected"});
+            set_node_status_to("closed");
         });
 
         node.on("error", function () {
@@ -473,9 +548,10 @@ module.exports = function (RED) {
 
                     verbose_log("Session closed on error emit");
                     if (err) {
-                        node.error(err);
+                        node.error(node.name + " " + err);
                     }
 
+                    set_node_status_to("session closed");
                     node.session = null;
 
                     if (node.client) {
@@ -489,7 +565,7 @@ module.exports = function (RED) {
                 });
             }
 
-            node.status({fill: "red", shape: "dot", text: "disconnect error"});
+            set_node_status_to("node error");
         });
     }
 
