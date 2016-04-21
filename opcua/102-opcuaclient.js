@@ -40,6 +40,7 @@ module.exports = function (RED) {
         var items = [];
 
         var subscription; // only one subscription needed to hold multiple monitored Items
+		var event_subscription; // only one subscription needed to hold multiple monitored Items
 
         var monitoredItems = new Set(null, function (a, b) {
             return a.topicName === b.topicName;
@@ -58,6 +59,62 @@ module.exports = function (RED) {
                 node.log(logMessage);
             }
         }
+
+		
+		function getBrowseName(session,nodeId,callback) {
+			session.read([{ nodeId: nodeId, attributeId: AttributeIds.BrowseName}],function(err,org,readValue) {
+				if (!err) {
+					if (readValue[0].statusCode === opcua.StatusCodes.Good) {
+						var browseName = readValue[0].value.value.name;
+						return callback(null,browseName);
+					}
+				}
+				callback(err,"<??>");
+			})
+		}
+
+		function __dumpEvent(node,session,fields,eventFields,_callback) {
+
+			async.forEachOf(eventFields,function(variant,index,callback) {
+				var msg = {};
+				if (variant.dataType === DataType.Null) {
+					return callback();
+				}
+				if (variant.dataType === DataType.NodeId)  {
+
+					getBrowseName(session,variant.value,function(err,name){
+
+						if (!err) {
+							
+							msg.topic = name;
+							msg.payload = name + ":" + variant.dataType.key.toString() + ":"+ name + ":" + variant.value;
+							console.log(name, fields[index]);
+							node.send(msg);
+							//console.log(w(name,20),w(fields[index],15).yellow,w(variant.dataType.key,10).toString().cyan,name.cyan.bold,"(",w(variant.value,20),")");
+						}
+						callback();
+					});
+
+				} else {
+					setImmediate(function() {
+						console.log("",fields[index]);
+						msg.payload = "" + fields[index] + ":" + variant.dataType.key.toString() + ":" + variant.value;
+						//console.log(w("",20),w(fields[index],15).yellow,w(variant.dataType.key,10).toString().cyan,variant.value);
+						callback();
+					})
+				}
+			},_callback);
+		}
+
+		var q = new async.queue(function(task,callback){
+			__dumpEvent(task.node, task.session,task.fields,task.eventFields,callback);
+		});
+
+		function dumpEvent(node,session,fields,eventFields,_callback) {
+			q.push({
+				node: node, session: session, fields:fields, eventFields: eventFields, _callback: _callback
+			});
+		}
 
         if (node.client == null) {
             verbose_warn("create Client ...");
@@ -280,6 +337,9 @@ module.exports = function (RED) {
                 case "browse":
                     browse_action_input(msg);
                     break;
+				case "events":
+					subscribe_events_input(msg);
+					break;
                 default:
                     break;
             }
@@ -502,6 +562,68 @@ module.exports = function (RED) {
             });
 
         }
+        function subscribe_events_input(msg) {
+
+            verbose_log("subscribing events");
+			
+			var eventFilter = msg.filter;
+			var AttributeIds = opcua.AttributeIds;
+			var baseEventTypeId = "i=2041"; // BaseEventType;
+			var serverObjectId = "i=2253";
+			
+			var parameters = {
+				requestedPublishingInterval: 100,
+				requestedLifetimeCount: 1000,
+				requestedMaxKeepAliveCount: 12,
+				maxNotificationsPerPublish: 10,
+				publishingEnabled: true,
+				priority: 10
+			};
+			/*
+            if (!subscription) {
+                // first build and start subscription and subscribe on its started event by callback
+                subscription = make_subscription(subscribe_monitoredItem, msg);
+			}
+            else {
+                // otherwise check if its terminated start to renew the subscription
+                if (subscription.subscriptionId != "terminated") {
+                    subscribe_monitoredItem(subscription, msg);
+                }
+                else {
+                    subscription = null;
+                    monitoredItems.clear();
+                    node.status({fill: "red", shape: "ring", text: "terminated"});
+                }
+            }
+			*/
+			if (!event_subscription) {
+				event_subscription = new opcua.ClientSubscription(node.session, parameters);
+			}
+			
+			var event_monitoringItem = event_subscription.monitor(
+				{
+					nodeId:      msg.topic, // serverObjectId,
+					attributeId: AttributeIds.EventNotifier
+				},
+				{
+					queueSize: 100000,
+					filter: msg.eventFilter,
+					discardOldest: true
+				}
+			);
+
+			event_monitoringItem.on("initialized", function () {
+				verbose_log("event_monitoringItem initialized");
+				callback();
+			});
+
+			event_monitoringItem.on("changed", function (eventFields) {
+				dumpEvent(node, node.session, msg.eventFields, eventFields, function() {});
+			});
+			event_monitoringItem.on("err", function (err_message) {
+				node.err("event_monitoringItem ", msg.eventTypeId, " ERROR".red, err_message);
+			});
+		}
 
         node.on("close", function () {
 

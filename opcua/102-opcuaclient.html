@@ -41,7 +41,7 @@ limitations under the License.
             var node = this;
 
             function change_time_input() {
-                if (inputAction.val() == "subscribe") {
+                if (inputAction.val() == "subscribe"  || inputAction.val() == "events") {
                     inputTime.show();
                 }
                 else {
@@ -77,6 +77,7 @@ limitations under the License.
             <option value="write">WRITE</option>
             <option value="browse">BROWSE</option>
             <option value="subscribe">SUBSCRIBE</option>
+			<option value="events">EVENTS</option>
         </select>
     </div>
     <div class="form-row">
