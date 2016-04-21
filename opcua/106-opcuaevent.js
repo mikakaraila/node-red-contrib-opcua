@@ -13,7 +13,7 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
- 
+
  **/
 
 module.exports = function (RED) {
@@ -21,63 +21,70 @@ module.exports = function (RED) {
     var opcua = require('node-opcua');
 
     function OpcUaEventNode(n) {
+
         RED.nodes.createNode(this, n);
+
         this.item = n.item;         			// OPC UA item nodeID
         this.conditiontypes = n.conditiontypes; // TODO String or eventTypes -> map to eventTypeIds 
         this.name = n.name;			         	// Node name
+
         var node = this;
+
         node.on("input", function (msg) {
-			//	var baseEventTypeId = "i=2041"; // BaseEventType;
-			//	var serverObjectId = "i=2253";  // Server object id
-			
-			// All event field, perhaps selectable in UI
-			var fields = [
-				"EventId",
-				"EventType",
-				"SourceNode",
-				"SourceName",
-				"Time",
-				"ReceiveTime",
-				"Message",
-				"Severity",
+            //	var baseEventTypeId = "i=2041"; // BaseEventType;
+            //	var serverObjectId = "i=2253";  // Server object id
 
-				// ConditionType
-				"ConditionClassId",
-				"ConditionClassName",
-				"ConditionName",
-				"BranchId",
-				"Retain",
-				"EnabledState",
-				"Quality",
-				"LastSeverity",
-				"Comment",
-				"ClientUserId",
+            // All event field, perhaps selectable in UI
+            var fields = [
+                "EventId",
+                "EventType",
+                "SourceNode",
+                "SourceName",
+                "Time",
+                "ReceiveTime",
+                "Message",
+                "Severity",
 
-				// AcknowledgeConditionType
-				"AckedState",
-				"ConfirmedState",
+                // ConditionType
+                "ConditionClassId",
+                "ConditionClassName",
+                "ConditionName",
+                "BranchId",
+                "Retain",
+                "EnabledState",
+                "Quality",
+                "LastSeverity",
+                "Comment",
+                "ClientUserId",
 
-				// AlarmConditionType
-				"ActiveState",
-				"InputNode",
-				"SuppressedState",
+                // AcknowledgeConditionType
+                "AckedState",
+                "ConfirmedState",
 
-				"HighLimit",
-				"LowLimit",
-				"HighHighLimit",
-				"LowLowLimit",
+                // AlarmConditionType
+                "ActiveState",
+                "InputNode",
+                "SuppressedState",
 
-				"Value",
-			];
-			var eventFilter = opcua.constructEventFilter(fields);
-			
-			msg.topic=node.item; // "ns=0;i=85";
-			msg.eventFilter = eventFilter;
-			msg.eventFields = fields;
-			//msg.eventTypeIds = eventTypeIds; // TODO in UI this should be selected and then mapped to id numbers
-			msg.eventTypeIds = "ns=0;i=10751";
+                "HighLimit",
+                "LowLimit",
+                "HighHighLimit",
+                "LowLowLimit",
+
+                "Value"
+            ];
+
+            var eventFilter = opcua.constructEventFilter(fields);
+
+            msg.topic = node.item; // "ns=0;i=85";
+            msg.eventFilter = eventFilter;
+            msg.eventFields = fields;
+            //msg.eventTypeIds = eventTypeIds; // TODO in UI this should be selected and then mapped to id numbers
+            msg.eventTypeIds = "ns=0;i=10751";
+
             node.send(msg);
         });
     }
+
     RED.nodes.registerType("OpcUa-Event", OpcUaEventNode);
 };

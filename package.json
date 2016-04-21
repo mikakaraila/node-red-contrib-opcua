@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-opcua",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "A Node-RED node to communicate via OPC UA based on node-opcua library.",
   "repository": {
     "type": "git",
@@ -33,8 +33,8 @@
     }
   },
   "dependencies": {
-    "async": "^2.0.0-rc.2",
-    "node-opcua": "^0.0.52",
+    "async": "^2.0.0-rc.3",
+    "node-opcua": "^0.0.54",
     "treeify": "^1.0.1"
   },
   "homepage": "https://github.com/mikakaraila/node-red-contrib-opcua#readme",

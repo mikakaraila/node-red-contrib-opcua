@@ -90,18 +90,18 @@ module.exports = function (RED) {
 							
 							msg.topic = name;
 							msg.payload = name + ":" + fields[index] + ":" + variant.dataType.key.toString() + ":"+ name + ":" + variant.value;
-							//console.log(name, fields[index]);
+                            //verbose_log(name, fields[index]);
 							node.send(msg);
-							//console.log(w(name,20),w(fields[index],15).yellow,w(variant.dataType.key,10).toString().cyan,name.cyan.bold,"(",w(variant.value,20),")");
+                            //verbose_log(w(name,20),w(fields[index],15).yellow,w(variant.dataType.key,10).toString().cyan,name.cyan.bold,"(",w(variant.value,20),")");
 						}
 						callback();
 					});
 
 				} else {
 					setImmediate(function() {
-						//console.log("",fields[index]);
+                        //verbose_log("",fields[index]);
 						msg.payload = "" + fields[index] + ":" + variant.dataType.key.toString() + ":" + variant.value;
-						//console.log(w("",20),w(fields[index],15).yellow,w(variant.dataType.key,10).toString().cyan,variant.value);
+                        //verbose_log(w("",20),w(fields[index],15).yellow,w(variant.dataType.key,10).toString().cyan,variant.value);
 						callback();
 					})
 				}

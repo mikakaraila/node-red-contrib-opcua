@@ -1,1 +1,481 @@
-[{"type":"tab","id":"ac7ab1ab.970df","label":"OPC UA Alarms & Events"},{"id":"ec543e54.782ad","type":"OpcUa-Endpoint","endpoint":"opc.tcp://localhost:62544/Quickstarts/AlarmConditionServer","login":false},{"id":"882af22a.5b814","type":"OpcUa-Client","endpoint":"ec543e54.782ad","action":"subscribe","time":10000,"name":"Subscribe","x":601.8957824707031,"y":158.88888549804688,"z":"ac7ab1ab.970df","wires":[["6549b28d.3ddc7c"]]},{"id":"6549b28d.3ddc7c","type":"debug","name":"","active":true,"console":"false","complete":"payload","x":781.8957824707031,"y":155.88888549804688,"z":"ac7ab1ab.970df","wires":[]},{"id":"1c277ab9.a3aaf5","type":"OpcUa-Item","item":"ns=2;s=1:Metals/SouthMotor?Bronze/Severity","datatype":"UInt16","value":"","name":"Severity","x":282.89573669433594,"y":236.88888549804688,"z":"ac7ab1ab.970df","wires":[["882af22a.5b814"]]},{"id":"df71d48.6a69a28","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":113.895751953125,"y":233.88888549804688,"z":"ac7ab1ab.970df","wires":[["1c277ab9.a3aaf5"]]},{"id":"788d27ec.37d848","type":"OpcUa-Item","item":"ns=2;s=1:Metals/SouthMotor?Bronze/EnabledState/EffectiveDisplayName","datatype":"String","value":"","name":"EffectiveDisplayName","x":283.8957214355469,"y":296.8888854980469,"z":"ac7ab1ab.970df","wires":[["882af22a.5b814"]]},{"id":"de14df85.3ee23","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":113.89576721191406,"y":296.8888854980469,"z":"ac7ab1ab.970df","wires":[["788d27ec.37d848"]]},{"id":"6c134cd4.f89e64","type":"OpcUa-Item","item":"ns=2;s=1:Metals/SouthMotor?Bronze/SourceName","datatype":"String","value":"","name":"Source","x":278.8957824707031,"y":118.88888549804688,"z":"ac7ab1ab.970df","wires":[["882af22a.5b814"]]},{"id":"cebf9637.408b48","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":106.89579772949219,"y":119.88888549804688,"z":"ac7ab1ab.970df","wires":[["6c134cd4.f89e64"]]},{"id":"359a6deb.176122","type":"OpcUa-Item","item":"ns=2;s=1:Metals/SouthMotor?Bronze/ConditionName","datatype":"String","value":"","name":"ConditionName","x":306.8957824707031,"y":169.88888549804688,"z":"ac7ab1ab.970df","wires":[["882af22a.5b814"]]},{"id":"5d77fb5a.2e4874","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":105.89579772949219,"y":170.88888549804688,"z":"ac7ab1ab.970df","wires":[["359a6deb.176122"]]},{"id":"f4d6e249.e1ca","type":"OpcUa-Item","item":"ns=2;s=1:Metals/SouthMotor?Bronze/Message","datatype":"String","value":"","name":"Message","x":306.89576721191406,"y":351.8888854980469,"z":"ac7ab1ab.970df","wires":[["882af22a.5b814"]]},{"id":"f9221a23.5a5fd8","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":112.89581298828125,"y":354.8888854980469,"z":"ac7ab1ab.970df","wires":[["f4d6e249.e1ca"]]},{"id":"e297acd5.2ca6e","type":"OpcUa-Item","item":"ns=2;s=1:Metals/SouthMotor?Bronze/Time","datatype":"String","value":"","name":"Message","x":309.8957824707031,"y":408.8888854980469,"z":"ac7ab1ab.970df","wires":[["882af22a.5b814"]]},{"id":"f7357a87.872398","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":108.89582824707031,"y":410.8888854980469,"z":"ac7ab1ab.970df","wires":[["e297acd5.2ca6e"]]},{"id":"9c4483c0.5945f","type":"OpcUa-Item","item":"ns=2;s=1:Metals/SouthMotor?Bronze/Type","datatype":"String","value":"","name":"Type","x":278.8957977294922,"y":204.88888549804688,"z":"ac7ab1ab.970df","wires":[["882af22a.5b814"]]},{"id":"e0546c21.0df4","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":109.89581298828125,"y":201.88888549804688,"z":"ac7ab1ab.970df","wires":[["9c4483c0.5945f"]]},{"id":"75bd62fd.b92c9c","type":"OpcUa-Item","item":"ns=2;s=1:Metals/SouthMotor?Bronze/AckedState","datatype":"String","value":"","name":"AckedState","x":307.89581298828125,"y":467.8888854980469,"z":"ac7ab1ab.970df","wires":[["882af22a.5b814"]]},{"id":"5aa27c2.f667584","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":106.89585876464844,"y":469.8888854980469,"z":"ac7ab1ab.970df","wires":[["75bd62fd.b92c9c"]]},{"id":"ebf03cd.e8119c","type":"OpcUa-Item","item":"ns=2;s=1:Metals/SouthMotor?Bronze/ConfirmedState","datatype":"String","value":"","name":"ConfirmedState","x":309.89581298828125,"y":516.888916015625,"z":"ac7ab1ab.970df","wires":[["882af22a.5b814"]]},{"id":"ec1194bb.8eacd8","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":108.89585876464844,"y":518.888916015625,"z":"ac7ab1ab.970df","wires":[["ebf03cd.e8119c"]]},{"id":"dec22f13.8b799","type":"OpcUa-Browser","endpoint":"ec543e54.782ad","item":"","datatype":"Integer","topic":"","items":[],"x":468.8957977294922,"y":45.888885498046875,"z":"ac7ab1ab.970df","wires":[["8ad45f75.833f2"]]},{"id":"8ad45f75.833f2","type":"debug","name":"","active":true,"console":"false","complete":"payload","x":651.8957977294922,"y":44.888885498046875,"z":"ac7ab1ab.970df","wires":[]},{"id":"ef474b13.0c6fa8","type":"OpcUa-Event","item":"ns=2;s=1:Metals/SouthMotor?Bronze","conditiontypes":"","name":"","x":319.8958282470703,"y":567.8888854980469,"z":"ac7ab1ab.970df","wires":[["882af22a.5b814"]]},{"id":"872430f.7a4cbd","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":114.89582824707031,"y":570.888916015625,"z":"ac7ab1ab.970df","wires":[["ef474b13.0c6fa8"]]},{"id":"1f4c878a.ab04e8","type":"OpcUa-Client","endpoint":"ec543e54.782ad","action":"events","time":"1000","name":"Alarms & Events","x":869.8958129882812,"y":388.8888854980469,"z":"ac7ab1ab.970df","wires":[["6b852241.8d87fc"]]},{"id":"6b852241.8d87fc","type":"debug","name":"","active":true,"console":"false","complete":"payload","x":877.8958129882812,"y":467.8888854980469,"z":"ac7ab1ab.970df","wires":[]},{"id":"f812417e.76f9f","type":"OpcUa-Event","item":"i=2253","conditiontypes":"","name":"","x":673.8958129882812,"y":483.8888854980469,"z":"ac7ab1ab.970df","wires":[["1f4c878a.ab04e8"]]},{"id":"7e42e027.6ff9","type":"inject","name":"Test all","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":545.8958129882812,"y":546.8888854980469,"z":"ac7ab1ab.970df","wires":[["f812417e.76f9f"]]}]
+[
+  {
+    "type": "tab",
+    "id": "ac7ab1ab.970df",
+    "label": "OPC UA Alarms & Events"
+  },
+  {
+    "id": "ec543e54.782ad",
+    "type": "OpcUa-Endpoint",
+    "endpoint": "opc.tcp://localhost:62544/Quickstarts/AlarmConditionServer",
+    "login": false
+  },
+  {
+    "id": "882af22a.5b814",
+    "type": "OpcUa-Client",
+    "endpoint": "ec543e54.782ad",
+    "action": "subscribe",
+    "time": 10000,
+    "name": "Subscribe",
+    "x": 601.8957824707031,
+    "y": 158.88888549804688,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "6549b28d.3ddc7c"
+      ]
+    ]
+  },
+  {
+    "id": "6549b28d.3ddc7c",
+    "type": "debug",
+    "name": "",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 781.8957824707031,
+    "y": 155.88888549804688,
+    "z": "ac7ab1ab.970df",
+    "wires": []
+  },
+  {
+    "id": "1c277ab9.a3aaf5",
+    "type": "OpcUa-Item",
+    "item": "ns=2;s=1:Metals/SouthMotor?Bronze/Severity",
+    "datatype": "UInt16",
+    "value": "",
+    "name": "Severity",
+    "x": 282.89573669433594,
+    "y": 236.88888549804688,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "882af22a.5b814"
+      ]
+    ]
+  },
+  {
+    "id": "df71d48.6a69a28",
+    "type": "inject",
+    "name": "Test",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 113.895751953125,
+    "y": 233.88888549804688,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "1c277ab9.a3aaf5"
+      ]
+    ]
+  },
+  {
+    "id": "788d27ec.37d848",
+    "type": "OpcUa-Item",
+    "item": "ns=2;s=1:Metals/SouthMotor?Bronze/EnabledState/EffectiveDisplayName",
+    "datatype": "String",
+    "value": "",
+    "name": "EffectiveDisplayName",
+    "x": 283.8957214355469,
+    "y": 296.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "882af22a.5b814"
+      ]
+    ]
+  },
+  {
+    "id": "de14df85.3ee23",
+    "type": "inject",
+    "name": "Test",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 113.89576721191406,
+    "y": 296.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "788d27ec.37d848"
+      ]
+    ]
+  },
+  {
+    "id": "6c134cd4.f89e64",
+    "type": "OpcUa-Item",
+    "item": "ns=2;s=1:Metals/SouthMotor?Bronze/SourceName",
+    "datatype": "String",
+    "value": "",
+    "name": "Source",
+    "x": 278.8957824707031,
+    "y": 118.88888549804688,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "882af22a.5b814"
+      ]
+    ]
+  },
+  {
+    "id": "cebf9637.408b48",
+    "type": "inject",
+    "name": "Test",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 106.89579772949219,
+    "y": 119.88888549804688,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "6c134cd4.f89e64"
+      ]
+    ]
+  },
+  {
+    "id": "359a6deb.176122",
+    "type": "OpcUa-Item",
+    "item": "ns=2;s=1:Metals/SouthMotor?Bronze/ConditionName",
+    "datatype": "String",
+    "value": "",
+    "name": "ConditionName",
+    "x": 306.8957824707031,
+    "y": 169.88888549804688,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "882af22a.5b814"
+      ]
+    ]
+  },
+  {
+    "id": "5d77fb5a.2e4874",
+    "type": "inject",
+    "name": "Test",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 105.89579772949219,
+    "y": 170.88888549804688,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "359a6deb.176122"
+      ]
+    ]
+  },
+  {
+    "id": "f4d6e249.e1ca",
+    "type": "OpcUa-Item",
+    "item": "ns=2;s=1:Metals/SouthMotor?Bronze/Message",
+    "datatype": "String",
+    "value": "",
+    "name": "Message",
+    "x": 306.89576721191406,
+    "y": 351.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "882af22a.5b814"
+      ]
+    ]
+  },
+  {
+    "id": "f9221a23.5a5fd8",
+    "type": "inject",
+    "name": "Test",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 112.89581298828125,
+    "y": 354.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "f4d6e249.e1ca"
+      ]
+    ]
+  },
+  {
+    "id": "e297acd5.2ca6e",
+    "type": "OpcUa-Item",
+    "item": "ns=2;s=1:Metals/SouthMotor?Bronze/Time",
+    "datatype": "String",
+    "value": "",
+    "name": "Message",
+    "x": 309.8957824707031,
+    "y": 408.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "882af22a.5b814"
+      ]
+    ]
+  },
+  {
+    "id": "f7357a87.872398",
+    "type": "inject",
+    "name": "Test",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 108.89582824707031,
+    "y": 410.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "e297acd5.2ca6e"
+      ]
+    ]
+  },
+  {
+    "id": "9c4483c0.5945f",
+    "type": "OpcUa-Item",
+    "item": "ns=2;s=1:Metals/SouthMotor?Bronze/Type",
+    "datatype": "String",
+    "value": "",
+    "name": "Type",
+    "x": 278.8957977294922,
+    "y": 204.88888549804688,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "882af22a.5b814"
+      ]
+    ]
+  },
+  {
+    "id": "e0546c21.0df4",
+    "type": "inject",
+    "name": "Test",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 109.89581298828125,
+    "y": 201.88888549804688,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "9c4483c0.5945f"
+      ]
+    ]
+  },
+  {
+    "id": "75bd62fd.b92c9c",
+    "type": "OpcUa-Item",
+    "item": "ns=2;s=1:Metals/SouthMotor?Bronze/AckedState",
+    "datatype": "String",
+    "value": "",
+    "name": "AckedState",
+    "x": 307.89581298828125,
+    "y": 467.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "882af22a.5b814"
+      ]
+    ]
+  },
+  {
+    "id": "5aa27c2.f667584",
+    "type": "inject",
+    "name": "Test",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 106.89585876464844,
+    "y": 469.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "75bd62fd.b92c9c"
+      ]
+    ]
+  },
+  {
+    "id": "ebf03cd.e8119c",
+    "type": "OpcUa-Item",
+    "item": "ns=2;s=1:Metals/SouthMotor?Bronze/ConfirmedState",
+    "datatype": "String",
+    "value": "",
+    "name": "ConfirmedState",
+    "x": 309.89581298828125,
+    "y": 516.888916015625,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "882af22a.5b814"
+      ]
+    ]
+  },
+  {
+    "id": "ec1194bb.8eacd8",
+    "type": "inject",
+    "name": "Test",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 108.89585876464844,
+    "y": 518.888916015625,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "ebf03cd.e8119c"
+      ]
+    ]
+  },
+  {
+    "id": "dec22f13.8b799",
+    "type": "OpcUa-Browser",
+    "endpoint": "ec543e54.782ad",
+    "item": "",
+    "datatype": "Integer",
+    "topic": "",
+    "items": [],
+    "x": 468.8957977294922,
+    "y": 45.888885498046875,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "8ad45f75.833f2"
+      ]
+    ]
+  },
+  {
+    "id": "8ad45f75.833f2",
+    "type": "debug",
+    "name": "",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 651.8957977294922,
+    "y": 44.888885498046875,
+    "z": "ac7ab1ab.970df",
+    "wires": []
+  },
+  {
+    "id": "ef474b13.0c6fa8",
+    "type": "OpcUa-Event",
+    "item": "ns=2;s=1:Metals/SouthMotor?Bronze",
+    "conditiontypes": "",
+    "name": "",
+    "x": 319.8958282470703,
+    "y": 567.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "882af22a.5b814"
+      ]
+    ]
+  },
+  {
+    "id": "872430f.7a4cbd",
+    "type": "inject",
+    "name": "Test",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 114.89582824707031,
+    "y": 570.888916015625,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "ef474b13.0c6fa8"
+      ]
+    ]
+  },
+  {
+    "id": "1f4c878a.ab04e8",
+    "type": "OpcUa-Client",
+    "endpoint": "ec543e54.782ad",
+    "action": "events",
+    "time": "1000",
+    "name": "Alarms & Events",
+    "x": 869.8958129882812,
+    "y": 388.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "6b852241.8d87fc"
+      ]
+    ]
+  },
+  {
+    "id": "6b852241.8d87fc",
+    "type": "debug",
+    "name": "",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 877.8958129882812,
+    "y": 467.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": []
+  },
+  {
+    "id": "f812417e.76f9f",
+    "type": "OpcUa-Event",
+    "item": "i=2253",
+    "conditiontypes": "",
+    "name": "",
+    "x": 673.8958129882812,
+    "y": 483.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "1f4c878a.ab04e8"
+      ]
+    ]
+  },
+  {
+    "id": "7e42e027.6ff9",
+    "type": "inject",
+    "name": "Test all",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 545.8958129882812,
+    "y": 546.8888854980469,
+    "z": "ac7ab1ab.970df",
+    "wires": [
+      [
+        "f812417e.76f9f"
+      ]
+    ]
+  }
+]
