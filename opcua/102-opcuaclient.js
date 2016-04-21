@@ -24,7 +24,9 @@ module.exports = function (RED) {
     var async = require("async");
     var treeify = require('treeify');
     var Set = require("collections/set");
-
+	var DataType = opcua.DataType;
+	var AttributeIds = opcua.AttributeIds;
+	
     function OpcUaClientNode(n) {
 
         RED.nodes.createNode(this, n);
