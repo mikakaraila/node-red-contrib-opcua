@@ -87,8 +87,8 @@ module.exports = function (RED) {
 						if (!err) {
 							
 							msg.topic = name;
-							msg.payload = name + ":" + variant.dataType.key.toString() + ":"+ name + ":" + variant.value;
-							console.log(name, fields[index]);
+							msg.payload = name + ":" + fields[index] + ":" + variant.dataType.key.toString() + ":"+ name + ":" + variant.value;
+							//console.log(name, fields[index]);
 							node.send(msg);
 							//console.log(w(name,20),w(fields[index],15).yellow,w(variant.dataType.key,10).toString().cyan,name.cyan.bold,"(",w(variant.value,20),")");
 						}
@@ -97,7 +97,7 @@ module.exports = function (RED) {
 
 				} else {
 					setImmediate(function() {
-						console.log("",fields[index]);
+						//console.log("",fields[index]);
 						msg.payload = "" + fields[index] + ":" + variant.dataType.key.toString() + ":" + variant.value;
 						//console.log(w("",20),w(fields[index],15).yellow,w(variant.dataType.key,10).toString().cyan,variant.value);
 						callback();
