@@ -5,7 +5,7 @@ node-red-contrib-opcua
 
 ![opcuanode] (images/opcuanode.png)
 
-A <a href="http://nodered.org" target="_new">Node-RED</a> node to communicate or serve via [OPC UA](https://www.npmjs.com/package/node-opcua).
+A Node-RED[1] nodes to communicate or serve via [OPC UA](https://www.npmjs.com/package/node-opcua).
 
 based on [node-opcua](http://node-opcua.github.io/)
 
@@ -37,6 +37,11 @@ Search for OPC UA on: http://flows.nodered.org/
 
 ![node-red-opcua-flow-Prosys] (images/PROSYS-OPC-UA-EXAMPLE.png)
 
+# Author
+
+* since 2015 [Mika Karaila][2]
+* since 2016 [Klaus Landsdorf][3]
+
 Testing
 ------
 
@@ -54,6 +59,7 @@ TBD List
 |                    | Documentation             | :waxing_crescent_moon:    |
 |  Item              |                           | :white_check_mark:        |
 |  Browser           |                           |                           |
+|                    | Browse                    | :white_check_mark:        |
 |                    | Simple UI interface       | :first_quarter_moon:      |
 |  Client            |                           |                           |
 |                    | Read                      | :white_check_mark:        |
@@ -81,3 +87,7 @@ TBD List
 |                    |                           |                           |
 
 [EMOJI CHEAT SHEET](http://www.emoji-cheat-sheet.com/)
+
+[1]:http://nodered.org
+[2]:https://github.com/mikakaraila
+[3]:https://github.com/biancode
