@@ -21,8 +21,8 @@ limitations under the License.
         category: 'opcua',
         color:"#3FADB5",
         defaults: {
-            item: {value:"", required:true}, 	// ns=2;i=85 Server object to look through all objects under it
-            conditiontypes: {value:""}, 		// TODO ui should contain selectable condition types or all
+            root: {value:"", required:true}, 	// ns=2;i=85 Server object to look through all objects under it
+            eventtype: {value:"", required:true}, 		// TODO ui should contain selectable condition types or all
             name: {value:""}
         },
         inputs:1,
@@ -40,12 +40,21 @@ limitations under the License.
 
 <script type="text/x-red" data-template-name="OpcUa-Event">
     <div class="form-row">
-        <label for="node-input-item"><i class="icon-tasks"></i> Item</label>
-        <input type="text" id="node-input-item" placeholder="">
+        <label for="node-input-root"><i class="icon-tasks"></i> Root node</label>
+        <input type="text" id="node-input-root" placeholder="i=2253">
     </div>
-    <div class="form-row">
-        <label for="node-input-conditiontypes"><i class="icon-tag"></i> Condition types</label>
-        <input type="text" id="node-input-conditiontypes" placeholder="">
+    <div class="form-row" id="node-input-eventtype-row">
+        <label for="node-input-datatype"><i class="icon-tag"></i> Event Type</label>
+        <select type="text" id="node-input-eventtype" style="display: inline-block; vertical-align: middle; width:60%;">
+            <option selected disabled value="" >Choose a Event Type</option>
+            <option selected value="i=2041">BaseEvent (all)</option>
+            <option value="i=2052">AuditEvent</option>
+            <option value="i=2132">BaseModelChangeEvent</option>
+            <option value="i=2782">ConditionType</option>
+            <option value="i=3035">Event Queue Overflow</option>
+            <option value="i=11436">Progress Event</option>
+			<option value="i=2130">System Event</option>
+        </select>
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
@@ -55,7 +64,6 @@ limitations under the License.
 
 <script type="text/x-red" data-help-name="OpcUa-Event">
     <p>Defines OPC UA events that will be subscribed from the server.</p>
-	<p>Server as root object will look through all condition types under it.</p>
-	<p>Condition type can be left empty then all alarm / event objects will be taken int account.</p>
-	<p>Later condition type can be defined to subscribe only wanted ones.</p>
+	<p>Server root node will used to look selected events under it.</p>
+	<p>Condition type can be left empty then all alarm / event objects will be taken into account.</p>
 </script>

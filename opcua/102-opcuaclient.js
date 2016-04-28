@@ -62,6 +62,103 @@ module.exports = function (RED) {
             }
         }
 
+		function collectAlarmFields(field, key, value, msg) {
+			// Common fields
+			if (field=="EventId") {
+				msg.EventId=value;
+			}
+			if (field=="EventType") {
+				msg.EventType=value;
+			}
+			if (field=="SourceNode") {
+				msg.SourceNode=value;
+			}
+			if (field=="SourceName") {
+				msg.SourceName=value;
+			}
+			if (field=="Time") {
+				msg.Time=value;
+			}
+			if (field=="ReceiveTime") {
+				msg.ReceiveTime=value;
+			}
+			if (field=="Message") {
+				msg.Message=value.text;
+			}
+			if (field=="Severity") {
+				msg.Severity=value;
+			}
+
+            // ConditionType
+			if (field=="ConditionClassId") {
+				msg.ConditionClassId=value;
+			}
+			if (field=="ConditionClassName") {
+				msg.ConditionClassNameName=value;
+			}
+			if (field=="ConditionName") {
+				msg.ConditionName=value;
+			}
+			if (field=="BranchId") {
+				msg.BranchId=value;
+			}
+			if (field=="Retain") {
+				msg.Retain=value;
+			}
+			if (field=="EnabledState") {
+				msg.EnabledState=value.text;
+			}
+			if (field=="Quality") {
+				msg.Quality=value;
+			}
+			if (field=="LastSeverity") {
+				msg.LastSeverity=value;
+			}
+			if (field=="Comment") {
+				msg.Comment=value.text;
+			}
+			if (field=="ClientUserId") {
+				msg.ClientUserId=value;
+			}
+
+            // AcknowledgeConditionType
+			if (field=="AckedState") {
+				msg.AckedState=value.text;
+			}
+			if (field=="ConfirmedState") {
+				msg.ConfirmedState=value.text;
+			}
+
+            // AlarmConditionType
+			if (field=="ActiveState") {
+				msg.ActiveState=value.text;
+			}
+			if (field=="InputNode") {
+				msg.InputNode=value;
+			}
+			if (field=="SupressedState") {
+				msg.SupressedState=value.text;
+			}
+			
+			// Limits
+			if (field=="HighHighLimit") {
+				msg.HighHighLimit=value;
+			}
+			if (field=="HighLimit") {
+				msg.HighLimit=value;
+			}
+			if (field=="LowLimit") {
+				msg.LowLimit=value;
+			}
+			if (field=="LowLowLimit") {
+				msg.LowLowLimit=value;
+			}
+			if (field=="Value") {
+				msg.Value=value;
+			}
+
+			return msg;
+		}
 		
 		function getBrowseName(session,nodeId,callback) {
 			session.read([{ nodeId: nodeId, attributeId: AttributeIds.BrowseName}],function(err,org,readValue) {
@@ -75,33 +172,29 @@ module.exports = function (RED) {
 			})
 		}
 
+		// Fields selected alarm fields
+		// EventFields same order returned from server array of variants (filled or empty)
 		function __dumpEvent(node,session,fields,eventFields,_callback) {
-
+			var msg = {};
+			msg.payload = new Array();
+			verbose_log("EventFields="+eventFields);
 			async.forEachOf(eventFields,function(variant,index,callback) {
-				var msg = {};
 				if (variant.dataType === DataType.Null) {
 					return callback();
 				}
 				if (variant.dataType === DataType.NodeId)  {
-
 					getBrowseName(session,variant.value,function(err,name){
-
 						if (!err) {
-							
-							msg.topic = name;
-							msg.payload = name + ":" + fields[index] + ":" + variant.dataType.key.toString() + ":"+ name + ":" + variant.value;
-							//console.log(name, fields[index]);
+							collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
+							//msg.payload.push((fields[index] + "|" + variant.dataType.key.toString() + ":" + variant.value));
 							node.send(msg);
-							//console.log(w(name,20),w(fields[index],15).yellow,w(variant.dataType.key,10).toString().cyan,name.cyan.bold,"(",w(variant.value,20),")");
 						}
 						callback();
 					});
-
 				} else {
 					setImmediate(function() {
-						//console.log("",fields[index]);
-						msg.payload = "" + fields[index] + ":" + variant.dataType.key.toString() + ":" + variant.value;
-						//console.log(w("",20),w(fields[index],15).yellow,w(variant.dataType.key,10).toString().cyan,variant.value);
+						collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
+						//msg.payload.push(fields[index] +"|"+variant.dataType.key.toString() + ":" + variant.value);
 						callback();
 					})
 				}
@@ -570,8 +663,8 @@ module.exports = function (RED) {
 			
 			var eventFilter = msg.filter;
 			var AttributeIds = opcua.AttributeIds;
-			var baseEventTypeId = "i=2041"; // BaseEventType;
-			var serverObjectId = "i=2253";
+			var baseEventTypeId = msg.eventTypeIds; // "i=2041"; // BaseEventType from Event node == msg.eventTypeIds
+			var serverObjectId = msg.topic; // "i=2253"; // Item from Event node msg.item
 			
 			var parameters = {
 				requestedPublishingInterval: 100,
@@ -581,27 +674,28 @@ module.exports = function (RED) {
 				publishingEnabled: true,
 				priority: 10
 			};
-			/*
-            if (!subscription) {
+			
+            if (!event_subscription) {
                 // first build and start subscription and subscribe on its started event by callback
-                subscription = make_subscription(subscribe_monitoredItem, msg);
+                //event_subscription = make_subscription(event_monitoredItem, msg);
+				event_subscription = new opcua.ClientSubscription(node.session, parameters);
 			}
             else {
                 // otherwise check if its terminated start to renew the subscription
-                if (subscription.subscriptionId != "terminated") {
-                    subscribe_monitoredItem(subscription, msg);
+                if (event_subscription.subscriptionId != "terminated") {
+                    //event_monitoredItem(event_subscription, msg);
                 }
                 else {
-                    subscription = null;
-                    monitoredItems.clear();
+                    event_subscription = null;
+                    event_monitoredItems.clear();
                     node.status({fill: "red", shape: "ring", text: "terminated"});
                 }
             }
-			*/
+			/*
 			if (!event_subscription) {
 				event_subscription = new opcua.ClientSubscription(node.session, parameters);
 			}
-			
+			*/
 			var event_monitoringItem = event_subscription.monitor(
 				{
 					nodeId:      msg.topic, // serverObjectId,
@@ -616,7 +710,7 @@ module.exports = function (RED) {
 
 			event_monitoringItem.on("initialized", function () {
 				verbose_log("event_monitoringItem initialized");
-				callback();
+				//callback();
 			});
 
 			event_monitoringItem.on("changed", function (eventFields) {
@@ -633,6 +727,10 @@ module.exports = function (RED) {
 
                 if (subscription) {
                     subscription.terminate();
+                    // subscription becomes null by its terminated event
+                }
+                if (event_subscription) {
+                    event_subscription.terminate();
                     // subscription becomes null by its terminated event
                 }
 
@@ -665,6 +763,10 @@ module.exports = function (RED) {
 
                 if (subscription) {
                     subscription.terminate();
+                    // subscription becomes null by its terminated event
+                }
+                if (event_subscription) {
+                    event_subscription.terminate();
                     // subscription becomes null by its terminated event
                 }
 

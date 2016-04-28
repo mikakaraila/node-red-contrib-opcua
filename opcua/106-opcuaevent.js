@@ -22,10 +22,12 @@ module.exports = function (RED) {
 
     function OpcUaEventNode(n) {
         RED.nodes.createNode(this, n);
-        this.item = n.item;         			// OPC UA item nodeID
-        this.conditiontypes = n.conditiontypes; // TODO String or eventTypes -> map to eventTypeIds 
-        this.name = n.name;			         	// Node name
+        this.root = n.root;         	// OPC UA item nodeID
+        this.eventtype = n.eventtype; 	// eventType
+        this.name = n.name;			    // Node name
+		
         var node = this;
+		
         node.on("input", function (msg) {
 			//	var baseEventTypeId = "i=2041"; // BaseEventType;
 			//	var serverObjectId = "i=2253";  // Server object id
@@ -69,13 +71,14 @@ module.exports = function (RED) {
 
 				"Value",
 			];
+			
 			var eventFilter = opcua.constructEventFilter(fields);
 			
-			msg.topic=node.item; // "ns=0;i=85";
+			msg.topic=node.root; // "ns=0;i=85";
 			msg.eventFilter = eventFilter;
-			msg.eventFields = fields;
-			//msg.eventTypeIds = eventTypeIds; // TODO in UI this should be selected and then mapped to id numbers
-			msg.eventTypeIds = "ns=0;i=10751";
+			msg.eventFields = fields; // All fields
+			msg.eventTypeIds = node.eventtype; // "ns=0;i=10751";
+			
             node.send(msg);
         });
     }
