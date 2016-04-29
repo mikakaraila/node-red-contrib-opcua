@@ -7,7 +7,7 @@
     "login": false
   },
   {
-    "id": "7cb5d30d.2e00ec",
+    "id": "e643c78e.1fe608",
     "type": "file",
     "z": "5ec1e150.40273",
     "name": "Address.txt",
@@ -16,7 +16,7 @@
     "createDir": true,
     "overwriteFile": "false",
     "x": 850,
-    "y": 100,
+    "y": 60,
     "wires": []
   },
   {
@@ -33,11 +33,11 @@
     "id": "fd7bd63d.2f3178",
     "type": "OpcUa-Item",
     "z": "5ec1e150.40273",
-    "item": "ns=4;s=free_memory",
-    "datatype": "opcua.DataType.Double",
+    "item": "ns=5;s=Random1",
+    "datatype": "Integer",
     "value": "",
-    "name": "FreeMemory",
-    "x": 370,
+    "name": "Random1",
+    "x": 380,
     "y": 300,
     "wires": [
       [
@@ -51,8 +51,8 @@
     "z": "5ec1e150.40273",
     "name": "Read",
     "topic": "",
-    "payload": "test2",
-    "payloadType": "none",
+    "payload": "",
+    "payloadType": "date",
     "repeat": "",
     "crontab": "",
     "once": false,
@@ -68,12 +68,12 @@
     "id": "8b2daf0a.2ac5b",
     "type": "debug",
     "z": "5ec1e150.40273",
-    "name": "Read value",
+    "name": "Read value Payload",
     "active": true,
     "console": "false",
-    "complete": "true",
-    "x": 850,
-    "y": 320,
+    "complete": "payload",
+    "x": 880,
+    "y": 340,
     "wires": []
   },
   {
@@ -83,8 +83,8 @@
     "item": "ns=4;s=DateTime",
     "datatype": "String",
     "value": "",
-    "name": "",
-    "x": 360,
+    "name": "DateTime",
+    "x": 380,
     "y": 380,
     "wires": [
       [
@@ -102,10 +102,11 @@
     "time": "",
     "name": "Test server (read items)",
     "x": 610,
-    "y": 320,
+    "y": 340,
     "wires": [
       [
-        "8b2daf0a.2ac5b"
+        "8b2daf0a.2ac5b",
+        "ef2f258a.509a58"
       ]
     ]
   },
@@ -113,11 +114,11 @@
     "id": "c4e6019e.66af7",
     "type": "OpcUa-Item",
     "z": "5ec1e150.40273",
-    "item": "ns=4;s=free_memory",
+    "item": "i=2258",
     "datatype": "String",
     "value": "",
-    "name": "",
-    "x": 360,
+    "name": "Server CurrentTime",
+    "x": 350,
     "y": 420,
     "wires": [
       [
@@ -131,8 +132,8 @@
     "z": "5ec1e150.40273",
     "name": "Subscribe",
     "topic": "",
-    "payload": "test2",
-    "payloadType": "str",
+    "payload": "",
+    "payloadType": "date",
     "repeat": "",
     "crontab": "",
     "once": false,
@@ -151,7 +152,7 @@
     "name": "Browse",
     "topic": "ns=2;s=MyDevice",
     "payload": "",
-    "payloadType": "str",
+    "payloadType": "date",
     "repeat": "",
     "crontab": "",
     "once": false,
@@ -163,6 +164,19 @@
         "19dfffe3.6c26c"
       ]
     ]
+  },
+  {
+    "id": "7cb5d30d.2e00ec",
+    "type": "file",
+    "z": "5ec1e150.40273",
+    "name": "Address.txt",
+    "filename": "./public/users/opc-ua/Address.txt",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "x": 850,
+    "y": 100,
+    "wires": []
   },
   {
     "id": "28d77e5.8101482",
@@ -202,19 +216,6 @@
     ]
   },
   {
-    "id": "e643c78e.1fe608",
-    "type": "file",
-    "z": "5ec1e150.40273",
-    "name": "Address.txt",
-    "filename": "./public/users/opc-ua/Address.txt",
-    "appendNewline": true,
-    "createDir": true,
-    "overwriteFile": "false",
-    "x": 850,
-    "y": 60,
-    "wires": []
-  },
-  {
     "id": "19dfffe3.6c26c",
     "type": "OpcUa-Client",
     "z": "5ec1e150.40273",
@@ -238,7 +239,7 @@
     "name": "Subscribed values",
     "active": true,
     "console": "false",
-    "complete": "true",
+    "complete": "payload",
     "x": 870,
     "y": 420,
     "wires": []
@@ -363,7 +364,7 @@
     "name": "Read",
     "topic": "",
     "payload": "",
-    "payloadType": "none",
+    "payloadType": "date",
     "repeat": "",
     "crontab": "",
     "once": false,
@@ -379,11 +380,11 @@
     "id": "27c2bd79.578a32",
     "type": "OpcUa-Item",
     "z": "5ec1e150.40273",
-    "item": "ns=0;i=112",
+    "item": "ns=5;s=Counter1",
     "datatype": "Double",
     "value": "",
-    "name": "",
-    "x": 360,
+    "name": "Counter1",
+    "x": 380,
     "y": 340,
     "wires": [
       [
@@ -460,7 +461,8 @@
     "y": 420,
     "wires": [
       [
-        "ca827ee0.3633a"
+        "ca827ee0.3633a",
+        "ef2f258a.509a58"
       ]
     ]
   },
@@ -486,7 +488,7 @@
     "active": true,
     "console": "false",
     "complete": "false",
-    "x": 330,
+    "x": 390,
     "y": 700,
     "wires": []
   },
@@ -497,7 +499,7 @@
     "name": "Read & Subscribe",
     "topic": "",
     "payload": "",
-    "payloadType": "str",
+    "payloadType": "date",
     "repeat": "",
     "crontab": "",
     "once": false,
@@ -515,8 +517,8 @@
     "z": "5ec1e150.40273",
     "root": "i=2253",
     "eventtype": "i=2041",
-    "name": "",
-    "x": 380,
+    "name": "All events from server",
+    "x": 400,
     "y": 620,
     "wires": [
       [
@@ -551,7 +553,7 @@
     "active": true,
     "console": "false",
     "complete": "false",
-    "x": 850,
+    "x": 930,
     "y": 620,
     "wires": []
   },
@@ -562,13 +564,42 @@
     "endpoint": "66dabf03.46121",
     "action": "events",
     "time": 10000,
-    "name": "",
+    "name": "Alarms & Events",
     "x": 640,
     "y": 620,
+    "wires": [
+      [
+        "ff34939.6bc5c7",
+        "dc6df03d.b2e26"
+      ]
+    ]
+  },
+  {
+    "id": "dc6df03d.b2e26",
+    "type": "function",
+    "z": "5ec1e150.40273",
+    "name": "Format",
+    "func": "var newmsg={};\nnewmsg.topic=\"\";\nnewmsg.payload=\"\";\n\nif (msg.EventId) {\n    //newmsg.payload=\"EVENTID\";\n\t//newmsg.payload=msg.EventId.toString('utf8');;\n}\nif (msg.EventType) {\n    //newmsg.topic=newmsg.topic+\"EventType\";\n    //newmsg.payload=\"EVENTTYPE\";\n\t//newmsg.payload=newmsg.payload+\"|\"+msg.EventType;\n}\nif (msg.SourceNode) {\n    //newmsg.topic=newmsg.topic+\"SourceNode\";\n\t//newmsg.payload=msg.payload+\"|\"+msg.SourceNode;\n}\nif (msg.SourceName) {\n    // Do not show internal alarm state changes e.q. rising events\n    //if (msg.SourceName==\"Internal\") return; \n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SourceName;\n}\nif (msg.Time) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Time\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Time;\n}\nif (msg.ReceiveTime) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ReceiveTime\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ReceiveTime;\n}\nif (msg.Message) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Message\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Message;\n}\nif (msg.Severity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Severity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Severity;\n}\n\n// ConditionType\nif (msg.ConditionClassId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassId;\n}\nif (msg.ConditionClassName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassNameName;\n}\nif (msg.ConditionName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionName;\n}\nif (msg.BranchId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"BranchId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.BranchId;\n}\nif (msg.Retain) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Retain\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Retain;\n}\nif (msg.EnabledState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"EnabledState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.EnabledState;\n}\nif (msg.Quality) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Quality\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Quality;\n}\nif (msg.LastSeverity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LastSeverity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LastSeverity;\n}\nif (msg.Comment) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Comment\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Comment;\n}\nif (msg.ClientUserId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ClientUserId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ClientUserId;\n}\n\n// AcknowledgeConditionType\nif (msg.AckedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"AckedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.AckedState;\n}\nif (msg.ConfirmedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConfirmedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConfirmedState;\n}\n\n// AlarmConditionType\nif (msg.ActiveState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ActiveState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ActiveState;\n}\nif (msg.InputNode) {\n    newmsg.topic=newmsg.topic+\"|\"+\"InputNode\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.InputNode;\n}\nif (msg.SupressedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"SupressedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SupressedState;\n}\n\n// Limits\nif (msg.HighHighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighHighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighHighLimit;\n}\nif (msg.HighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighLimit;\n}\nif (msg.LowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLimit;\n}\nif (msg.LowLowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLowLimit;\n}\nif (msg.Value) {\n        newmsg.topic=newmsg.topic+\"|\"+\"Value\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Value;\n}\n\nreturn newmsg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 780,
+    "y": 680,
     "wires": [
       [
         "ff34939.6bc5c7"
       ]
     ]
+  },
+  {
+    "id": "ef2f258a.509a58",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "Complete Message",
+    "active": false,
+    "console": "false",
+    "complete": "true",
+    "x": 870,
+    "y": 380,
+    "wires": []
   }
 ]

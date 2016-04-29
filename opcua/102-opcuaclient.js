@@ -93,7 +93,7 @@ module.exports = function (RED) {
                 if (variant.dataType === DataType.NodeId) {
                     getBrowseName(session, variant.value, function (err, name) {
                         if (!err) {
-                            collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
+                            opcuaBasics.collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
                             set_node_status_to("active event");
                             node.send(msg);
                         }
@@ -101,7 +101,7 @@ module.exports = function (RED) {
                     });
                 } else {
                     setImmediate(function () {
-                        collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
+                        opcuaBasics.collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
                         set_node_status_to("active event");
                         callback();
                     })
@@ -265,15 +265,19 @@ module.exports = function (RED) {
             node.session.readVariableValue(items, function (err, dataValues, diagnostics) {
                 if (err) {
                     verbose_log(diagnostics);
-                    node.error(err.message);
+                    node.error(err);
                     set_node_status_to("error");
+
                 } else {
 
                     set_node_status_to("active reading");
 
                     for (var i = 0; i < dataValues.length; i++) {
+
                         var dataValue = dataValues[i];
-                        verbose_log("\tNode : " + (items[i]).cyan.bold);
+
+                        verbose_log("\tNode : " + (msg.topic).cyan.bold);
+
                         if (dataValue) {
                             try {
                                 verbose_log("\tValue : " + dataValue.value.value);
@@ -285,18 +289,24 @@ module.exports = function (RED) {
 
                                 msg.payload = dataValue.value.value;
 
+                                if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
+                                    verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
+                                }
+                                else {
+                                    verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16));
+                                }
+
                                 node.send(msg);
                             }
                             catch (e) {
-                                node.error("\tBad read: " + dataValue.statusCode, msg);
-                            }
-                        }
 
-                        if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
-                            verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
-                        }
-                        else {
-                            verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16));
+                                if (dataValue) {
+                                    node.error("\tBad read: " + dataValue.statusCode, msg);
+                                }
+                                else {
+                                    node.error(e.message);
+                                }
+                            }
                         }
                     }
                 }
@@ -496,18 +506,18 @@ module.exports = function (RED) {
                 monitoredItems.add({"topicName": msg.topic, mItem: monitoredItem});
 
 
-                monitoredItems.on("initialized", function () {
+                monitoredItem.on("initialized", function () {
                     verbose_log("monitored Event initialized");
                     set_node_status_to("initialized");
                 });
 
-                monitoredItems.on("changed", function (eventFields) {
+                monitoredItem.on("changed", function (eventFields) {
                     dumpEvent(node, node.session, msg.eventFields, eventFields, function () {
                     });
                     set_node_status_to("changed");
                 });
 
-                monitoredItems.on("err", function (err_message) {
+                monitoredItem.on("error", function (err_message) {
                     verbose_log("error monitored Event on " + msg.topic);
                     if (monitoredItems.get({"topicName": msg.topic})) {
                         monitoredItems.delete({"topicName": msg.topic});
