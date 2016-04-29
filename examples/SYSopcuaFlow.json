@@ -141,7 +141,8 @@
     "y": 420,
     "wires": [
       [
-        "c4e6019e.66af7"
+        "c4e6019e.66af7",
+        "c2e67110.f1efa"
       ]
     ]
   },
@@ -455,7 +456,7 @@
     "z": "5ec1e150.40273",
     "endpoint": "66dabf03.46121",
     "action": "subscribe",
-    "time": 10000,
+    "time": "3000",
     "name": "",
     "x": 640,
     "y": 420,
@@ -515,7 +516,7 @@
     "id": "e7585aa3.d5d658",
     "type": "OpcUa-Event",
     "z": "5ec1e150.40273",
-    "root": "i=2253",
+    "root": "ns=2;s=MyLevel.Alarm",
     "eventtype": "i=2041",
     "name": "All events from server",
     "x": 400,
@@ -601,5 +602,21 @@
     "x": 870,
     "y": 380,
     "wires": []
+  },
+  {
+    "id": "c2e67110.f1efa",
+    "type": "OpcUa-Item",
+    "z": "5ec1e150.40273",
+    "item": "ns=2;s=MyLevel",
+    "datatype": "Double",
+    "value": "",
+    "name": "MyDevice - MyLevel",
+    "x": 340,
+    "y": 460,
+    "wires": [
+      [
+        "b289b3e3.c303"
+      ]
+    ]
   }
 ]
