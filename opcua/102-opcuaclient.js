@@ -119,11 +119,15 @@ module.exports = function (RED) {
             });
         }
 
-        if (node.client == null) {
-            verbose_warn("create Client ...");
-            node.client = new opcua.OPCUAClient();
-            node.items = items;
-            set_node_status_to("create client");
+        function create_opcua_client(callback) {
+            if (node.client == null) {
+                verbose_warn("create Client ...");
+                node.client = new opcua.OPCUAClient();
+                node.items = items;
+                set_node_status_to("create client");
+            }
+
+            callback();
         }
 
         function set_node_status_to(statusValue) {
@@ -132,48 +136,50 @@ module.exports = function (RED) {
             node.status({fill: statusParameter.fill, shape: statusParameter.shape, text: statusParameter.status});
         }
 
-        async.series([
-            // First connect to server´s endpoint
-            function (callback) {
-                verbose_log("async series - connecting ", opcuaEndpoint.endpoint);
-                try {
-                    set_node_status_to("connecting");
-                    node.client.connect(opcuaEndpoint.endpoint, callback);
-                } catch (err) {
-                    callback(err);
+        function connect_opcua_client() {
+            async.series([
+                // First connect to server´s endpoint
+                function (callback) {
+                    verbose_log("async series - connecting ", opcuaEndpoint.endpoint);
+                    try {
+                        set_node_status_to("connecting");
+                        node.client.connect(opcuaEndpoint.endpoint, callback);
+                    } catch (err) {
+                        callback(err);
+                    }
+                },
+                function (callback) {
+                    verbose_log("async series - create session ...");
+                    try {
+                        node.client.createSession(function (err, session) {
+                            if (!err) {
+                                node.session = session;
+                                node.session.timeout = tenSeconds;
+                                verbose_log("session active");
+                                set_node_status_to("session active");
+                                callback();
+                            }
+                            else {
+                                set_node_status_to("session error");
+                                callback(err);
+                            }
+                        });
+                    } catch (err) {
+                        callback(err);
+                    }
                 }
-            },
-            function (callback) {
-                verbose_log("async series - create session ...");
-                try {
-                    node.client.createSession(function (err, session) {
-                        if (!err) {
-                            node.session = session;
-                            node.session.timeout = tenSeconds;
-                            verbose_log("session active");
-                            set_node_status_to("session active");
-                            callback();
-                        }
-                        else {
-                            set_node_status_to("session error");
-                            callback(err);
-                        }
-                    });
-                } catch (err) {
-                    callback(err);
+            ], function (err) {
+                if (err) {
+                    node.error(node.name + " OPC UA connection error: " + err.message);
+                    verbose_log(err);
+                    set_node_status_to("connection error");
+                    node.session = null;
+                    node.client = null;
                 }
-            }
-        ], function (err) {
-            if (err) {
-                node.error(node.name + " OPC UA connection error: " + err.message);
-                verbose_log(err);
-                set_node_status_to("connection error");
-                node.session = null;
-                node.client = null;
-            }
-        });
+            });
+        }
 
-        function make_subscription(callback, msg) {
+        function make_subscription(callback, msg, parameters) {
 
             var newSubscription = null;
 
@@ -182,7 +188,7 @@ module.exports = function (RED) {
                 return newSubscription;
             }
 
-            newSubscription = new opcua.ClientSubscription(node.session, opcuaBasics.getSubscriptionParameters(node.time));
+            newSubscription = new opcua.ClientSubscription(node.session, parameters);
 
             newSubscription.on("initialized", function () {
                 verbose_log("Subscription initialized");
@@ -210,6 +216,8 @@ module.exports = function (RED) {
             return newSubscription;
         }
 
+        create_opcua_client(connect_opcua_client);
+
         node.on("input", function (msg) {
 
             if (!node.action) {
@@ -224,7 +232,7 @@ module.exports = function (RED) {
                 return;
             }
 
-            if (!msg.topic) {
+            if (!msg || !msg.topic) {
                 verbose_warn("can't work without OPC UA NodeId - msg.topic");
                 node.send(msg);
                 return;
@@ -267,6 +275,14 @@ module.exports = function (RED) {
                     verbose_log(diagnostics);
                     node.error(err);
                     set_node_status_to("error");
+
+                    if (node.client) {
+                        node.client.disconnect(function () {
+                            node.client = null;
+                            verbose_log("Client disconnected!");
+                            create_opcua_client(connect_opcua_client);
+                        });
+                    }
 
                 } else {
 
@@ -348,7 +364,7 @@ module.exports = function (RED) {
 
             if (!subscription) {
                 // first build and start subscription and subscribe on its started event by callback
-                subscription = make_subscription(subscribe_monitoredItem, msg);
+                subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(node.time));
             }
             else {
                 // otherwise check if its terminated start to renew the subscription
@@ -469,6 +485,14 @@ module.exports = function (RED) {
                 else {
                     node.error(err.message);
                     set_node_status_to("error browsing");
+
+                    if (node.client) {
+                        node.client.disconnect(function () {
+                            node.client = null;
+                            verbose_log("Client disconnected!");
+                            create_opcua_client(connect_opcua_client);
+                        });
+                    }
                 }
 
             });
@@ -547,7 +571,7 @@ module.exports = function (RED) {
 
             if (!subscription) {
                 // first build and start subscription and subscribe on its started event by callback
-                subscription = new opcua.ClientSubscription(node.session, opcuaBasics.getEventSubscribtionParameters());
+                subscription = make_subscription(subscribe_monitoredEvent, msg, opcuaBasics.getEventSubscribtionParameters());
             }
             else {
                 // otherwise check if its terminated start to renew the subscription
