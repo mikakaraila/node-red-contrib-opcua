@@ -120,14 +120,25 @@ module.exports = function (RED) {
         }
 
         function create_opcua_client(callback) {
-            if (node.client == null) {
-                verbose_warn("create Client ...");
-                node.client = new opcua.OPCUAClient();
-                node.items = items;
-                set_node_status_to("create client");
+
+            node.client = null;
+            verbose_warn("create Client ...");
+            node.client = new opcua.OPCUAClient();
+            items = [];
+            node.items = items;
+            set_node_status_to("create client");
+            callback();
+        }
+
+        function reset_opcua_client(callback) {
+
+            if (node.client) {
+                node.client.disconnect(function () {
+                    verbose_log("Client disconnected!");
+                    create_opcua_client(callback);
+                });
             }
 
-            callback();
         }
 
         function set_node_status_to(statusValue) {
@@ -137,6 +148,9 @@ module.exports = function (RED) {
         }
 
         function connect_opcua_client() {
+
+            node.session = null;
+
             async.series([
                 // First connect to server´s endpoint
                 function (callback) {
@@ -188,6 +202,11 @@ module.exports = function (RED) {
                 return newSubscription;
             }
 
+            if (!parameters) {
+                verbose_log("Subscription without parameters");
+                return newSubscription;
+            }
+
             newSubscription = new opcua.ClientSubscription(node.session, parameters);
 
             newSubscription.on("initialized", function () {
@@ -198,6 +217,7 @@ module.exports = function (RED) {
             newSubscription.on("started", function () {
                 verbose_log("Subscription subscribed ID: " + newSubscription.subscriptionId);
                 set_node_status_to("subscribed");
+                monitoredItems.clear();
                 callback(newSubscription, msg);
             });
 
@@ -228,6 +248,14 @@ module.exports = function (RED) {
 
             if (!node.session) {
                 verbose_warn("can't work without OPC UA Session");
+                reset_opcua_client(connect_opcua_client);
+                node.send(msg);
+                return;
+            }
+
+            if (node.session.sessionId == "terminated") {
+                verbose_warn("terminated OPC UA Session");
+                reset_opcua_client(connect_opcua_client);
                 node.send(msg);
                 return;
             }
@@ -272,18 +300,10 @@ module.exports = function (RED) {
 
             node.session.readVariableValue(items, function (err, dataValues, diagnostics) {
                 if (err) {
-                    verbose_log(diagnostics);
+                    verbose_log('diagnostics:' + diagnostics);
                     node.error(err);
                     set_node_status_to("error");
-
-                    if (node.client) {
-                        node.client.disconnect(function () {
-                            node.client = null;
-                            verbose_log("Client disconnected!");
-                            create_opcua_client(connect_opcua_client);
-                        });
-                    }
-
+                    reset_opcua_client(connect_opcua_client);
                 } else {
 
                     set_node_status_to("active reading");
@@ -350,6 +370,7 @@ module.exports = function (RED) {
                 if (err) {
                     set_node_status_to("error");
                     node.error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
+                    reset_opcua_client(connect_opcua_client);
                 }
                 else {
                     set_node_status_to("active writing");
@@ -376,6 +397,7 @@ module.exports = function (RED) {
                     subscription = null;
                     monitoredItems.clear();
                     set_node_status_to("terminated");
+                    reset_opcua_client(connect_opcua_client);
                 }
             }
         }
@@ -485,14 +507,7 @@ module.exports = function (RED) {
                 else {
                     node.error(err.message);
                     set_node_status_to("error browsing");
-
-                    if (node.client) {
-                        node.client.disconnect(function () {
-                            node.client = null;
-                            verbose_log("Client disconnected!");
-                            create_opcua_client(connect_opcua_client);
-                        });
-                    }
+                    reset_opcua_client(connect_opcua_client);
                 }
 
             });
@@ -583,6 +598,7 @@ module.exports = function (RED) {
                     subscription = null;
                     monitoredItems.clear();
                     set_node_status_to("terminated");
+                    reset_opcua_client(connect_opcua_client);
                 }
             }
         }
