@@ -19,14 +19,15 @@
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
+    var opcuaBasics = require('./opcua-basics');
     var nodeId = require('node-opcua/lib/datamodel/nodeid');
     var browse_service = require("node-opcua/lib/services/browse_service");
     var async = require("async");
     var treeify = require('treeify');
     var Set = require("collections/set");
-	var DataType = opcua.DataType;
-	var AttributeIds = opcua.AttributeIds;
-	
+    var DataType = opcua.DataType;
+    var AttributeIds = opcua.AttributeIds;
+
     function OpcUaClientNode(n) {
 
         RED.nodes.createNode(this, n);
@@ -40,9 +41,9 @@ module.exports = function (RED) {
         var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
 
         var items = [];
+        var tenSeconds = 10000; // 10 sec.
 
         var subscription; // only one subscription needed to hold multiple monitored Items
-		var event_subscription; // only one subscription needed to hold multiple monitored Items
 
         var monitoredItems = new Set(null, function (a, b) {
             return a.topicName === b.topicName;
@@ -62,154 +63,61 @@ module.exports = function (RED) {
             }
         }
 
-		function collectAlarmFields(field, key, value, msg) {
-			// Common fields
-			if (field=="EventId") {
-				msg.EventId=value;
-			}
-			if (field=="EventType") {
-				msg.EventType=value;
-			}
-			if (field=="SourceNode") {
-				msg.SourceNode=value;
-			}
-			if (field=="SourceName") {
-				msg.SourceName=value;
-			}
-			if (field=="Time") {
-				msg.Time=value;
-			}
-			if (field=="ReceiveTime") {
-				msg.ReceiveTime=value;
-			}
-			if (field=="Message") {
-				msg.Message=value.text;
-			}
-			if (field=="Severity") {
-				msg.Severity=value;
-			}
+        function getBrowseName(session, nodeId, callback) {
+            session.read([{nodeId: nodeId, attributeId: AttributeIds.BrowseName}], function (err, org, readValue) {
+                if (!err) {
+                    if (readValue[0].statusCode === opcua.StatusCodes.Good) {
+                        var browseName = readValue[0].value.value.name;
+                        return callback(null, browseName);
+                    }
+                }
+                callback(err, "<??>");
+            })
+        }
 
-            // ConditionType
-			if (field=="ConditionClassId") {
-				msg.ConditionClassId=value;
-			}
-			if (field=="ConditionClassName") {
-				msg.ConditionClassNameName=value;
-			}
-			if (field=="ConditionName") {
-				msg.ConditionName=value;
-			}
-			if (field=="BranchId") {
-				msg.BranchId=value;
-			}
-			if (field=="Retain") {
-				msg.Retain=value;
-			}
-			if (field=="EnabledState") {
-				msg.EnabledState=value.text;
-			}
-			if (field=="Quality") {
-				msg.Quality=value;
-			}
-			if (field=="LastSeverity") {
-				msg.LastSeverity=value;
-			}
-			if (field=="Comment") {
-				msg.Comment=value.text;
-			}
-			if (field=="ClientUserId") {
-				msg.ClientUserId=value;
-			}
+        // Fields selected alarm fields
+        // EventFields same order returned from server array of variants (filled or empty)
+        function __dumpEvent(node, session, fields, eventFields, _callback) {
 
-            // AcknowledgeConditionType
-			if (field=="AckedState") {
-				msg.AckedState=value.text;
-			}
-			if (field=="ConfirmedState") {
-				msg.ConfirmedState=value.text;
-			}
+            var msg = {};
+            msg.payload = [];
 
-            // AlarmConditionType
-			if (field=="ActiveState") {
-				msg.ActiveState=value.text;
-			}
-			if (field=="InputNode") {
-				msg.InputNode=value;
-			}
-			if (field=="SupressedState") {
-				msg.SupressedState=value.text;
-			}
-			
-			// Limits
-			if (field=="HighHighLimit") {
-				msg.HighHighLimit=value;
-			}
-			if (field=="HighLimit") {
-				msg.HighLimit=value;
-			}
-			if (field=="LowLimit") {
-				msg.LowLimit=value;
-			}
-			if (field=="LowLowLimit") {
-				msg.LowLowLimit=value;
-			}
-			if (field=="Value") {
-				msg.Value=value;
-			}
+            verbose_log("EventFields=" + eventFields);
 
-			return msg;
-		}
-		
-		function getBrowseName(session,nodeId,callback) {
-			session.read([{ nodeId: nodeId, attributeId: AttributeIds.BrowseName}],function(err,org,readValue) {
-				if (!err) {
-					if (readValue[0].statusCode === opcua.StatusCodes.Good) {
-						var browseName = readValue[0].value.value.name;
-						return callback(null,browseName);
-					}
-				}
-				callback(err,"<??>");
-			})
-		}
+            async.forEachOf(eventFields, function (variant, index, callback) {
 
-		// Fields selected alarm fields
-		// EventFields same order returned from server array of variants (filled or empty)
-		function __dumpEvent(node,session,fields,eventFields,_callback) {
-			var msg = {};
-			msg.payload = new Array();
-			verbose_log("EventFields="+eventFields);
-			async.forEachOf(eventFields,function(variant,index,callback) {
-				if (variant.dataType === DataType.Null) {
-					return callback();
-				}
-				if (variant.dataType === DataType.NodeId)  {
-					getBrowseName(session,variant.value,function(err,name){
-						if (!err) {
-							collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
-							//msg.payload.push((fields[index] + "|" + variant.dataType.key.toString() + ":" + variant.value));
-							node.send(msg);
-						}
-						callback();
-					});
-				} else {
-					setImmediate(function() {
-						collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
-						//msg.payload.push(fields[index] +"|"+variant.dataType.key.toString() + ":" + variant.value);
-						callback();
-					})
-				}
-			},_callback);
-		}
+                if (variant.dataType === DataType.Null) {
+                    return callback("variants dataType is Null");
+                }
 
-		var q = new async.queue(function(task,callback){
-			__dumpEvent(task.node, task.session,task.fields,task.eventFields,callback);
-		});
+                if (variant.dataType === DataType.NodeId) {
+                    getBrowseName(session, variant.value, function (err, name) {
+                        if (!err) {
+                            collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
+                            set_node_status_to("active event");
+                            node.send(msg);
+                        }
+                        callback(err);
+                    });
+                } else {
+                    setImmediate(function () {
+                        collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
+                        set_node_status_to("active event");
+                        callback();
+                    })
+                }
+            }, _callback);
+        }
 
-		function dumpEvent(node,session,fields,eventFields,_callback) {
-			q.push({
-				node: node, session: session, fields:fields, eventFields: eventFields, _callback: _callback
-			});
-		}
+        var eventQueue = new async.queue(function (task, callback) {
+            __dumpEvent(task.node, task.session, task.fields, task.eventFields, callback);
+        });
+
+        function dumpEvent(node, session, fields, eventFields, _callback) {
+            eventQueue.push({
+                node: node, session: session, fields: fields, eventFields: eventFields, _callback: _callback
+            });
+        }
 
         if (node.client == null) {
             verbose_warn("create Client ...");
@@ -219,51 +127,9 @@ module.exports = function (RED) {
         }
 
         function set_node_status_to(statusValue) {
-
             verbose_log("Client status: " + statusValue);
-
-            var fillValue = "red";
-            var shapeValue = "dot";
-
-            switch (statusValue) {
-
-                case "create client":
-                case "connecting":
-                case "connected":
-                case "initialized":
-                case "keepalive":
-                    fillValue = "green";
-                    shapeValue = "ring";
-                    break;
-
-                case "active":
-                case "active reading":
-                case "active writing":
-                case "active subscribing":
-                case "active subscribed":
-                case "active browsing":
-                case "session active":
-                case "subscribed":
-                case "browse done":
-                    fillValue = "green";
-                    shapeValue = "dot";
-                    break;
-
-                case "disconnected":
-                case "terminated":
-                    fillValue = "red";
-                    shapeValue = "ring";
-                    break;
-
-                default:
-                    if (!statusValue) {
-                        fillValue = "blue";
-                        statusValue = "waiting ...";
-                    }
-                    break;
-            }
-
-            node.status({fill: fillValue, shape: shapeValue, text: statusValue});
+            var statusParameter = opcuaBasics.get_node_status(statusValue);
+            node.status({fill: statusParameter.fill, shape: statusParameter.shape, text: statusParameter.status});
         }
 
         async.series([
@@ -283,7 +149,7 @@ module.exports = function (RED) {
                     node.client.createSession(function (err, session) {
                         if (!err) {
                             node.session = session;
-                            node.session.timeout = 10000;
+                            node.session.timeout = tenSeconds;
                             verbose_log("session active");
                             set_node_status_to("session active");
                             callback();
@@ -316,15 +182,7 @@ module.exports = function (RED) {
                 return newSubscription;
             }
 
-            newSubscription = new opcua.ClientSubscription(node.session, {
-
-                requestedPublishingInterval: node.time,
-                requestedLifetimeCount: 10,
-                requestedMaxKeepAliveCount: 2,
-                maxNotificationsPerPublish: 10,
-                publishingEnabled: true,
-                priority: 10
-            });
+            newSubscription = new opcua.ClientSubscription(node.session, opcuaBasics.getSubscriptionParameters(node.time));
 
             newSubscription.on("initialized", function () {
                 verbose_log("Subscription initialized");
@@ -352,60 +210,16 @@ module.exports = function (RED) {
             return newSubscription;
         }
 
-        function ToInt32(x) {
-            var uint16 = x;
-
-            if (uint16 >= Math.pow(2, 15)) {
-                uint16 = x - Math.pow(2, 16);
-                return uint16;
-            }
-            else {
-                return uint16;
-            }
-        }
-
-        function build_new_variant(msg) {
-
-            var nValue = new opcua.Variant({dataType: opcua.DataType.Float, value: 0.0});
-
-            switch (msg.datatype) {
-                case"Float":
-                    nValue = new opcua.Variant({dataType: opcua.DataType.Float, value: parseFloat(msg.payload)});
-                    break;
-                case"Double":
-                    nValue = new opcua.Variant({
-                        dataType: opcua.DataType.Double,
-                        value: parseFloat(msg.payload)
-                    });
-                    break;
-                case"UInt16":
-                    var uint16 = new Uint16Array([msg.payload]);
-                    nValue = new opcua.Variant({dataType: opcua.DataType.UInt16, value: uint16[0]});
-                    break;
-                case"Integer":
-                    nValue = new opcua.Variant({dataType: opcua.DataType.UInt16, value: parseInt(msg.payload)});
-                    break;
-                case"Boolean":
-                    if (msg.payload) {
-                        nValue = new opcua.Variant({dataType: opcua.DataType.Boolean, value: true})
-                    }
-                    else {
-                        nValue = new opcua.Variant({dataType: opcua.DataType.Boolean, value: false})
-                    }
-                    break;
-                case"String":
-                    nValue = new opcua.Variant({dataType: opcua.DataType.String, value: msg.payload});
-                    break;
-                default:
-                    break;
-            }
-
-            return nValue;
-        }
-
         node.on("input", function (msg) {
 
-            if (!node.session || !node.action) {
+            if (!node.action) {
+                verbose_warn("can't work without action (read, write, browse ...)");
+                node.send(msg);
+                return;
+            }
+
+            if (!node.session) {
+                verbose_warn("can't work without OPC UA Session");
                 node.send(msg);
                 return;
             }
@@ -432,9 +246,9 @@ module.exports = function (RED) {
                 case "browse":
                     browse_action_input(msg);
                     break;
-				case "events":
-					subscribe_events_input(msg);
-					break;
+                case "events":
+                    subscribe_events_input(msg);
+                    break;
                 default:
                     break;
             }
@@ -504,7 +318,7 @@ module.exports = function (RED) {
             verbose_log("value=" + msg.payload);
             verbose_log(nodeid.toString());
 
-            var opcuaVariant = build_new_variant(msg);
+            var opcuaVariant = build_new_variant(opcua, msg.payload);
 
             node.session.writeSingleNode(nodeid, opcuaVariant, function (err) {
                 if (err) {
@@ -612,14 +426,7 @@ module.exports = function (RED) {
 
             crawler.read(msg.topic, function (err, obj) {
 
-                var newMessage = {
-                    "topic": msg.topic,
-                    "nodeId": "",
-                    "browseName": "",
-                    "nodeClassType": "",
-                    "typeDefinition": "",
-                    "payload": ""
-                };
+                var newMessage = opcuaBasics.buildBrowseMessage(msg.topic);
 
                 if (!err) {
 
@@ -657,69 +464,94 @@ module.exports = function (RED) {
             });
 
         }
+
+        function subscribe_monitoredEvent(subscription, msg) {
+
+            verbose_log("Session subscriptionId: " + subscription.subscriptionId);
+
+            var monitoredItem = monitoredItems.get({"topicName": msg.topic});
+
+            if (!monitoredItem) {
+
+                var interval = 100;
+
+                if (typeof msg.payload === 'number') {
+                    interval = Number(msg.payload);
+                }
+
+                verbose_log(msg.topic + " samplingInterval " + interval);
+
+                monitoredItem = subscription.monitor(
+                    {
+                        nodeId: msg.topic, // serverObjectId
+                        attributeId: AttributeIds.EventNotifier
+                    },
+                    {
+                        queueSize: 100000,
+                        filter: msg.eventFilter,
+                        discardOldest: true
+                    }
+                );
+
+                monitoredItems.add({"topicName": msg.topic, mItem: monitoredItem});
+
+
+                monitoredItems.on("initialized", function () {
+                    verbose_log("monitored Event initialized");
+                    set_node_status_to("initialized");
+                });
+
+                monitoredItems.on("changed", function (eventFields) {
+                    dumpEvent(node, node.session, msg.eventFields, eventFields, function () {
+                    });
+                    set_node_status_to("changed");
+                });
+
+                monitoredItems.on("err", function (err_message) {
+                    verbose_log("error monitored Event on " + msg.topic);
+                    if (monitoredItems.get({"topicName": msg.topic})) {
+                        monitoredItems.delete({"topicName": msg.topic});
+                    }
+                    node.err("monitored Event ", msg.eventTypeId, " ERROR".red, err_message);
+                    set_node_status_to("error");
+                });
+
+                monitoredItem.on("keepalive", function () {
+                    verbose_log("keepalive monitored Event on " + msg.topic);
+                });
+
+                monitoredItem.on("terminated", function () {
+                    verbose_log("terminated monitored Event on " + msg.topic);
+                    if (monitoredItems.get({"topicName": msg.topic})) {
+                        monitoredItems.delete({"topicName": msg.topic});
+                    }
+                });
+            }
+
+            return monitoredItem;
+        }
+
         function subscribe_events_input(msg) {
 
             verbose_log("subscribing events");
-			
-			var eventFilter = msg.filter;
-			var AttributeIds = opcua.AttributeIds;
-			var baseEventTypeId = msg.eventTypeIds; // "i=2041"; // BaseEventType from Event node == msg.eventTypeIds
-			var serverObjectId = msg.topic; // "i=2253"; // Item from Event node msg.item
-			
-			var parameters = {
-				requestedPublishingInterval: 100,
-				requestedLifetimeCount: 1000,
-				requestedMaxKeepAliveCount: 12,
-				maxNotificationsPerPublish: 10,
-				publishingEnabled: true,
-				priority: 10
-			};
-			
-            if (!event_subscription) {
+
+            if (!subscription) {
                 // first build and start subscription and subscribe on its started event by callback
-                //event_subscription = make_subscription(event_monitoredItem, msg);
-				event_subscription = new opcua.ClientSubscription(node.session, parameters);
-			}
+                subscription = new opcua.ClientSubscription(node.session, opcuaBasics.getEventSubscribtionParameters());
+            }
             else {
                 // otherwise check if its terminated start to renew the subscription
-                if (event_subscription.subscriptionId != "terminated") {
-                    //event_monitoredItem(event_subscription, msg);
+                if (subscription.subscriptionId != "terminated") {
+                    set_node_status_to("active subscribing");
+                    subscribe_monitoredEvent(subscription, msg);
                 }
                 else {
-                    event_subscription = null;
-                    event_monitoredItems.clear();
-                    node.status({fill: "red", shape: "ring", text: "terminated"});
+                    subscription = null;
+                    monitoredItems.clear();
+                    set_node_status_to("terminated");
                 }
             }
-			/*
-			if (!event_subscription) {
-				event_subscription = new opcua.ClientSubscription(node.session, parameters);
-			}
-			*/
-			var event_monitoringItem = event_subscription.monitor(
-				{
-					nodeId:      msg.topic, // serverObjectId,
-					attributeId: AttributeIds.EventNotifier
-				},
-				{
-					queueSize: 100000,
-					filter: msg.eventFilter,
-					discardOldest: true
-				}
-			);
-
-			event_monitoringItem.on("initialized", function () {
-				verbose_log("event_monitoringItem initialized");
-				//callback();
-			});
-
-			event_monitoringItem.on("changed", function (eventFields) {
-				dumpEvent(node, node.session, msg.eventFields, eventFields, function() {});
-			});
-			event_monitoringItem.on("err", function (err_message) {
-				node.err("event_monitoringItem ", msg.eventTypeId, " ERROR".red, err_message);
-			});
-		}
+        }
 
         node.on("close", function () {
 
@@ -727,10 +559,6 @@ module.exports = function (RED) {
 
                 if (subscription) {
                     subscription.terminate();
-                    // subscription becomes null by its terminated event
-                }
-                if (event_subscription) {
-                    event_subscription.terminate();
                     // subscription becomes null by its terminated event
                 }
 
@@ -763,10 +591,6 @@ module.exports = function (RED) {
 
                 if (subscription) {
                     subscription.terminate();
-                    // subscription becomes null by its terminated event
-                }
-                if (event_subscription) {
-                    event_subscription.terminate();
                     // subscription becomes null by its terminated event
                 }
 

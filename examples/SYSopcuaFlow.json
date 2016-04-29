@@ -1,201 +1,190 @@
 [
   {
-    "id": "d55eb70.60547c8",
-    "type": "comment",
-    "name": "PROSYS OPC-UA",
-    "info": "using the PROSYS OPC-UA Simulation Server",
-    "x": 906,
-    "y": 74,
-    "z": "dde2f7ab.221d08",
-    "wires": []
+    "id": "66dabf03.46121",
+    "type": "OpcUa-Endpoint",
+    "z": "5ec1e150.40273",
+    "endpoint": "opc.tcp://192.168.1.15:53530/OPCUA/SimulationServer",
+    "login": false
   },
   {
-    "id": "6be23ebd.941dc",
-    "type": "OpcUaItem",
-    "item": "ns=4;s=free_memory",
-    "datatype": "opcua.DataType.Double",
-    "value": "",
-    "name": "FreeMemory",
-    "x": 263,
-    "y": 266,
-    "z": "dde2f7ab.221d08",
-    "wires": [
-      [
-        "a71dd6a0.58e228"
-      ]
-    ]
-  },
-  {
-    "id": "bb0319ca.44fce8",
-    "type": "inject",
-    "name": "Read",
-    "topic": "",
-    "payload": "test2",
-    "payloadType": "none",
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "x": 92,
-    "y": 267,
-    "z": "dde2f7ab.221d08",
-    "wires": [
-      [
-        "6be23ebd.941dc"
-      ]
-    ]
-  },
-  {
-    "id": "766caa9b.899354",
-    "type": "debug",
-    "name": "Read value",
-    "active": false,
-    "console": "false",
-    "complete": "true",
-    "x": 823,
-    "y": 325,
-    "z": "dde2f7ab.221d08",
-    "wires": []
-  },
-  {
-    "id": "df385ce2.20c7a",
-    "type": "OpcUaItem",
-    "item": "ns=4;s=DateTime",
-    "datatype": "opcua.DataType.Double",
-    "value": "",
-    "name": "",
-    "x": 262,
-    "y": 323,
-    "z": "dde2f7ab.221d08",
-    "wires": [
-      [
-        "a71dd6a0.58e228"
-      ]
-    ]
-  },
-  {
-    "id": "70b82290.8f47dc",
-    "type": "inject",
-    "name": "Read",
-    "topic": "",
-    "payload": "",
-    "payloadType": "none",
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "x": 92,
-    "y": 323,
-    "z": "dde2f7ab.221d08",
-    "wires": [
-      [
-        "df385ce2.20c7a"
-      ]
-    ]
-  },
-  {
-    "id": "a71dd6a0.58e228",
-    "type": "OpcUaClient",
-    "endpoint": "opc.tcp://localhost:53530/OPCUA/SimulationServer",
-    "action": "read",
-    "time": "",
-    "name": "Test server (read items)",
-    "x": 595,
-    "y": 325,
-    "z": "dde2f7ab.221d08",
-    "wires": [
-      [
-        "766caa9b.899354"
-      ]
-    ]
-  },
-  {
-    "id": "24be3a5.fdb41c6",
-    "type": "OpcUaItem",
-    "item": "ns=2;s=MyLevel",
-    "datatype": "opcua.DataType.String",
-    "value": "",
-    "name": "",
-    "x": 262,
-    "y": 369,
-    "z": "dde2f7ab.221d08",
-    "wires": [
-      [
-        "a71dd6a0.58e228",
-        "36a1f027.c95e1"
-      ]
-    ]
-  },
-  {
-    "id": "119c2278.ee63de",
-    "type": "inject",
-    "name": "Read",
-    "topic": "",
-    "payload": "test2",
-    "payloadType": "none",
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "x": 93,
-    "y": 370,
-    "z": "dde2f7ab.221d08",
-    "wires": [
-      [
-        "24be3a5.fdb41c6"
-      ]
-    ]
-  },
-  {
-    "id": "620b5441.9df4ac",
-    "type": "inject",
-    "name": "Browse",
-    "topic": "ns=2;s=MyDevice",
-    "payload": "",
-    "payloadType": "none",
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "x": 89,
-    "y": 27,
-    "z": "dde2f7ab.221d08",
-    "wires": [
-      [
-        "ada5a5fd.525a58",
-        "ba56a04b.45a96"
-      ]
-    ]
-  },
-  {
-    "id": "f5dff8f1.0a2008",
+    "id": "7cb5d30d.2e00ec",
     "type": "file",
+    "z": "5ec1e150.40273",
     "name": "Address.txt",
     "filename": "./public/users/opc-ua/Address.txt",
     "appendNewline": true,
     "createDir": true,
     "overwriteFile": "false",
-    "x": 700.5,
-    "y": 69.24996948242188,
-    "z": "dde2f7ab.221d08",
+    "x": 850,
+    "y": 100,
     "wires": []
   },
   {
-    "id": "907085b6.6f8f78",
-    "type": "function",
-    "name": "Items",
-    "func": "msg.payload=msg.browseName+\"|\"+msg.topic;\nreturn msg;",
-    "outputs": 1,
-    "noerr": 0,
-    "x": 432.75,
-    "y": 93.75,
-    "z": "dde2f7ab.221d08",
+    "id": "75ff66ac.f39498",
+    "type": "comment",
+    "z": "5ec1e150.40273",
+    "name": "PROSYS OPC-UA",
+    "info": "using the PROSYS OPC-UA Simulation Server",
+    "x": 130,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "fd7bd63d.2f3178",
+    "type": "OpcUa-Item",
+    "z": "5ec1e150.40273",
+    "item": "ns=4;s=free_memory",
+    "datatype": "opcua.DataType.Double",
+    "value": "",
+    "name": "FreeMemory",
+    "x": 370,
+    "y": 300,
     "wires": [
       [
-        "f5dff8f1.0a2008",
-        "37207dbb.c8df82"
+        "a6eb9ec.c21db6"
       ]
     ]
   },
   {
-    "id": "ada5a5fd.525a58",
+    "id": "2dd2dd3c.5d9b72",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Read",
+    "topic": "",
+    "payload": "test2",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 110,
+    "y": 300,
+    "wires": [
+      [
+        "fd7bd63d.2f3178"
+      ]
+    ]
+  },
+  {
+    "id": "8b2daf0a.2ac5b",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "Read value",
+    "active": true,
+    "console": "false",
+    "complete": "true",
+    "x": 850,
+    "y": 320,
+    "wires": []
+  },
+  {
+    "id": "7b069e3f.171f5",
+    "type": "OpcUa-Item",
+    "z": "5ec1e150.40273",
+    "item": "ns=4;s=DateTime",
+    "datatype": "String",
+    "value": "",
+    "name": "",
+    "x": 360,
+    "y": 380,
+    "wires": [
+      [
+        "a6eb9ec.c21db6",
+        "b289b3e3.c303"
+      ]
+    ]
+  },
+  {
+    "id": "a6eb9ec.c21db6",
+    "type": "OpcUa-Client",
+    "z": "5ec1e150.40273",
+    "endpoint": "66dabf03.46121",
+    "action": "read",
+    "time": "",
+    "name": "Test server (read items)",
+    "x": 610,
+    "y": 320,
+    "wires": [
+      [
+        "8b2daf0a.2ac5b"
+      ]
+    ]
+  },
+  {
+    "id": "c4e6019e.66af7",
+    "type": "OpcUa-Item",
+    "z": "5ec1e150.40273",
+    "item": "ns=4;s=free_memory",
+    "datatype": "String",
+    "value": "",
+    "name": "",
+    "x": 360,
+    "y": 420,
+    "wires": [
+      [
+        "b289b3e3.c303"
+      ]
+    ]
+  },
+  {
+    "id": "4ec38626.22afb8",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Subscribe",
+    "topic": "",
+    "payload": "test2",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 120,
+    "y": 420,
+    "wires": [
+      [
+        "c4e6019e.66af7"
+      ]
+    ]
+  },
+  {
+    "id": "de7b113d.00879",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Browse",
+    "topic": "ns=2;s=MyDevice",
+    "payload": "",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 110,
+    "y": 60,
+    "wires": [
+      [
+        "fb399d4f.61dc4",
+        "19dfffe3.6c26c"
+      ]
+    ]
+  },
+  {
+    "id": "28d77e5.8101482",
+    "type": "function",
+    "z": "5ec1e150.40273",
+    "name": "Items",
+    "func": "msg.payload=msg.browseName+\"|\"+msg.topic;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 530,
+    "y": 120,
+    "wires": [
+      [
+        "7cb5d30d.2e00ec",
+        "b10ffb29.47ab88"
+      ]
+    ]
+  },
+  {
+    "id": "fb399d4f.61dc4",
     "type": "trigger",
+    "z": "5ec1e150.40273",
     "op1": "object|address",
     "op2": "0",
     "op1type": "val",
@@ -204,187 +193,173 @@
     "extend": "false",
     "units": "ms",
     "name": "Clear file",
-    "x": 386.75,
-    "y": 25.5,
-    "z": "dde2f7ab.221d08",
+    "x": 480,
+    "y": 60,
     "wires": [
       [
-        "7b92692f.846d98"
+        "e643c78e.1fe608"
       ]
     ]
   },
   {
-    "id": "7b92692f.846d98",
+    "id": "e643c78e.1fe608",
     "type": "file",
+    "z": "5ec1e150.40273",
     "name": "Address.txt",
     "filename": "./public/users/opc-ua/Address.txt",
     "appendNewline": true,
     "createDir": true,
     "overwriteFile": "false",
-    "x": 702,
-    "y": 25.5,
-    "z": "dde2f7ab.221d08",
+    "x": 850,
+    "y": 60,
     "wires": []
   },
   {
-    "id": "ba56a04b.45a96",
-    "type": "OpcUaClient",
-    "endpoint": "opc.tcp://localhost:53530/OPCUA/SimulationServer",
+    "id": "19dfffe3.6c26c",
+    "type": "OpcUa-Client",
+    "z": "5ec1e150.40273",
+    "endpoint": "66dabf03.46121",
     "action": "browse",
     "time": "",
     "name": "Test server (browse)",
-    "x": 221,
-    "y": 136,
-    "z": "dde2f7ab.221d08",
+    "x": 320,
+    "y": 160,
     "wires": [
       [
-        "907085b6.6f8f78",
-        "85327b73.7acd88"
+        "28d77e5.8101482",
+        "bd51e6e9.102cf8"
       ]
     ]
   },
   {
-    "id": "36a1f027.c95e1",
-    "type": "OpcUaClient",
-    "endpoint": "opc.tcp://localhost:53530/OPCUA/SimulationServer",
-    "action": "subscribe",
-    "time": "60000",
-    "name": "Test server (subscribe item)",
-    "x": 578,
-    "y": 431,
-    "z": "dde2f7ab.221d08",
-    "wires": [
-      [
-        "de106b26.21ef98"
-      ]
-    ]
-  },
-  {
-    "id": "de106b26.21ef98",
+    "id": "ca827ee0.3633a",
     "type": "debug",
+    "z": "5ec1e150.40273",
     "name": "Subscribed values",
-    "active": false,
+    "active": true,
     "console": "false",
     "complete": "true",
-    "x": 827,
-    "y": 432,
-    "z": "dde2f7ab.221d08",
+    "x": 870,
+    "y": 420,
     "wires": []
   },
   {
-    "id": "37207dbb.c8df82",
+    "id": "b10ffb29.47ab88",
     "type": "debug",
+    "z": "5ec1e150.40273",
     "name": "Address items",
-    "active": false,
+    "active": true,
     "console": "false",
     "complete": "false",
-    "x": 711,
-    "y": 117,
-    "z": "dde2f7ab.221d08",
+    "x": 860,
+    "y": 140,
     "wires": []
   },
   {
-    "id": "80d55486.7f2aa8",
+    "id": "77256a3c.71f1d4",
     "type": "comment",
+    "z": "5ec1e150.40273",
     "name": "v9.1.0",
     "info": "Browse node allows user to select item:\n- runtime browse\n- select RootFolder -> SubFolder\n- select Item\n\nActions:\nread\nwrite\nbrowse\nsubscribe\n\nNodes:\nclient node for actions\nitem node for defining item\n",
-    "x": 871,
-    "y": 36,
-    "z": "dde2f7ab.221d08",
+    "x": 90,
+    "y": 200,
     "wires": []
   },
   {
-    "id": "d875f2c1.278a1",
+    "id": "2ec2bede.18aba2",
     "type": "inject",
-    "name": "Read MyLevelAlarm",
-    "topic": "ns=2;s=MyDevice",
+    "z": "5ec1e150.40273",
+    "name": "Browse Alarm",
+    "topic": "ns=2;s=MyLevel.Alarm",
     "payload": "",
-    "payloadType": "none",
+    "payloadType": "date",
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 134,
-    "y": 518,
-    "z": "dde2f7ab.221d08",
+    "x": 130,
+    "y": 520,
     "wires": [
       [
-        "79e03766.17284"
+        "60103cf1.60b664"
       ]
     ]
   },
   {
-    "id": "85327b73.7acd88",
+    "id": "bd51e6e9.102cf8",
     "type": "template",
-    "name": "OpcUaItem",
+    "z": "5ec1e150.40273",
+    "name": "OpcUa-Item",
     "field": "payload",
-    "template": "[\n  {\n    \"id\": \"4b12ca9b.e7e184\",\n    \"type\": \"OpcUaItem\",\n    \"item\": \"{{topic}}\",\n    \"datatype\": \"opcua.DataType.Double\",\n    \"value\": \"66.6\",\n    \"name\": \"{{browseName}}\",\n    \"x\": 251,\n    \"y\": 334,\n    \"z\": \"30ffd2ee.59fdd6\",\n    \"wires\": [\n      [\n        \"70dd1397.3c8e44\"\n      ]\n    ]\n  }\n]",
-    "x": 406,
-    "y": 190,
-    "z": "dde2f7ab.221d08",
+    "fieldType": "msg",
+    "syntax": "mustache",
+    "template": "[\n  {\n    \"id\": \"4b12ca9b.e7e184\",\n    \"type\": \"OpcUa-Item\",\n    \"item\": \"{{topic}}\",\n    \"datatype\": \"opcua.DataType.Double\",\n    \"value\": \"66.6\",\n    \"name\": \"{{browseName}}\",\n    \"x\": 251,\n    \"y\": 334,\n    \"z\": \"30ffd2ee.59fdd6\",\n    \"wires\": [\n      [\n        \"70dd1397.3c8e44\"\n      ]\n    ]\n  }\n]",
+    "x": 550,
+    "y": 180,
     "wires": [
       [
-        "94e1936a.6b1e7",
-        "30761891.cf89e8"
+        "251746cc.116c3a",
+        "d7e87799.e5bba8"
       ]
     ]
   },
   {
-    "id": "94e1936a.6b1e7",
+    "id": "251746cc.116c3a",
     "type": "function",
+    "z": "5ec1e150.40273",
     "name": "Save to lib",
     "func": "msg.filename=\"./public/users/opc-ua/templates/\"+msg.browseName+\".js\";\nmsg.payload=\"// name: \"+msg.browseName+\"\\n\"+\"// field: payload\\n\"+msg.payload;\nreturn msg;",
     "outputs": 1,
     "noerr": 0,
-    "x": 642,
-    "y": 218,
-    "z": "dde2f7ab.221d08",
+    "x": 650,
+    "y": 260,
     "wires": [
       [
-        "41ba3683.be45c8",
-        "268d19df.d972e6"
+        "d5eda8e6.d58238",
+        "3826e0f3.91b6d"
       ]
     ]
   },
   {
-    "id": "41ba3683.be45c8",
+    "id": "d5eda8e6.d58238",
     "type": "debug",
+    "z": "5ec1e150.40273",
     "name": "Pre-configured library items",
-    "active": true,
+    "active": false,
     "console": "false",
     "complete": "true",
-    "x": 873,
-    "y": 253,
-    "z": "dde2f7ab.221d08",
+    "x": 900,
+    "y": 280,
     "wires": []
   },
   {
-    "id": "268d19df.d972e6",
+    "id": "3826e0f3.91b6d",
     "type": "file",
+    "z": "5ec1e150.40273",
     "name": "OPC UA Items",
     "filename": "",
     "appendNewline": true,
     "createDir": true,
     "overwriteFile": "false",
-    "x": 831,
-    "y": 190,
-    "z": "dde2f7ab.221d08",
+    "x": 860,
+    "y": 220,
     "wires": []
   },
   {
-    "id": "30761891.cf89e8",
+    "id": "d7e87799.e5bba8",
     "type": "debug",
+    "z": "5ec1e150.40273",
     "name": "",
-    "active": false,
+    "active": true,
     "console": "false",
     "complete": "false",
-    "x": 651,
-    "y": 168,
-    "z": "dde2f7ab.221d08",
+    "x": 850,
+    "y": 180,
     "wires": []
   },
   {
-    "id": "8dd8771e.ad168",
+    "id": "1caef89f.2ed4e7",
     "type": "inject",
+    "z": "5ec1e150.40273",
     "name": "Read",
     "topic": "",
     "payload": "",
@@ -392,86 +367,208 @@
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 85,
-    "y": 420,
-    "z": "dde2f7ab.221d08",
+    "x": 110,
+    "y": 340,
     "wires": [
       [
-        "74238caa.af9e2c"
+        "27c2bd79.578a32"
       ]
     ]
   },
   {
-    "id": "74238caa.af9e2c",
-    "type": "OpcUaItem",
+    "id": "27c2bd79.578a32",
+    "type": "OpcUa-Item",
+    "z": "5ec1e150.40273",
     "item": "ns=0;i=112",
-    "datatype": "http://127.0.0.1:1880/",
+    "datatype": "Double",
     "value": "",
     "name": "",
-    "x": 247,
-    "y": 421,
-    "z": "dde2f7ab.221d08",
+    "x": 360,
+    "y": 340,
     "wires": [
       [
-        "a71dd6a0.58e228"
+        "a6eb9ec.c21db6"
       ]
     ]
   },
   {
-    "id": "79e03766.17284",
-    "type": "OpcUaClient",
-    "endpoint": "opc.tcp://localhost:53530/OPCUA/SimulationServer",
+    "id": "60103cf1.60b664",
+    "type": "OpcUa-Client",
+    "z": "5ec1e150.40273",
+    "endpoint": "66dabf03.46121",
     "action": "browse",
-    "time": "",
-    "name": "browse SimulationServer",
-    "x": 367,
-    "y": 513,
-    "z": "dde2f7ab.221d08",
+    "time": "10000",
+    "name": "",
+    "x": 360,
+    "y": 520,
     "wires": [
       [
-        "337cfdc6.f4f3ea",
-        "a877b97d.c9b028"
+        "7ceef407.eafb3c",
+        "926dc4c4.041508"
       ]
     ]
   },
   {
-    "id": "337cfdc6.f4f3ea",
+    "id": "7ceef407.eafb3c",
     "type": "debug",
+    "z": "5ec1e150.40273",
     "name": "Browsed JSON",
-    "active": false,
+    "active": true,
     "console": "false",
     "complete": "true",
-    "x": 640,
-    "y": 496,
-    "z": "dde2f7ab.221d08",
+    "x": 860,
+    "y": 520,
     "wires": []
   },
   {
-    "id": "a877b97d.c9b028",
+    "id": "926dc4c4.041508",
     "type": "function",
+    "z": "5ec1e150.40273",
     "name": "read browseName and topic",
     "func": "msg.payload=msg.browseName+\" - \"+msg.topic;\nreturn msg;",
     "outputs": 1,
     "noerr": 0,
-    "x": 675,
-    "y": 580,
-    "z": "dde2f7ab.221d08",
+    "x": 600,
+    "y": 560,
     "wires": [
       [
-        "2dc31e94.48c292"
+        "1af9b387.3278dc"
       ]
     ]
   },
   {
-    "id": "2dc31e94.48c292",
+    "id": "1af9b387.3278dc",
     "type": "debug",
+    "z": "5ec1e150.40273",
     "name": "browseName",
-    "active": false,
+    "active": true,
     "console": "false",
     "complete": "payload",
-    "x": 941,
-    "y": 579,
-    "z": "dde2f7ab.221d08",
+    "x": 850,
+    "y": 560,
     "wires": []
+  },
+  {
+    "id": "b289b3e3.c303",
+    "type": "OpcUa-Client",
+    "z": "5ec1e150.40273",
+    "endpoint": "66dabf03.46121",
+    "action": "subscribe",
+    "time": 10000,
+    "name": "",
+    "x": 640,
+    "y": 420,
+    "wires": [
+      [
+        "ca827ee0.3633a"
+      ]
+    ]
+  },
+  {
+    "id": "f6f54112.c9ed4",
+    "type": "catch",
+    "z": "5ec1e150.40273",
+    "name": "",
+    "scope": null,
+    "x": 140,
+    "y": 700,
+    "wires": [
+      [
+        "3b51ffbd.c887f"
+      ]
+    ]
+  },
+  {
+    "id": "3b51ffbd.c887f",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "",
+    "active": true,
+    "console": "false",
+    "complete": "false",
+    "x": 330,
+    "y": 700,
+    "wires": []
+  },
+  {
+    "id": "6868efd9.25a6c",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Read & Subscribe",
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 150,
+    "y": 380,
+    "wires": [
+      [
+        "7b069e3f.171f5"
+      ]
+    ]
+  },
+  {
+    "id": "e7585aa3.d5d658",
+    "type": "OpcUa-Event",
+    "z": "5ec1e150.40273",
+    "root": "i=2253",
+    "eventtype": "i=2041",
+    "name": "",
+    "x": 380,
+    "y": 620,
+    "wires": [
+      [
+        "6b885842.c7dfb8"
+      ]
+    ]
+  },
+  {
+    "id": "983dcde4.57503",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Subscribe Events",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 140,
+    "y": 620,
+    "wires": [
+      [
+        "e7585aa3.d5d658"
+      ]
+    ]
+  },
+  {
+    "id": "ff34939.6bc5c7",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "",
+    "active": true,
+    "console": "false",
+    "complete": "false",
+    "x": 850,
+    "y": 620,
+    "wires": []
+  },
+  {
+    "id": "6b885842.c7dfb8",
+    "type": "OpcUa-Client",
+    "z": "5ec1e150.40273",
+    "endpoint": "66dabf03.46121",
+    "action": "events",
+    "time": 10000,
+    "name": "",
+    "x": 640,
+    "y": 620,
+    "wires": [
+      [
+        "ff34939.6bc5c7"
+      ]
+    ]
   }
 ]
