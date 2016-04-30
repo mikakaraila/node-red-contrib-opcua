@@ -127,7 +127,9 @@ module.exports = function (RED) {
             items = [];
             node.items = items;
             set_node_status_to("create client");
-            callback();
+            if (callback) {
+                callback();
+            }
         }
 
         function reset_opcua_client(callback) {
@@ -138,7 +140,18 @@ module.exports = function (RED) {
                     create_opcua_client(callback);
                 });
             }
+        }
 
+        function close_opcua_client(callback) {
+            if (node.client) {
+                node.client.disconnect(function () {
+                    node.client = null;
+                    verbose_log("Client disconnected!");
+                    if (callback) {
+                        callback();
+                    }
+                });
+            }
         }
 
         function set_node_status_to(statusValue) {
@@ -186,9 +199,8 @@ module.exports = function (RED) {
                 if (err) {
                     node.error(node.name + " OPC UA connection error: " + err.message);
                     verbose_log(err);
-                    set_node_status_to("connection error");
                     node.session = null;
-                    node.client = null;
+                    close_opcua_client(set_node_status_to("connection error"));
                 }
             });
         }
@@ -320,7 +332,7 @@ module.exports = function (RED) {
                                 verbose_log("\tDataType: " + dataValue.value.dataType);
 
                                 if (dataValue.value.dataType === opcua.DataType.UInt16) {
-                                    verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + ToInt32(dataValue.value.value));
+                                    verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
                                 }
 
                                 msg.payload = dataValue.value.value;
@@ -419,11 +431,21 @@ module.exports = function (RED) {
                 verbose_log(msg.topic + " samplingInterval " + interval);
 
                 monitoredItem = subscription.monitor(
-                    {nodeId: msg.topic, attributeId: opcua.AttributeIds.Value},
+                    {
+                        nodeId: msg.topic,
+                        attributeId: opcua.AttributeIds.Value
+                    },
                     {
                         samplingInterval: interval,
                         queueSize: 10,
                         discardOldest: true
+                    },
+                    3,
+                    function (err) {
+                        if (err) {
+                            node.error('subscription.monitorItem:' + err);
+                            reset_opcua_client(connect_opcua_client);
+                        }
                     }
                 );
 
@@ -539,6 +561,13 @@ module.exports = function (RED) {
                         queueSize: 100000,
                         filter: msg.eventFilter,
                         discardOldest: true
+                    },
+                    3,
+                    function (err) {
+                        if (err) {
+                            node.error('subscription.monitorEvent:' + err);
+                            reset_opcua_client(connect_opcua_client);
+                        }
                     }
                 );
 
@@ -605,12 +634,12 @@ module.exports = function (RED) {
 
         node.on("close", function () {
 
-            if (node.session) {
+            if (subscription && subscription.isActive()) {
+                subscription.terminate();
+                // subscription becomes null by its terminated event
+            }
 
-                if (subscription) {
-                    subscription.terminate();
-                    // subscription becomes null by its terminated event
-                }
+            if (node.session) {
 
                 node.session.close(function (err) {
 
@@ -621,28 +650,21 @@ module.exports = function (RED) {
                     }
 
                     node.session = null;
-
-                    if (node.client) {
-
-                        node.client.disconnect(function () {
-                            node.client = null;
-                            verbose_log("Client disconnected!");
-                        });
-                    }
+                    close_opcua_client(set_node_status_to("closed"));
                 });
+            } else {
+                close_opcua_client(set_node_status_to("closed"));
             }
-
-            set_node_status_to("closed");
         });
 
         node.on("error", function () {
 
-            if (node.session) {
+            if (subscription && subscription.isActive()) {
+                subscription.terminate();
+                // subscription becomes null by its terminated event
+            }
 
-                if (subscription) {
-                    subscription.terminate();
-                    // subscription becomes null by its terminated event
-                }
+            if (node.session) {
 
                 node.session.close(function (err) {
 
@@ -653,19 +675,13 @@ module.exports = function (RED) {
 
                     set_node_status_to("session closed");
                     node.session = null;
-
-                    if (node.client) {
-
-                        node.client.disconnect(function () {
-                            node.client = null;
-                            verbose_log("Client disconnected!");
-                        });
-                    }
+                    close_opcua_client(set_node_status_to("node error"));
 
                 });
-            }
 
-            set_node_status_to("node error");
+            } else {
+                close_opcua_client(set_node_status_to("node error"));
+            }
         });
     }
 
