@@ -16,6 +16,52 @@
 
 "use strict";
 
+module.exports.get_timeUnit_name = function (unit) {
+
+    var unitAbbreviation = '';
+
+    switch (unit) {
+        case "ms":
+            unitAbbreviation = 'msec.';
+            break;
+        case "s":
+            unitAbbreviation = 'sec.';
+            break;
+        case "m":
+            unitAbbreviation = 'min.';
+            break;
+        case "h":
+            unitAbbreviation = 'h.';
+            break;
+        default:
+            break;
+    }
+
+    return unitAbbreviation;
+};
+
+module.exports.calc_milliseconds_by_time_and_unit = function (time, unit) {
+
+    switch (unit) {
+        case "ms":
+            break;
+        case "s":
+            time = time * 1000; // seconds
+            break;
+        case "m":
+            time = time * 60000; // minutes
+            break;
+        case "h":
+            time = time * 3600000; // hours
+            break;
+        default:
+            time = 10000; // 10 sec.
+            break;
+    }
+
+    return time;
+};
+
 module.exports.collectAlarmFields = function (field, key, value, msg) {
 
     switch (field) {
@@ -164,23 +210,33 @@ module.exports.getBasicEventFields = function () {
     ];
 };
 
+/*
+ Options defaults node-opcua
 
-module.exports.getEventSubscribtionParameters = function () {
+ options.requestedPublishingInterval = options.requestedPublishingInterval || 100;
+ options.requestedLifetimeCount      = options.requestedLifetimeCount || 60;
+ options.requestedMaxKeepAliveCount  = options.requestedMaxKeepAliveCount || 2;
+ options.maxNotificationsPerPublish  = options.maxNotificationsPerPublish || 2;
+ options.publishingEnabled           = options.publishingEnabled ? true : false;
+ options.priority                    = options.priority || 1;
+ */
+
+module.exports.getEventSubscribtionParameters = function (timeMilliseconds) {
     return {
-        requestedPublishingInterval: 100,
-        requestedLifetimeCount: 1000,
-        requestedMaxKeepAliveCount: 12,
-        maxNotificationsPerPublish: 10,
+        requestedPublishingInterval: timeMilliseconds || 100,
+        requestedLifetimeCount: 120,
+        requestedMaxKeepAliveCount: 3,
+        maxNotificationsPerPublish: 4,
         publishingEnabled: true,
-        priority: 10
+        priority: 1
     };
 };
 
-module.exports.getSubscriptionParameters = function (time) {
+module.exports.getSubscriptionParameters = function (timeMilliseconds) {
     return {
-        requestedPublishingInterval: time,
-        requestedLifetimeCount: 10,
-        requestedMaxKeepAliveCount: 2,
+        requestedPublishingInterval: timeMilliseconds || 100,
+        requestedLifetimeCount: 30,
+        requestedMaxKeepAliveCount: 3,
         maxNotificationsPerPublish: 10,
         publishingEnabled: true,
         priority: 10

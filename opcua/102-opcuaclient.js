@@ -35,14 +35,12 @@ module.exports = function (RED) {
         this.name = n.name;
         this.action = n.action;
         this.time = n.time;
+        this.timeUnit = n.timeUnit;
 
         var node = this;
 
         var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
-
         var items = [];
-        var tenSeconds = 10000; // 10 sec.
-
         var subscription; // only one subscription needed to hold multiple monitored Items
 
         var monitoredItems = new Set(null, function (a, b) {
@@ -181,7 +179,7 @@ module.exports = function (RED) {
                         node.client.createSession(function (err, session) {
                             if (!err) {
                                 node.session = session;
-                                node.session.timeout = tenSeconds;
+                                node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
                                 verbose_log("session active");
                                 set_node_status_to("session active");
                                 callback();
@@ -258,14 +256,16 @@ module.exports = function (RED) {
                 return;
             }
 
-            if (!node.session) {
+            if (!node.client || !node.session) {
                 verbose_warn("can't work without OPC UA Session");
                 reset_opcua_client(connect_opcua_client);
                 node.send(msg);
                 return;
             }
 
-            if (node.session.sessionId == "terminated") {
+            node.warn("secureChannelId:" + node.session.secureChannelId);
+
+            if (!node.session.sessionId == "terminated") {
                 verbose_warn("terminated OPC UA Session");
                 reset_opcua_client(connect_opcua_client);
                 node.send(msg);
@@ -397,7 +397,8 @@ module.exports = function (RED) {
 
             if (!subscription) {
                 // first build and start subscription and subscribe on its started event by callback
-                subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(node.time));
+                var timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
+                subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
             }
             else {
                 // otherwise check if its terminated start to renew the subscription
@@ -429,6 +430,7 @@ module.exports = function (RED) {
                 }
 
                 verbose_log(msg.topic + " samplingInterval " + interval);
+                verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
 
                 monitoredItem = subscription.monitor(
                     {
@@ -551,6 +553,7 @@ module.exports = function (RED) {
                 }
 
                 verbose_log(msg.topic + " samplingInterval " + interval);
+                verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
 
                 monitoredItem = subscription.monitor(
                     {
@@ -558,6 +561,7 @@ module.exports = function (RED) {
                         attributeId: AttributeIds.EventNotifier
                     },
                     {
+                        samplingInterval: interval,
                         queueSize: 100000,
                         filter: msg.eventFilter,
                         discardOldest: true
@@ -615,7 +619,8 @@ module.exports = function (RED) {
 
             if (!subscription) {
                 // first build and start subscription and subscribe on its started event by callback
-                subscription = make_subscription(subscribe_monitoredEvent, msg, opcuaBasics.getEventSubscribtionParameters());
+                var timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
+                subscription = make_subscription(subscribe_monitoredEvent, msg, opcuaBasics.getEventSubscribtionParameters(timeMilliseconds));
             }
             else {
                 // otherwise check if its terminated start to renew the subscription
@@ -653,6 +658,7 @@ module.exports = function (RED) {
                     close_opcua_client(set_node_status_to("closed"));
                 });
             } else {
+                node.session = null;
                 close_opcua_client(set_node_status_to("closed"));
             }
         });
@@ -680,6 +686,7 @@ module.exports = function (RED) {
                 });
 
             } else {
+                node.session = null;
                 close_opcua_client(set_node_status_to("node error"));
             }
         });

@@ -23,7 +23,8 @@ limitations under the License.
         defaults: {
             endpoint: {value: "", required: true, type: "OpcUa-Endpoint"},
             action: {value: "read", required: true},
-            time: {value: 10000, required: false},
+            time: {value: 10},
+            timeUnit: {value: "s"},
             name: {value: ""}
         },
         inputs: 1,
@@ -40,29 +41,27 @@ limitations under the License.
 
             var node = this;
 
+            try {
+                var inputAction = $('#node-input-action');
+                var inputTime = $('#node-input-timerow');
+                change_time_input(); // first to fit config now
+                inputAction.change(change_time_input);
+
+            } catch (err) {
+                console.log(err);
+            }
+
             function change_time_input() {
-                if (inputAction.val() == "subscribe"  || inputAction.val() == "events") {
+                if (inputAction.val() == "subscribe" || inputAction.val() == "events") {
                     inputTime.show();
                 }
                 else {
                     inputTime.hide();
                 }
             }
-
-            try {
-                var inputAction = $('#node-input-action');
-                var inputTime = $('#node-input-time');
-
-                change_time_input();
-
-                inputAction.change(change_time_input);
-            } catch (err) {
-                console.log(err);
-            }
         }
     });
 </script>
-
 
 
 <script type="text/x-red" data-template-name="OpcUa-Client">
@@ -80,24 +79,40 @@ limitations under the License.
 			<option value="events">EVENTS</option>
         </select>
     </div>
-    <div class="form-row">
-        <label for="node-input-name"><i class="icon-tasks"></i> Time(ms)</label>
-        <input type="text" id="node-input-time" placeholder="10000">
+    <div class="form-row" id="node-input-timerow">
+        <label for="node-input-time"><i class="icon-time"></i> Interval</label>
+        <input type="number" id="node-input-time" placeholder="number" style="max-width:120px">
+        <select id="node-input-timeUnit" style="max-width:160px">
+            <option value="ms">millisecond(s)</option>
+            <option value="s">second(s)</option>
+            <option value="m">minute(s)</option>
+            <option value="h">hour(s)</option>
+        </select>
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tasks"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="">
     </div>
+
 </script>
 
-
-
 <script type="text/x-red" data-help-name="OpcUa-Client">
-    <p>Connect to endpoint: opc.tcp://host:port/UA/EndpointName.</p>
-    <p>Action is read, write or browse.</p>
-    <p>Item can be defined in input msg object:</p>
-    <p>Inject your OPC UA address by the <strong>Topic</strong> of an Inject node or with the OpcUaItem cotrolled by an Inject node.</p>
-    <p>To read inject the Topic for every reading.</p>
-    <p>Inject the Topic only once on Subscribe and you got the changing value.</p>
-    <p>If <b>payload</b> is empty value will be read from the OPC UA server otherwise value will be written to the server.</p>
+    <p>Connect to an endpoint like opc.tcp://host:port/UA/EndpointName.</p>
+    <p>Actions are:</p>
+    <p>
+        <ul>
+            <li>Read</li>
+            <li>Write</li>
+            <li>Browse</li>
+            <li>Subscribe</li>
+            <li>Event</li>
+         </ul>
+    </p>
+    <p>Items can be defined in input msg object or by an OpcUa-Item.</p>
+    <p>Inject your OPC UA address (NodeId) by the <strong>Topic</strong> of an Inject node or with the OpcUa-Item cotrolled by an Inject node.</p>
+    <p>To Read/Write inject the Topic for every operation.</p>
+    <p>The value to Write should be injected by an OpcUa-Item.</p>
+    <p>Inject the Topic only once on Subscribe or Event for subscription and you got the changing value on every Interval.</p>
+    <p>Interval is setting for Client <strong>requestedPublishingInterval</strong> (deflaut: 100ms).</p>
+    <p><strong>msg.payload</strong> can bring an samplingInterval for monitored Items/Events in subscription (default: 100ms).</p>
 </script>
