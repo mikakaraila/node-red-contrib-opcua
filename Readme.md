@@ -66,6 +66,7 @@ TBD List
 |                    | Write                     | :white_check_mark:        |
 |                    | Subscribe                 | :white_check_mark:        |
 |                    | AE                        | :new_moon:                |
+|                    | reconnect on error        | :waxing_crescent_moon:    |
 |  Server            |                           |                           |
 |      Commands      |                           |                           |
 |                    | Restart                   | :white_check_mark:        |
@@ -84,6 +85,7 @@ TBD List
 |                    | AE                        |                           |
 |                    |                           |                           |
 |  Alarm and Events  |                           |                           |
+|                    | Subscribe                 | :white_check_mark:        |
 |                    |                           |                           |
 
 [EMOJI CHEAT SHEET](http://www.emoji-cheat-sheet.com/)
