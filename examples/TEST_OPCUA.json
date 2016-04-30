@@ -6,7 +6,7 @@
   },
   {
     "id": "fd7d7d1f.02828",
-    "type": "OpcUaBrowse",
+    "type": "OpcUa-Browser",
     "item": "ns=1;s=al:A1:TIC100:mella/Quality\n",
     "datatype": "opcua.DataType.Double",
     "value": "",
@@ -21,7 +21,7 @@
   },
   {
     "id": "5f40058d.a0bffc",
-    "type": "OpcUaClient",
+    "type": "OpcUa-Client",
     "endpoint": "opc.tcp://localhost:26543",
     "action": "browse",
     "time": "60000",
@@ -117,7 +117,7 @@
   },
   {
     "id": "bc233d76.43dcc",
-    "type": "OpcUaClient",
+    "type": "OpcUa-Client",
     "endpoint": "opc.tcp://localhost:26543",
     "action": "read",
     "time": 10000,

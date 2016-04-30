@@ -130,7 +130,7 @@
   },
   {
     "id": "11682102.b5b9af",
-    "type": "OpcUaServer",
+    "type": "OpcUa-Server",
     "z": "30ded7dc.266628",
     "port": "53880",
     "name": "",

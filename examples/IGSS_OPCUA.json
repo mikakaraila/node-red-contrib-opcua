@@ -1,283 +1,275 @@
 [
   {
     "type": "tab",
-    "id": "39bb936b.c6446c",
+    "id": "c1e582b2.7e3dc",
     "label": "IGSS OPC UA Tests"
   },
   {
-    "id": "da070375.25f9",
-    "type": "OpcUaClient",
-    "endpoint": "opc.tcp://trel13096286:12403/IGSS/IGSSOpcUaServer",
-    "action": "browse",
-    "time": 10000,
-    "name": "Browse",
-    "x": 249,
-    "y": 171,
-    "z": "39bb936b.c6446c",
-    "wires": [
-      [
-        "22f1b124.dd0e4e"
-      ]
-    ]
+    "id": "7290d8b0.f713d8",
+    "type": "OpcUa-Endpoint",
+    "endpoint": "opc.tcp://localhost:62544/Quickstarts/AlarmConditionServer",
+    "login": false
   },
   {
-    "id": "dbdd4f89.2422b",
+    "id": "c5eee587.009a88",
     "type": "inject",
-    "name": "Test",
-    "topic": "ns=2;s=0:IGSS Objects/(All)",
+    "z": "c1e582b2.7e3dc",
+    "name": "Test without Topic",
+    "topic": "",
     "payload": "",
-    "payloadType": "string",
+    "payloadType": "date",
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 95,
-    "y": 169,
-    "z": "39bb936b.c6446c",
+    "x": 130,
+    "y": 180,
     "wires": [
       [
-        "da070375.25f9"
+        "5f721d20.c74eb4"
       ]
     ]
   },
   {
-    "id": "22f1b124.dd0e4e",
+    "id": "470a5816.70d2f8",
     "type": "debug",
+    "z": "c1e582b2.7e3dc",
     "name": "Browse",
     "active": true,
     "console": "false",
     "complete": "payload",
-    "x": 446,
-    "y": 169,
-    "z": "39bb936b.c6446c",
+    "x": 760,
+    "y": 180,
     "wires": []
   },
   {
-    "id": "260b14a1.d9f4ec",
-    "type": "OpcUaItem",
+    "id": "486b9c7f.892244",
+    "type": "OpcUa-Item",
+    "z": "c1e582b2.7e3dc",
     "item": "ns=2;s=1:PST-007-Alarm-Level@Training?VALUE",
     "datatype": "double",
     "value": "",
     "name": "",
-    "x": 398,
-    "y": 283,
-    "z": "39bb936b.c6446c",
+    "x": 380,
+    "y": 280,
     "wires": [
       [
-        "645769f6.9ba898"
+        "f0864f8a.10649"
       ]
     ]
   },
   {
-    "id": "645769f6.9ba898",
-    "type": "OpcUaClient",
-    "endpoint": "opc.tcp://trel13096286:12403/IGSS/IGSSOpcUaServer",
+    "id": "f0864f8a.10649",
+    "type": "OpcUa-Client",
+    "z": "c1e582b2.7e3dc",
+    "endpoint": "7290d8b0.f713d8",
     "action": "read",
     "time": 10000,
     "name": "Read",
-    "x": 670,
-    "y": 320,
-    "z": "39bb936b.c6446c",
+    "x": 590,
+    "y": 340,
     "wires": [
       [
-        "f1d9e189.0e262"
+        "6618ad86.b92174"
       ]
     ]
   },
   {
-    "id": "f1d9e189.0e262",
+    "id": "6618ad86.b92174",
     "type": "debug",
+    "z": "c1e582b2.7e3dc",
     "name": "Read",
     "active": true,
     "console": "false",
     "complete": "payload",
-    "x": 790,
-    "y": 320,
-    "z": "39bb936b.c6446c",
+    "x": 750,
+    "y": 340,
     "wires": []
   },
   {
-    "id": "5cd8ccf6.a32734",
+    "id": "b54547b8.f84df8",
     "type": "inject",
+    "z": "c1e582b2.7e3dc",
     "name": "Test read",
     "topic": "",
-    "payload": "browse",
-    "payloadType": "none",
+    "payload": "",
+    "payloadType": "date",
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 107,
-    "y": 259,
-    "z": "39bb936b.c6446c",
+    "x": 160,
+    "y": 340,
     "wires": [
       [
-        "260b14a1.d9f4ec",
-        "6e5c856a.91a37c",
-        "cf097a14.30f688",
-        "16c45bc1.e93ba4"
+        "486b9c7f.892244",
+        "777f4a48.793394",
+        "a4fe7e50.10f4b",
+        "ee44e61a.9ef058"
       ]
     ]
   },
   {
-    "id": "3759f01f.c8a61",
-    "type": "OpcUaItem",
+    "id": "13359d18.d43f23",
+    "type": "OpcUa-Item",
+    "z": "c1e582b2.7e3dc",
     "item": "ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT",
     "datatype": "Double",
     "value": "",
     "name": "",
-    "x": 406,
-    "y": 447,
-    "z": "39bb936b.c6446c",
+    "x": 380,
+    "y": 440,
     "wires": [
       [
-        "fd98da51.026728"
+        "7baea106.60165"
       ]
     ]
   },
   {
-    "id": "fd98da51.026728",
-    "type": "OpcUaClient",
-    "endpoint": "opc.tcp://trel13096286:12403/IGSS/IGSSOpcUaServer",
+    "id": "7baea106.60165",
+    "type": "OpcUa-Client",
+    "z": "c1e582b2.7e3dc",
+    "endpoint": "7290d8b0.f713d8",
     "action": "write",
     "time": 10000,
     "name": "Write",
-    "x": 677,
-    "y": 446,
-    "z": "39bb936b.c6446c",
+    "x": 590,
+    "y": 440,
     "wires": [
       [
-        "96a85190.6957b"
+        "f90e6b13.52bad8"
       ]
     ]
   },
   {
-    "id": "96a85190.6957b",
+    "id": "f90e6b13.52bad8",
     "type": "debug",
+    "z": "c1e582b2.7e3dc",
     "name": "Write",
     "active": true,
     "console": "false",
     "complete": "true",
-    "x": 808,
-    "y": 447,
-    "z": "39bb936b.c6446c",
+    "x": 750,
+    "y": 440,
     "wires": []
   },
   {
-    "id": "f1f4ef37.0e0b1",
-    "type": "OpcUaClient",
-    "endpoint": "opc.tcp://trel13096286:12403/IGSS/IGSSOpcUaServer",
+    "id": "fd381405.f82898",
+    "type": "OpcUa-Client",
+    "z": "c1e582b2.7e3dc",
+    "endpoint": "7290d8b0.f713d8",
     "action": "subscribe",
-    "time": "5000",
+    "time": "5",
+    "timeUnit": "s",
     "name": "Subscribe",
-    "x": 668,
-    "y": 223,
-    "z": "39bb936b.c6446c",
+    "x": 580,
+    "y": 240,
     "wires": [
       [
-        "d84a3b91.27b5c8"
+        "807f2a5b.9740c8"
       ]
     ]
   },
   {
-    "id": "d84a3b91.27b5c8",
+    "id": "807f2a5b.9740c8",
     "type": "debug",
+    "z": "c1e582b2.7e3dc",
     "name": "Subs",
     "active": true,
     "console": "false",
     "complete": "payload",
-    "x": 800,
-    "y": 223,
-    "z": "39bb936b.c6446c",
+    "x": 750,
+    "y": 240,
     "wires": []
   },
   {
-    "id": "6e5c856a.91a37c",
-    "type": "OpcUaItem",
+    "id": "777f4a48.793394",
+    "type": "OpcUa-Item",
+    "z": "c1e582b2.7e3dc",
     "item": "ns=2;s=1:PST-007-Alarm-Level@Training?HIGH_SCALE",
     "datatype": "double",
     "value": "",
     "name": "",
-    "x": 379,
-    "y": 318,
-    "z": "39bb936b.c6446c",
+    "x": 380,
+    "y": 320,
     "wires": [
       [
-        "645769f6.9ba898"
+        "f0864f8a.10649"
       ]
     ]
   },
   {
-    "id": "cf097a14.30f688",
-    "type": "OpcUaItem",
+    "id": "a4fe7e50.10f4b",
+    "type": "OpcUa-Item",
+    "z": "c1e582b2.7e3dc",
     "item": "ns=2;s=1:PST-007-Alarm-Level@Training?LOW_SCALE",
     "datatype": "double",
     "value": "",
     "name": "",
     "x": 380,
-    "y": 352,
-    "z": "39bb936b.c6446c",
+    "y": 360,
     "wires": [
       [
-        "645769f6.9ba898"
+        "f0864f8a.10649"
       ]
     ]
   },
   {
-    "id": "bbd1a16a.442e6",
-    "type": "OpcUaItem",
+    "id": "51b76b2e.a38d14",
+    "type": "OpcUa-Item",
+    "z": "c1e582b2.7e3dc",
     "item": "ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT",
     "datatype": "double",
     "value": "4",
     "name": "",
-    "x": 385,
-    "y": 223,
-    "z": "39bb936b.c6446c",
+    "x": 380,
+    "y": 240,
     "wires": [
       [
-        "f1f4ef37.0e0b1"
+        "fd381405.f82898"
       ]
     ]
   },
   {
-    "id": "16fb4426.e904bc",
+    "id": "633b6abc.947534",
     "type": "inject",
-    "name": "Test subs",
+    "z": "c1e582b2.7e3dc",
+    "name": "Test subs (250ms)",
     "topic": "",
-    "payload": "browse",
-    "payloadType": "none",
+    "payload": "250",
+    "payloadType": "num",
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 100,
-    "y": 223,
-    "z": "39bb936b.c6446c",
+    "x": 130,
+    "y": 240,
     "wires": [
       [
-        "bbd1a16a.442e6"
+        "51b76b2e.a38d14"
       ]
     ]
   },
   {
-    "id": "b586aea4.4a795",
+    "id": "38a57fd8.732b3",
     "type": "inject",
+    "z": "c1e582b2.7e3dc",
     "name": "Test write 2.5",
     "topic": "",
     "payload": " 2.5",
-    "payloadType": "string",
+    "payloadType": "str",
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 105,
-    "y": 423,
-    "z": "39bb936b.c6446c",
+    "x": 150,
+    "y": 420,
     "wires": [
       [
-        "3759f01f.c8a61"
+        "13359d18.d43f23"
       ]
     ]
   },
   {
-    "id": "a9e607b5.5619f8",
+    "id": "32ebb557.602eea",
     "type": "inject",
+    "z": "c1e582b2.7e3dc",
     "name": "Test write 3.5",
     "topic": "",
     "payload": " 3.5",
@@ -285,91 +277,107 @@
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 102,
-    "y": 463,
-    "z": "39bb936b.c6446c",
+    "x": 150,
+    "y": 460,
     "wires": [
       [
-        "3759f01f.c8a61"
+        "13359d18.d43f23"
       ]
     ]
   },
   {
-    "id": "16c45bc1.e93ba4",
-    "type": "OpcUaItem",
+    "id": "ee44e61a.9ef058",
+    "type": "OpcUa-Item",
+    "z": "c1e582b2.7e3dc",
     "item": "ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT",
     "datatype": "double",
     "value": "4",
     "name": "",
-    "x": 386,
-    "y": 386,
-    "z": "39bb936b.c6446c",
+    "x": 380,
+    "y": 400,
     "wires": [
       [
-        "645769f6.9ba898"
+        "f0864f8a.10649"
       ]
     ]
   },
   {
-    "id": "1b2ace46.e4d532",
-    "type": "OpcUaClient",
-    "endpoint": "opc.tcp://trel13096286:12403/IGSS/IGSSOpcUaServer",
+    "id": "f4dc2e15.d4872",
+    "type": "OpcUa-Client",
+    "z": "c1e582b2.7e3dc",
+    "endpoint": "7290d8b0.f713d8",
     "action": "browse",
     "time": 10000,
     "name": "Browse",
-    "x": 250,
-    "y": 94,
-    "z": "39bb936b.c6446c",
+    "x": 580,
+    "y": 120,
     "wires": [
       [
-        "5e038a81.a1fc74"
+        "8a361383.b5992"
       ]
     ]
   },
   {
-    "id": "6cd93d98.9326c4",
+    "id": "17f810e6.2ef63f",
     "type": "inject",
-    "name": "Test",
+    "z": "c1e582b2.7e3dc",
+    "name": "Test with Topic",
     "topic": "ns=2;s=0:IGSS Objects/Area/Cases/Diagram/Boiler@Cases/Template",
     "payload": "",
-    "payloadType": "string",
+    "payloadType": "str",
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 96,
-    "y": 92,
-    "z": "39bb936b.c6446c",
+    "x": 140,
+    "y": 120,
     "wires": [
       [
-        "1b2ace46.e4d532"
+        "f4dc2e15.d4872"
       ]
     ]
   },
   {
-    "id": "22b737b4.dd48c8",
+    "id": "2dd2de5a.91ff52",
     "type": "debug",
+    "z": "c1e582b2.7e3dc",
     "name": "Browse",
     "active": true,
     "console": "false",
     "complete": "payload",
-    "x": 600,
-    "y": 95,
-    "z": "39bb936b.c6446c",
+    "x": 940,
+    "y": 120,
     "wires": []
   },
   {
-    "id": "5e038a81.a1fc74",
+    "id": "8a361383.b5992",
     "type": "template",
-    "name": "OpcUaItem",
+    "z": "c1e582b2.7e3dc",
+    "name": "OpcUa-Item",
     "field": "payload",
     "format": "handlebars",
-    "template": "[{\"id\":\"4b12ca9b.e7e184\",\"type\":\"OpcUaItem\",\"item\":\"{{topic}}\",\"datatype\":\"opcua.DataType.Double\",\"value\":\"\",\"name\":\"{{browseName}}\",\"x\":251,\"y\":334,\"z\":\"30ffd2ee.59fdd6\",\"wires\":[[\"70dd1397.3c8e44\"]]}]",
-    "x": 411,
-    "y": 93,
-    "z": "39bb936b.c6446c",
+    "template": "[{\"id\":\"4b12ca9b.e7e184\",\"type\":\"OpcUa-Item\",\"item\":\"{{topic}}\",\"datatype\":\"opcua.DataType.Double\",\"value\":\"\",\"name\":\"{{browseName}}\",\"x\":251,\"y\":334,\"z\":\"30ffd2ee.59fdd6\",\"wires\":[[\"70dd1397.3c8e44\"]]}]",
+    "x": 770,
+    "y": 120,
     "wires": [
       [
-        "22b737b4.dd48c8"
+        "2dd2de5a.91ff52"
+      ]
+    ]
+  },
+  {
+    "id": "5f721d20.c74eb4",
+    "type": "OpcUa-Browser",
+    "z": "c1e582b2.7e3dc",
+    "endpoint": "",
+    "item": "",
+    "datatype": "",
+    "topic": "ns=2;s=0:IGSS Objects/(All)",
+    "items": [],
+    "x": 550,
+    "y": 180,
+    "wires": [
+      [
+        "470a5816.70d2f8"
       ]
     ]
   }

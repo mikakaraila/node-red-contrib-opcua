@@ -60,18 +60,18 @@
     ]
   },
   {
-    "id": "921fdf3e.682e7",
+    "id": "471ae056.ea012",
     "type": "inject",
-    "name": "Test",
+    "z": "ea2cd3ac.c1e01",
+    "name": "Test (500ms)",
     "topic": "",
-    "payload": "",
-    "payloadType": "none",
+    "payload": "500",
+    "payloadType": "num",
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 104,
+    "x": 124,
     "y": 38.888916015625,
-    "z": "ea2cd3ac.c1e01",
     "wires": [
       [
         "db59244f.d54628"
