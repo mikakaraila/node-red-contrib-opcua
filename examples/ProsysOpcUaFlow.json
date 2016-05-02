@@ -1,0 +1,624 @@
+[
+  {
+    "id": "66dabf03.46121",
+    "type": "OpcUa-Endpoint",
+    "z": "5ec1e150.40273",
+    "endpoint": "opc.tcp://localhost:53530/OPCUA/SimulationServer",
+    "login": false
+  },
+  {
+    "id": "e643c78e.1fe608",
+    "type": "file",
+    "z": "5ec1e150.40273",
+    "name": "Address.txt",
+    "filename": "./public/users/opc-ua/Address.txt",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "x": 850,
+    "y": 60,
+    "wires": []
+  },
+  {
+    "id": "75ff66ac.f39498",
+    "type": "comment",
+    "z": "5ec1e150.40273",
+    "name": "PROSYS OPC-UA",
+    "info": "using the PROSYS OPC-UA Simulation Server",
+    "x": 130,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "fd7bd63d.2f3178",
+    "type": "OpcUa-Item",
+    "z": "5ec1e150.40273",
+    "item": "ns=5;s=Random1",
+    "datatype": "Integer",
+    "value": "",
+    "name": "Random1",
+    "x": 380,
+    "y": 300,
+    "wires": [
+      [
+        "a6eb9ec.c21db6"
+      ]
+    ]
+  },
+  {
+    "id": "2dd2dd3c.5d9b72",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Read",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 110,
+    "y": 300,
+    "wires": [
+      [
+        "fd7bd63d.2f3178"
+      ]
+    ]
+  },
+  {
+    "id": "8b2daf0a.2ac5b",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "Read value Payload",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 880,
+    "y": 340,
+    "wires": []
+  },
+  {
+    "id": "7b069e3f.171f5",
+    "type": "OpcUa-Item",
+    "z": "5ec1e150.40273",
+    "item": "ns=4;s=DateTime",
+    "datatype": "String",
+    "value": "",
+    "name": "DateTime",
+    "x": 380,
+    "y": 380,
+    "wires": [
+      [
+        "a6eb9ec.c21db6",
+        "b289b3e3.c303"
+      ]
+    ]
+  },
+  {
+    "id": "a6eb9ec.c21db6",
+    "type": "OpcUa-Client",
+    "z": "5ec1e150.40273",
+    "endpoint": "66dabf03.46121",
+    "action": "read",
+    "time": "",
+    "name": "Test server (read items)",
+    "x": 610,
+    "y": 340,
+    "wires": [
+      [
+        "8b2daf0a.2ac5b",
+        "ef2f258a.509a58"
+      ]
+    ]
+  },
+  {
+    "id": "c4e6019e.66af7",
+    "type": "OpcUa-Item",
+    "z": "5ec1e150.40273",
+    "item": "i=2258",
+    "datatype": "String",
+    "value": "",
+    "name": "Server CurrentTime",
+    "x": 410,
+    "y": 420,
+    "wires": [
+      [
+        "b289b3e3.c303"
+      ]
+    ]
+  },
+  {
+    "id": "4ec38626.22afb8",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Subscribe ( Interval 1 sec.)",
+    "topic": "",
+    "payload": "1000",
+    "payloadType": "num",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 170,
+    "y": 420,
+    "wires": [
+      [
+        "c4e6019e.66af7",
+        "c2e67110.f1efa"
+      ]
+    ]
+  },
+  {
+    "id": "de7b113d.00879",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Browse",
+    "topic": "ns=2;s=MyDevice",
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 110,
+    "y": 60,
+    "wires": [
+      [
+        "fb399d4f.61dc4",
+        "19dfffe3.6c26c"
+      ]
+    ]
+  },
+  {
+    "id": "7cb5d30d.2e00ec",
+    "type": "file",
+    "z": "5ec1e150.40273",
+    "name": "Address.txt",
+    "filename": "./public/users/opc-ua/Address.txt",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "x": 850,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "28d77e5.8101482",
+    "type": "function",
+    "z": "5ec1e150.40273",
+    "name": "Items",
+    "func": "msg.payload=msg.browseName+\"|\"+msg.topic;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 530,
+    "y": 120,
+    "wires": [
+      [
+        "7cb5d30d.2e00ec",
+        "b10ffb29.47ab88"
+      ]
+    ]
+  },
+  {
+    "id": "fb399d4f.61dc4",
+    "type": "trigger",
+    "z": "5ec1e150.40273",
+    "op1": "object|address",
+    "op2": "0",
+    "op1type": "val",
+    "op2type": "",
+    "duration": "0",
+    "extend": "false",
+    "units": "ms",
+    "name": "Clear file",
+    "x": 480,
+    "y": 60,
+    "wires": [
+      [
+        "e643c78e.1fe608"
+      ]
+    ]
+  },
+  {
+    "id": "19dfffe3.6c26c",
+    "type": "OpcUa-Client",
+    "z": "5ec1e150.40273",
+    "endpoint": "66dabf03.46121",
+    "action": "browse",
+    "time": "",
+    "name": "Test server (browse)",
+    "x": 320,
+    "y": 160,
+    "wires": [
+      [
+        "28d77e5.8101482",
+        "bd51e6e9.102cf8"
+      ]
+    ]
+  },
+  {
+    "id": "ca827ee0.3633a",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "Subscribed values",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 870,
+    "y": 420,
+    "wires": []
+  },
+  {
+    "id": "b10ffb29.47ab88",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "Address items",
+    "active": true,
+    "console": "false",
+    "complete": "false",
+    "x": 860,
+    "y": 140,
+    "wires": []
+  },
+  {
+    "id": "77256a3c.71f1d4",
+    "type": "comment",
+    "z": "5ec1e150.40273",
+    "name": "v9.1.0",
+    "info": "Browse node allows user to select item:\n- runtime browse\n- select RootFolder -> SubFolder\n- select Item\n\nActions:\nread\nwrite\nbrowse\nsubscribe\n\nNodes:\nclient node for actions\nitem node for defining item\n",
+    "x": 90,
+    "y": 200,
+    "wires": []
+  },
+  {
+    "id": "2ec2bede.18aba2",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Browse Alarm",
+    "topic": "ns=2;s=MyLevel.Alarm",
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 130,
+    "y": 520,
+    "wires": [
+      [
+        "60103cf1.60b664"
+      ]
+    ]
+  },
+  {
+    "id": "bd51e6e9.102cf8",
+    "type": "template",
+    "z": "5ec1e150.40273",
+    "name": "OpcUa-Item",
+    "field": "payload",
+    "fieldType": "msg",
+    "syntax": "mustache",
+    "template": "[\n  {\n    \"id\": \"4b12ca9b.e7e184\",\n    \"type\": \"OpcUa-Item\",\n    \"item\": \"{{topic}}\",\n    \"datatype\": \"opcua.DataType.Double\",\n    \"value\": \"66.6\",\n    \"name\": \"{{browseName}}\",\n    \"x\": 251,\n    \"y\": 334,\n    \"z\": \"30ffd2ee.59fdd6\",\n    \"wires\": [\n      [\n        \"70dd1397.3c8e44\"\n      ]\n    ]\n  }\n]",
+    "x": 550,
+    "y": 180,
+    "wires": [
+      [
+        "251746cc.116c3a",
+        "d7e87799.e5bba8"
+      ]
+    ]
+  },
+  {
+    "id": "251746cc.116c3a",
+    "type": "function",
+    "z": "5ec1e150.40273",
+    "name": "Save to lib",
+    "func": "msg.filename=\"./public/users/opc-ua/templates/\"+msg.browseName+\".js\";\nmsg.payload=\"// name: \"+msg.browseName+\"\\n\"+\"// field: payload\\n\"+msg.payload;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 650,
+    "y": 260,
+    "wires": [
+      [
+        "d5eda8e6.d58238",
+        "3826e0f3.91b6d"
+      ]
+    ]
+  },
+  {
+    "id": "d5eda8e6.d58238",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "Pre-configured library items",
+    "active": false,
+    "console": "false",
+    "complete": "true",
+    "x": 900,
+    "y": 280,
+    "wires": []
+  },
+  {
+    "id": "3826e0f3.91b6d",
+    "type": "file",
+    "z": "5ec1e150.40273",
+    "name": "OPC UA Items",
+    "filename": "",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "x": 860,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "d7e87799.e5bba8",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "",
+    "active": true,
+    "console": "false",
+    "complete": "false",
+    "x": 850,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "1caef89f.2ed4e7",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Read",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 110,
+    "y": 340,
+    "wires": [
+      [
+        "27c2bd79.578a32"
+      ]
+    ]
+  },
+  {
+    "id": "27c2bd79.578a32",
+    "type": "OpcUa-Item",
+    "z": "5ec1e150.40273",
+    "item": "ns=5;s=Counter1",
+    "datatype": "Double",
+    "value": "",
+    "name": "Counter1",
+    "x": 380,
+    "y": 340,
+    "wires": [
+      [
+        "a6eb9ec.c21db6"
+      ]
+    ]
+  },
+  {
+    "id": "60103cf1.60b664",
+    "type": "OpcUa-Client",
+    "z": "5ec1e150.40273",
+    "endpoint": "66dabf03.46121",
+    "action": "browse",
+    "time": "10000",
+    "name": "",
+    "x": 400,
+    "y": 520,
+    "wires": [
+      [
+        "7ceef407.eafb3c",
+        "926dc4c4.041508"
+      ]
+    ]
+  },
+  {
+    "id": "7ceef407.eafb3c",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "Browsed JSON",
+    "active": true,
+    "console": "false",
+    "complete": "true",
+    "x": 860,
+    "y": 520,
+    "wires": []
+  },
+  {
+    "id": "926dc4c4.041508",
+    "type": "function",
+    "z": "5ec1e150.40273",
+    "name": "Read Info",
+    "func": "msg.payload=msg.browseName+\" - \"+msg.topic;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 660,
+    "y": 560,
+    "wires": [
+      [
+        "1af9b387.3278dc"
+      ]
+    ]
+  },
+  {
+    "id": "1af9b387.3278dc",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "browseName",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 850,
+    "y": 560,
+    "wires": []
+  },
+  {
+    "id": "b289b3e3.c303",
+    "type": "OpcUa-Client",
+    "z": "5ec1e150.40273",
+    "endpoint": "66dabf03.46121",
+    "action": "subscribe",
+    "time": "4",
+    "timeUnit": "s",
+    "name": "",
+    "x": 640,
+    "y": 420,
+    "wires": [
+      [
+        "ca827ee0.3633a",
+        "ef2f258a.509a58"
+      ]
+    ]
+  },
+  {
+    "id": "f6f54112.c9ed4",
+    "type": "catch",
+    "z": "5ec1e150.40273",
+    "name": "",
+    "scope": null,
+    "x": 140,
+    "y": 700,
+    "wires": [
+      [
+        "3b51ffbd.c887f"
+      ]
+    ]
+  },
+  {
+    "id": "3b51ffbd.c887f",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "",
+    "active": true,
+    "console": "false",
+    "complete": "false",
+    "x": 390,
+    "y": 700,
+    "wires": []
+  },
+  {
+    "id": "6868efd9.25a6c",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Read & Subscribe",
+    "topic": "",
+    "payload": "500",
+    "payloadType": "num",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 150,
+    "y": 380,
+    "wires": [
+      [
+        "7b069e3f.171f5"
+      ]
+    ]
+  },
+  {
+    "id": "e7585aa3.d5d658",
+    "type": "OpcUa-Event",
+    "z": "5ec1e150.40273",
+    "root": "ns=2;s=MyLevel.Alarm",
+    "eventtype": "i=2041",
+    "name": "All events from server",
+    "x": 420,
+    "y": 620,
+    "wires": [
+      [
+        "6b885842.c7dfb8"
+      ]
+    ]
+  },
+  {
+    "id": "983dcde4.57503",
+    "type": "inject",
+    "z": "5ec1e150.40273",
+    "name": "Subscribe Events (250ms)",
+    "topic": "",
+    "payload": "250",
+    "payloadType": "num",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 170,
+    "y": 620,
+    "wires": [
+      [
+        "e7585aa3.d5d658"
+      ]
+    ]
+  },
+  {
+    "id": "ff34939.6bc5c7",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "",
+    "active": true,
+    "console": "false",
+    "complete": "false",
+    "x": 930,
+    "y": 620,
+    "wires": []
+  },
+  {
+    "id": "6b885842.c7dfb8",
+    "type": "OpcUa-Client",
+    "z": "5ec1e150.40273",
+    "endpoint": "66dabf03.46121",
+    "action": "events",
+    "time": "10",
+    "timeUnit": "s",
+    "name": "Alarms & Events",
+    "x": 640,
+    "y": 620,
+    "wires": [
+      [
+        "ff34939.6bc5c7",
+        "dc6df03d.b2e26"
+      ]
+    ]
+  },
+  {
+    "id": "dc6df03d.b2e26",
+    "type": "function",
+    "z": "5ec1e150.40273",
+    "name": "Format",
+    "func": "var newmsg={};\nnewmsg.topic=\"\";\nnewmsg.payload=\"\";\n\nif (msg.EventId) {\n    //newmsg.payload=\"EVENTID\";\n\t//newmsg.payload=msg.EventId.toString('utf8');;\n}\nif (msg.EventType) {\n    //newmsg.topic=newmsg.topic+\"EventType\";\n    //newmsg.payload=\"EVENTTYPE\";\n\t//newmsg.payload=newmsg.payload+\"|\"+msg.EventType;\n}\nif (msg.SourceNode) {\n    //newmsg.topic=newmsg.topic+\"SourceNode\";\n\t//newmsg.payload=msg.payload+\"|\"+msg.SourceNode;\n}\nif (msg.SourceName) {\n    // Do not show internal alarm state changes e.q. rising events\n    //if (msg.SourceName==\"Internal\") return; \n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SourceName;\n}\nif (msg.Time) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Time\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Time;\n}\nif (msg.ReceiveTime) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ReceiveTime\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ReceiveTime;\n}\nif (msg.Message) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Message\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Message;\n}\nif (msg.Severity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Severity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Severity;\n}\n\n// ConditionType\nif (msg.ConditionClassId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassId;\n}\nif (msg.ConditionClassName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassNameName;\n}\nif (msg.ConditionName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionName;\n}\nif (msg.BranchId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"BranchId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.BranchId;\n}\nif (msg.Retain) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Retain\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Retain;\n}\nif (msg.EnabledState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"EnabledState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.EnabledState;\n}\nif (msg.Quality) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Quality\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Quality;\n}\nif (msg.LastSeverity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LastSeverity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LastSeverity;\n}\nif (msg.Comment) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Comment\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Comment;\n}\nif (msg.ClientUserId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ClientUserId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ClientUserId;\n}\n\n// AcknowledgeConditionType\nif (msg.AckedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"AckedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.AckedState;\n}\nif (msg.ConfirmedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConfirmedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConfirmedState;\n}\n\n// AlarmConditionType\nif (msg.ActiveState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ActiveState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ActiveState;\n}\nif (msg.InputNode) {\n    newmsg.topic=newmsg.topic+\"|\"+\"InputNode\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.InputNode;\n}\nif (msg.SupressedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"SupressedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SupressedState;\n}\n\n// Limits\nif (msg.HighHighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighHighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighHighLimit;\n}\nif (msg.HighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighLimit;\n}\nif (msg.LowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLimit;\n}\nif (msg.LowLowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLowLimit;\n}\nif (msg.Value) {\n        newmsg.topic=newmsg.topic+\"|\"+\"Value\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Value;\n}\n\nreturn newmsg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 800,
+    "y": 680,
+    "wires": [
+      [
+        "ff34939.6bc5c7"
+      ]
+    ]
+  },
+  {
+    "id": "ef2f258a.509a58",
+    "type": "debug",
+    "z": "5ec1e150.40273",
+    "name": "Complete Message",
+    "active": false,
+    "console": "false",
+    "complete": "true",
+    "x": 870,
+    "y": 380,
+    "wires": []
+  },
+  {
+    "id": "c2e67110.f1efa",
+    "type": "OpcUa-Item",
+    "z": "5ec1e150.40273",
+    "item": "ns=2;s=MyLevel",
+    "datatype": "Double",
+    "value": "",
+    "name": "MyDevice - MyLevel",
+    "x": 420,
+    "y": 460,
+    "wires": [
+      [
+        "b289b3e3.c303"
+      ]
+    ]
+  }
+]

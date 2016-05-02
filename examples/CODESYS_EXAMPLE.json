@@ -1,0 +1,98 @@
+[
+  {
+    "id": "90eca945.1ad888",
+    "type": "comment",
+    "z": "2c6fbea3.d39042",
+    "name": "CODESYS PI OPC-UA",
+    "info": "using the CODESYS OPC-UA Project on Raspberry PI",
+    "x": 946,
+    "y": 109,
+    "wires": []
+  },
+  {
+    "id": "5c0aa8bd.bb60d8",
+    "type": "comment",
+    "z": "2c6fbea3.d39042",
+    "name": "v1.0.0",
+    "info": "Browse to find out the names from \nthe CODESYS PI OPC UA Model",
+    "x": 901,
+    "y": 71,
+    "wires": []
+  },
+  {
+    "id": "5e847ca.9ec4f84",
+    "type": "inject",
+    "z": "2c6fbea3.d39042",
+    "name": "Read DeviceSet on PI Model",
+    "topic": "ns=2;i=5001",
+    "payload": "",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 173,
+    "y": 82,
+    "wires": [
+      [
+        "edd12196.77d17"
+      ]
+    ]
+  },
+  {
+    "id": "edd12196.77d17",
+    "type": "OpcUa-Client",
+    "z": "2c6fbea3.d39042",
+    "endpoint": "opc.tcp://pinode.local:4840",
+    "action": "browse",
+    "time": "",
+    "name": "Browse CODESYS PI OPC UA Server",
+    "x": 349,
+    "y": 185,
+    "wires": [
+      [
+        "ecd69f22.5e6a6",
+        "12bce249.b57b2e"
+      ]
+    ]
+  },
+  {
+    "id": "ecd69f22.5e6a6",
+    "type": "debug",
+    "z": "2c6fbea3.d39042",
+    "name": "Browsed JSON",
+    "active": true,
+    "console": "false",
+    "complete": "true",
+    "x": 691,
+    "y": 120,
+    "wires": []
+  },
+  {
+    "id": "12bce249.b57b2e",
+    "type": "function",
+    "z": "2c6fbea3.d39042",
+    "name": "read browseName and topic",
+    "func": "msg.payload=msg.browseName+\" - \"+msg.topic;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 718,
+    "y": 210,
+    "wires": [
+      [
+        "b394601f.98b12"
+      ]
+    ]
+  },
+  {
+    "id": "b394601f.98b12",
+    "type": "debug",
+    "z": "2c6fbea3.d39042",
+    "name": "browseName",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 987,
+    "y": 210,
+    "wires": []
+  }
+]

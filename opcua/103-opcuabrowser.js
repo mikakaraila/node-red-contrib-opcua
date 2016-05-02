@@ -92,6 +92,7 @@ module.exports = function (RED) {
                     var msg = {payload: node.items, endpoint: opcuaEndpoint.endpoint};
                     node.send(msg);
 
+                    node.warn("close browse session");
                     browseSession.close(function (err) {
                         if (err) {
                             node.error("session closed failed on browse");

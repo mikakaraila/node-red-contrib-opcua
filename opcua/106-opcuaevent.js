@@ -13,74 +13,41 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
- 
+
  **/
 
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
+    var opcuaBasic = require('./opcua-basics');
 
     function OpcUaEventNode(n) {
+
         RED.nodes.createNode(this, n);
+
         this.root = n.root;         	// OPC UA item nodeID
         this.eventtype = n.eventtype; 	// eventType
         this.name = n.name;			    // Node name
-		
+
         var node = this;
-		
+
         node.on("input", function (msg) {
-			//	var baseEventTypeId = "i=2041"; // BaseEventType;
-			//	var serverObjectId = "i=2253";  // Server object id
-			
-			// All event field, perhaps selectable in UI
-			var fields = [
-				"EventId",
-				"EventType",
-				"SourceNode",
-				"SourceName",
-				"Time",
-				"ReceiveTime",
-				"Message",
-				"Severity",
 
-				// ConditionType
-				"ConditionClassId",
-				"ConditionClassName",
-				"ConditionName",
-				"BranchId",
-				"Retain",
-				"EnabledState",
-				"Quality",
-				"LastSeverity",
-				"Comment",
-				"ClientUserId",
+            // var baseEventTypeId = "i=2041";
+            // var serverObjectId = "i=2253";
+            // All event field, perhaps selectable in UI
 
-				// AcknowledgeConditionType
-				"AckedState",
-				"ConfirmedState",
+            var basicEventFields = opcuaBasic.getBasicEventFields();
+            var eventFilter = opcua.constructEventFilter(basicEventFields);
 
-				// AlarmConditionType
-				"ActiveState",
-				"InputNode",
-				"SuppressedState",
+            msg.topic = node.root; // example: ns=0;i=85;
+            msg.eventFilter = eventFilter;
+            msg.eventFields = basicEventFields;
+            msg.eventTypeIds = node.eventtype; // example: ns=0;i=10751;
 
-				"HighLimit",
-				"LowLimit",
-				"HighHighLimit",
-				"LowLowLimit",
-
-				"Value",
-			];
-			
-			var eventFilter = opcua.constructEventFilter(fields);
-			
-			msg.topic=node.root; // "ns=0;i=85";
-			msg.eventFilter = eventFilter;
-			msg.eventFields = fields; // All fields
-			msg.eventTypeIds = node.eventtype; // "ns=0;i=10751";
-			
             node.send(msg);
         });
     }
+
     RED.nodes.registerType("OpcUa-Event", OpcUaEventNode);
 };

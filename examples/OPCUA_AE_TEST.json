@@ -1,1 +1,200 @@
-[{"type":"tab","id":"ea2cd3ac.c1e01","label":"OPC Foundation A&E"},{"type":"tab","id":"970b1295.07642","label":"Node & event type selected"},{"id":"ec543e54.782ad","type":"OpcUa-Endpoint","endpoint":"opc.tcp://localhost:62544/Quickstarts/AlarmConditionServer","login":false},{"id":"3ec80ecf.a0d7a2","type":"OpcUa-Client","endpoint":"ec543e54.782ad","action":"events","time":"1000","name":"Alarms & Events","x":382.9999542236328,"y":157.88888549804688,"z":"ea2cd3ac.c1e01","wires":[["805b026b.11cbd","fcd46383.8f35f"]]},{"id":"805b026b.11cbd","type":"debug","name":"","active":false,"console":"false","complete":"true","x":558.9999847412109,"y":157.88888549804688,"z":"ea2cd3ac.c1e01","wires":[]},{"id":"db59244f.d54628","type":"OpcUa-Event","root":"i=2253","eventtype":"i=2041","name":"All events from server","x":222.99998474121094,"y":102.88888549804688,"z":"ea2cd3ac.c1e01","wires":[["3ec80ecf.a0d7a2"]]},{"id":"921fdf3e.682e7","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":104,"y":38.888916015625,"z":"ea2cd3ac.c1e01","wires":[["db59244f.d54628"]]},{"id":"fcd46383.8f35f","type":"function","name":"Format","func":"var newmsg={};\nnewmsg.topic=\"\";\nnewmsg.payload=\"\";\n\nif (msg.EventId) {\n    //newmsg.payload=\"EVENTID\";\n\t//newmsg.payload=msg.EventId.toString('utf8');;\n}\nif (msg.EventType) {\n    //newmsg.topic=newmsg.topic+\"EventType\";\n    //newmsg.payload=\"EVENTTYPE\";\n\t//newmsg.payload=newmsg.payload+\"|\"+msg.EventType;\n}\nif (msg.SourceNode) {\n    //newmsg.topic=newmsg.topic+\"SourceNode\";\n\t//newmsg.payload=msg.payload+\"|\"+msg.SourceNode;\n}\nif (msg.SourceName) {\n    // Do not show internal alarm state changes e.q. rising events\n    //if (msg.SourceName==\"Internal\") return; \n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SourceName;\n}\nif (msg.Time) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Time\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Time;\n}\nif (msg.ReceiveTime) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ReceiveTime\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ReceiveTime;\n}\nif (msg.Message) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Message\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Message;\n}\nif (msg.Severity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Severity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Severity;\n}\n\n// ConditionType\nif (msg.ConditionClassId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassId;\n}\nif (msg.ConditionClassName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassNameName;\n}\nif (msg.ConditionName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionName;\n}\nif (msg.BranchId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"BranchId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.BranchId;\n}\nif (msg.Retain) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Retain\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Retain;\n}\nif (msg.EnabledState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"EnabledState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.EnabledState;\n}\nif (msg.Quality) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Quality\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Quality;\n}\nif (msg.LastSeverity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LastSeverity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LastSeverity;\n}\nif (msg.Comment) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Comment\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Comment;\n}\nif (msg.ClientUserId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ClientUserId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ClientUserId;\n}\n\n// AcknowledgeConditionType\nif (msg.AckedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"AckedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.AckedState;\n}\nif (msg.ConfirmedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConfirmedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConfirmedState;\n}\n\n// AlarmConditionType\nif (msg.ActiveState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ActiveState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ActiveState;\n}\nif (msg.InputNode) {\n    newmsg.topic=newmsg.topic+\"|\"+\"InputNode\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.InputNode;\n}\nif (msg.SupressedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"SupressedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SupressedState;\n}\n\n// Limits\nif (msg.HighHighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighHighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighHighLimit;\n}\nif (msg.HighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighLimit;\n}\nif (msg.LowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLimit;\n}\nif (msg.LowLowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLowLimit;\n}\nif (msg.Value) {\n        newmsg.topic=newmsg.topic+\"|\"+\"Value\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Value;\n}\n\nreturn newmsg;","outputs":1,"noerr":0,"x":418.5624694824219,"y":222.88888549804688,"z":"ea2cd3ac.c1e01","wires":[["e66ada33.0e1038"]]},{"id":"e66ada33.0e1038","type":"debug","name":"","active":true,"console":"false","complete":"payload","x":576.5624847412109,"y":220.88888549804688,"z":"ea2cd3ac.c1e01","wires":[]},{"id":"290b1d93.cb8c72","type":"OpcUa-Client","endpoint":"ec543e54.782ad","action":"events","time":"1000","name":"Alarms & Events","x":414.99993896484375,"y":156.99996948242188,"z":"970b1295.07642","wires":[["d9c723ff.df3f5","351f7369.eee4ac"]]},{"id":"d9c723ff.df3f5","type":"debug","name":"","active":false,"console":"false","complete":"true","x":590.9999694824219,"y":156.99996948242188,"z":"970b1295.07642","wires":[]},{"id":"fd5ebd64.8c97a","type":"OpcUa-Event","root":"ns=2;s=0:East/Blue","eventtype":"i=2782","name":"East/Blue Condition events","x":254.99996948242188,"y":101.99996948242188,"z":"970b1295.07642","wires":[["290b1d93.cb8c72"]]},{"id":"22cc3061.b6b31","type":"inject","name":"Test","topic":"","payload":"","payloadType":"none","repeat":"","crontab":"","once":false,"x":135.99998474121094,"y":38,"z":"970b1295.07642","wires":[["fd5ebd64.8c97a"]]},{"id":"351f7369.eee4ac","type":"function","name":"Format","func":"var newmsg={};\nnewmsg.topic=\"\";\nnewmsg.payload=\"\";\n\nif (msg.EventId) {\n    //newmsg.payload=\"EVENTID\";\n\t//newmsg.payload=msg.EventId.toString('utf8');;\n}\nif (msg.EventType) {\n    //newmsg.topic=newmsg.topic+\"EventType\";\n    //newmsg.payload=\"EVENTTYPE\";\n\t//newmsg.payload=newmsg.payload+\"|\"+msg.EventType;\n}\nif (msg.SourceNode) {\n    //newmsg.topic=newmsg.topic+\"SourceNode\";\n\t//newmsg.payload=msg.payload+\"|\"+msg.SourceNode;\n}\nif (msg.SourceName) {\n    // Do not show internal alarm state changes e.q. rising events\n    //if (msg.SourceName==\"Internal\") return; \n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SourceName;\n}\nif (msg.Time) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Time\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Time;\n}\nif (msg.ReceiveTime) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ReceiveTime\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ReceiveTime;\n}\nif (msg.Message) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Message\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Message;\n}\nif (msg.Severity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Severity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Severity;\n}\n\n// ConditionType\nif (msg.ConditionClassId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassId;\n}\nif (msg.ConditionClassName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassNameName;\n}\nif (msg.ConditionName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionName;\n}\nif (msg.BranchId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"BranchId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.BranchId;\n}\nif (msg.Retain) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Retain\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Retain;\n}\nif (msg.EnabledState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"EnabledState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.EnabledState;\n}\nif (msg.Quality) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Quality\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Quality;\n}\nif (msg.LastSeverity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LastSeverity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LastSeverity;\n}\nif (msg.Comment) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Comment\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Comment;\n}\nif (msg.ClientUserId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ClientUserId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ClientUserId;\n}\n\n// AcknowledgeConditionType\nif (msg.AckedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"AckedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.AckedState;\n}\nif (msg.ConfirmedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConfirmedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConfirmedState;\n}\n\n// AlarmConditionType\nif (msg.ActiveState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ActiveState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ActiveState;\n}\nif (msg.InputNode) {\n    newmsg.topic=newmsg.topic+\"|\"+\"InputNode\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.InputNode;\n}\nif (msg.SupressedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"SupressedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SupressedState;\n}\n\n// Limits\nif (msg.HighHighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighHighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighHighLimit;\n}\nif (msg.HighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighLimit;\n}\nif (msg.LowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLimit;\n}\nif (msg.LowLowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLowLimit;\n}\nif (msg.Value) {\n        newmsg.topic=newmsg.topic+\"|\"+\"Value\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Value;\n}\n\nreturn newmsg;","outputs":1,"noerr":0,"x":450.5624542236328,"y":221.99996948242188,"z":"970b1295.07642","wires":[["64c15769.b5a378"]]},{"id":"64c15769.b5a378","type":"debug","name":"","active":true,"console":"false","complete":"payload","x":608.5624694824219,"y":219.99996948242188,"z":"970b1295.07642","wires":[]}]
+[
+  {
+    "type": "tab",
+    "id": "ea2cd3ac.c1e01",
+    "label": "OPC Foundation A&E"
+  },
+  {
+    "type": "tab",
+    "id": "970b1295.07642",
+    "label": "Node & event type selected"
+  },
+  {
+    "id": "ec543e54.782ad",
+    "type": "OpcUa-Endpoint",
+    "endpoint": "opc.tcp://localhost:62544/Quickstarts/AlarmConditionServer",
+    "login": false
+  },
+  {
+    "id": "3ec80ecf.a0d7a2",
+    "type": "OpcUa-Client",
+    "endpoint": "ec543e54.782ad",
+    "action": "events",
+    "time": "1000",
+    "name": "Alarms & Events",
+    "x": 382.9999542236328,
+    "y": 157.88888549804688,
+    "z": "ea2cd3ac.c1e01",
+    "wires": [
+      [
+        "805b026b.11cbd",
+        "fcd46383.8f35f"
+      ]
+    ]
+  },
+  {
+    "id": "805b026b.11cbd",
+    "type": "debug",
+    "name": "",
+    "active": false,
+    "console": "false",
+    "complete": "true",
+    "x": 558.9999847412109,
+    "y": 157.88888549804688,
+    "z": "ea2cd3ac.c1e01",
+    "wires": []
+  },
+  {
+    "id": "db59244f.d54628",
+    "type": "OpcUa-Event",
+    "root": "i=2253",
+    "eventtype": "i=2041",
+    "name": "All events from server",
+    "x": 222.99998474121094,
+    "y": 102.88888549804688,
+    "z": "ea2cd3ac.c1e01",
+    "wires": [
+      [
+        "3ec80ecf.a0d7a2"
+      ]
+    ]
+  },
+  {
+    "id": "471ae056.ea012",
+    "type": "inject",
+    "z": "ea2cd3ac.c1e01",
+    "name": "Test (500ms)",
+    "topic": "",
+    "payload": "500",
+    "payloadType": "num",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 124,
+    "y": 38.888916015625,
+    "wires": [
+      [
+        "db59244f.d54628"
+      ]
+    ]
+  },
+  {
+    "id": "fcd46383.8f35f",
+    "type": "function",
+    "name": "Format",
+    "func": "var newmsg={};\nnewmsg.topic=\"\";\nnewmsg.payload=\"\";\n\nif (msg.EventId) {\n    //newmsg.payload=\"EVENTID\";\n\t//newmsg.payload=msg.EventId.toString('utf8');;\n}\nif (msg.EventType) {\n    //newmsg.topic=newmsg.topic+\"EventType\";\n    //newmsg.payload=\"EVENTTYPE\";\n\t//newmsg.payload=newmsg.payload+\"|\"+msg.EventType;\n}\nif (msg.SourceNode) {\n    //newmsg.topic=newmsg.topic+\"SourceNode\";\n\t//newmsg.payload=msg.payload+\"|\"+msg.SourceNode;\n}\nif (msg.SourceName) {\n    // Do not show internal alarm state changes e.q. rising events\n    //if (msg.SourceName==\"Internal\") return; \n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SourceName;\n}\nif (msg.Time) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Time\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Time;\n}\nif (msg.ReceiveTime) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ReceiveTime\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ReceiveTime;\n}\nif (msg.Message) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Message\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Message;\n}\nif (msg.Severity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Severity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Severity;\n}\n\n// ConditionType\nif (msg.ConditionClassId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassId;\n}\nif (msg.ConditionClassName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassNameName;\n}\nif (msg.ConditionName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionName;\n}\nif (msg.BranchId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"BranchId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.BranchId;\n}\nif (msg.Retain) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Retain\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Retain;\n}\nif (msg.EnabledState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"EnabledState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.EnabledState;\n}\nif (msg.Quality) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Quality\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Quality;\n}\nif (msg.LastSeverity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LastSeverity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LastSeverity;\n}\nif (msg.Comment) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Comment\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Comment;\n}\nif (msg.ClientUserId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ClientUserId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ClientUserId;\n}\n\n// AcknowledgeConditionType\nif (msg.AckedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"AckedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.AckedState;\n}\nif (msg.ConfirmedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConfirmedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConfirmedState;\n}\n\n// AlarmConditionType\nif (msg.ActiveState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ActiveState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ActiveState;\n}\nif (msg.InputNode) {\n    newmsg.topic=newmsg.topic+\"|\"+\"InputNode\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.InputNode;\n}\nif (msg.SupressedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"SupressedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SupressedState;\n}\n\n// Limits\nif (msg.HighHighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighHighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighHighLimit;\n}\nif (msg.HighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighLimit;\n}\nif (msg.LowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLimit;\n}\nif (msg.LowLowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLowLimit;\n}\nif (msg.Value) {\n        newmsg.topic=newmsg.topic+\"|\"+\"Value\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Value;\n}\n\nreturn newmsg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 418.5624694824219,
+    "y": 222.88888549804688,
+    "z": "ea2cd3ac.c1e01",
+    "wires": [
+      [
+        "e66ada33.0e1038"
+      ]
+    ]
+  },
+  {
+    "id": "e66ada33.0e1038",
+    "type": "debug",
+    "name": "",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 576.5624847412109,
+    "y": 220.88888549804688,
+    "z": "ea2cd3ac.c1e01",
+    "wires": []
+  },
+  {
+    "id": "290b1d93.cb8c72",
+    "type": "OpcUa-Client",
+    "endpoint": "ec543e54.782ad",
+    "action": "events",
+    "time": "1000",
+    "name": "Alarms & Events",
+    "x": 414.99993896484375,
+    "y": 156.99996948242188,
+    "z": "970b1295.07642",
+    "wires": [
+      [
+        "d9c723ff.df3f5",
+        "351f7369.eee4ac"
+      ]
+    ]
+  },
+  {
+    "id": "d9c723ff.df3f5",
+    "type": "debug",
+    "name": "",
+    "active": false,
+    "console": "false",
+    "complete": "true",
+    "x": 590.9999694824219,
+    "y": 156.99996948242188,
+    "z": "970b1295.07642",
+    "wires": []
+  },
+  {
+    "id": "fd5ebd64.8c97a",
+    "type": "OpcUa-Event",
+    "root": "ns=2;s=0:East/Blue",
+    "eventtype": "i=2782",
+    "name": "East/Blue Condition events",
+    "x": 254.99996948242188,
+    "y": 101.99996948242188,
+    "z": "970b1295.07642",
+    "wires": [
+      [
+        "290b1d93.cb8c72"
+      ]
+    ]
+  },
+  {
+    "id": "22cc3061.b6b31",
+    "type": "inject",
+    "name": "Test",
+    "topic": "",
+    "payload": "",
+    "payloadType": "none",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "x": 135.99998474121094,
+    "y": 38,
+    "z": "970b1295.07642",
+    "wires": [
+      [
+        "fd5ebd64.8c97a"
+      ]
+    ]
+  },
+  {
+    "id": "351f7369.eee4ac",
+    "type": "function",
+    "name": "Format",
+    "func": "var newmsg={};\nnewmsg.topic=\"\";\nnewmsg.payload=\"\";\n\nif (msg.EventId) {\n    //newmsg.payload=\"EVENTID\";\n\t//newmsg.payload=msg.EventId.toString('utf8');;\n}\nif (msg.EventType) {\n    //newmsg.topic=newmsg.topic+\"EventType\";\n    //newmsg.payload=\"EVENTTYPE\";\n\t//newmsg.payload=newmsg.payload+\"|\"+msg.EventType;\n}\nif (msg.SourceNode) {\n    //newmsg.topic=newmsg.topic+\"SourceNode\";\n\t//newmsg.payload=msg.payload+\"|\"+msg.SourceNode;\n}\nif (msg.SourceName) {\n    // Do not show internal alarm state changes e.q. rising events\n    //if (msg.SourceName==\"Internal\") return; \n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SourceName;\n}\nif (msg.Time) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Time\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Time;\n}\nif (msg.ReceiveTime) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ReceiveTime\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ReceiveTime;\n}\nif (msg.Message) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Message\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Message;\n}\nif (msg.Severity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Severity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Severity;\n}\n\n// ConditionType\nif (msg.ConditionClassId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassId;\n}\nif (msg.ConditionClassName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionClassName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionClassNameName;\n}\nif (msg.ConditionName) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConditionName\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConditionName;\n}\nif (msg.BranchId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"BranchId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.BranchId;\n}\nif (msg.Retain) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Retain\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Retain;\n}\nif (msg.EnabledState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"EnabledState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.EnabledState;\n}\nif (msg.Quality) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Quality\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Quality;\n}\nif (msg.LastSeverity) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LastSeverity\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LastSeverity;\n}\nif (msg.Comment) {\n    newmsg.topic=newmsg.topic+\"|\"+\"Comment\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Comment;\n}\nif (msg.ClientUserId) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ClientUserId\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ClientUserId;\n}\n\n// AcknowledgeConditionType\nif (msg.AckedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"AckedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.AckedState;\n}\nif (msg.ConfirmedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ConfirmedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ConfirmedState;\n}\n\n// AlarmConditionType\nif (msg.ActiveState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"ActiveState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.ActiveState;\n}\nif (msg.InputNode) {\n    newmsg.topic=newmsg.topic+\"|\"+\"InputNode\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.InputNode;\n}\nif (msg.SupressedState) {\n    newmsg.topic=newmsg.topic+\"|\"+\"SupressedState\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.SupressedState;\n}\n\n// Limits\nif (msg.HighHighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighHighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighHighLimit;\n}\nif (msg.HighLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"HighLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.HighLimit;\n}\nif (msg.LowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLimit;\n}\nif (msg.LowLowLimit) {\n    newmsg.topic=newmsg.topic+\"|\"+\"LowLowLimit\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.LowLowLimit;\n}\nif (msg.Value) {\n        newmsg.topic=newmsg.topic+\"|\"+\"Value\";\n\tnewmsg.payload=newmsg.payload+\"|\"+msg.Value;\n}\n\nreturn newmsg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 450.5624542236328,
+    "y": 221.99996948242188,
+    "z": "970b1295.07642",
+    "wires": [
+      [
+        "64c15769.b5a378"
+      ]
+    ]
+  },
+  {
+    "id": "64c15769.b5a378",
+    "type": "debug",
+    "name": "",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 608.5624694824219,
+    "y": 219.99996948242188,
+    "z": "970b1295.07642",
+    "wires": []
+  }
+]
