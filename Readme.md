@@ -5,7 +5,7 @@ node-red-contrib-opcua
 
 ![opcuanode](images/opcuanode.png)
 
-A Node-RED[1] nodes to communicate or serve via [OPC UA](https://www.npmjs.com/package/node-opcua).
+A [Node-RED][1] nodes to communicate or serve via [OPC UA](https://www.npmjs.com/package/node-opcua).
 
 based on [node-opcua](http://node-opcua.github.io/)
 
@@ -14,7 +14,7 @@ based on [node-opcua](http://node-opcua.github.io/)
 Install
 -------
 
-Run command on Node-RED installation directory
+Run command on Node-RED installation directory.
 
 	npm install node-red-contrib-opcua
 
