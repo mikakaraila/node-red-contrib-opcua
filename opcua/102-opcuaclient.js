@@ -263,7 +263,7 @@ module.exports = function (RED) {
                 return;
             }
 
-            node.warn("secureChannelId:" + node.session.secureChannelId);
+            // node.warn("secureChannelId:" + node.session.secureChannelId);
 
             if (!node.session.sessionId == "terminated") {
                 verbose_warn("terminated OPC UA Session");
@@ -371,12 +371,13 @@ module.exports = function (RED) {
 
             var nodeid = new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
 
+            verbose_log("msg=" + JSON.stringify(msg));
             verbose_log("namespace=" + ns);
             verbose_log("string=" + s);
             verbose_log("value=" + msg.payload);
             verbose_log(nodeid.toString());
 
-            var opcuaVariant = build_new_variant(opcua, msg.payload);
+            var opcuaVariant = opcuaBasics.build_new_variant(opcua, msg.datatype, msg.payload);
 
             node.session.writeSingleNode(nodeid, opcuaVariant, function (err) {
                 if (err) {

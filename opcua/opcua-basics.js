@@ -316,39 +316,78 @@ module.exports.get_node_status = function (statusValue) {
 };
 
 
-module.exports.build_new_variant = function (opcua, data) {
+module.exports.build_new_variant = function (opcua, datatype, value) {
 
     var nValue = new opcua.Variant({dataType: opcua.DataType.Float, value: 0.0});
 
-    switch (data) {
-        case"Float":
-            nValue = new opcua.Variant({dataType: opcua.DataType.Float, value: parseFloat(data)});
+    switch (datatype) {
+        case "Float":
+            nValue = new opcua.Variant({dataType: opcua.DataType.Float, value: parseFloat(value)});
             break;
-        case"Double":
+        case "Double":
             nValue = new opcua.Variant({
                 dataType: opcua.DataType.Double,
-                value: parseFloat(data)
+                value: parseFloat(value)
             });
             break;
-        case"UInt16":
-            var uint16 = new Uint16Array([data]);
+        case "UInt16":
+            var uint16 = new Uint16Array([value]);
             nValue = new opcua.Variant({dataType: opcua.DataType.UInt16, value: uint16[0]});
             break;
-        case"Integer":
-            nValue = new opcua.Variant({dataType: opcua.DataType.UInt16, value: parseInt(data)});
+        case "Integer":
+            nValue = new opcua.Variant({dataType: opcua.DataType.UInt16, value: parseInt(value)});
             break;
-        case"Boolean":
-            if (data) {
-                nValue = new opcua.Variant({dataType: opcua.DataType.Boolean, value: true})
+        case "Boolean":
+            if (value && value !== "false") {
+                nValue = new opcua.Variant({dataType: opcua.DataType.Boolean, value: true});
             }
             else {
-                nValue = new opcua.Variant({dataType: opcua.DataType.Boolean, value: false})
+                nValue = new opcua.Variant({dataType: opcua.DataType.Boolean, value: false});
             }
             break;
-        case"String":
-            nValue = new opcua.Variant({dataType: opcua.DataType.String, value: data});
+        case "String":
+            nValue = new opcua.Variant({dataType: opcua.DataType.String, value: value});
             break;
         default:
+            nValue = new opcua.Variant({dataType: opcua.DataType.BaseDataType, value: value});
+            break;
+    }
+
+    return nValue;
+};
+
+
+module.exports.build_new_value_by_datatype = function (datatype, value) {
+
+    var nValue = 0;
+
+    switch (datatype) {
+        case "Float":
+            nValue = parseFloat(value);
+            break;
+        case "Double":
+            nValue = parseFloat(value);
+            break;
+        case "UInt16":
+            var uint16 = new Uint16Array([value]);
+            nValue = uint16[0];
+            break;
+        case "Integer":
+            nValue = parseInt(value);
+            break;
+        case "Boolean":
+            if (value && value !== "false") {
+                nValue = true;
+            }
+            else {
+                nValue = false;
+            }
+            break;
+        case "String":
+            nValue = value.toString();
+            break;
+        default:
+            nValue = value;
             break;
     }
 
