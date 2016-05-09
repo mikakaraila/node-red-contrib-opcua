@@ -108,11 +108,11 @@ limitations under the License.
             <li>Event</li>
          </ul>
     </p>
-    <p>Items can be defined in input msg object or by an OpcUa-Item.</p>
     <p>Inject your OPC UA address (NodeId) by the <strong>Topic</strong> of an Inject node or with the OpcUa-Item cotrolled by an Inject node.</p>
     <p>To Read/Write inject the Topic for every operation.</p>
     <p>The value to Write should be injected by an OpcUa-Item.</p>
-    <p>Inject the Topic only once on Subscribe or Event for subscription and you got the changing value on every Interval.</p>
-    <p>Interval is setting for Client <strong>requestedPublishingInterval</strong> (deflaut: 100ms).</p>
-    <p><strong>msg.payload</strong> can bring an samplingInterval for monitored Items/Events in subscription (default: 100ms).</p>
+    <p>Inject the Topic only once on Subscribe or Event for subscription and you got the changing value on every Interval.
+        Every inject subscribes a new monitored Item.</p>
+    <p>Interval is setting for Client <strong>requestedPublishingInterval</strong> (default: 100ms).</p>
+    <p>Input <strong>msg.payload</strong> can bring an samplingInterval for monitored Items/Events in subscription (default: 100ms).</p>
 </script>

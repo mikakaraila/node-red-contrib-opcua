@@ -3,13 +3,13 @@
 node-red-contrib-opcua
 ========================
 
-![opcuanode] (images/opcuanode.png)
+![opcuanode](images/opcuanode.png)
 
-A Node-RED[1] nodes to communicate or serve via [OPC UA](https://www.npmjs.com/package/node-opcua).
+A [Node-RED][1] nodes to communicate or serve via [OPC UA](https://www.npmjs.com/package/node-opcua).
 
 based on [node-opcua](http://node-opcua.github.io/)
 
-![nodeopcua64] (images/nodeopcua64.png)
+![nodeopcua64](images/nodeopcua64.png)
 
 Install
 -------
@@ -18,6 +18,9 @@ Run command on Node-RED installation directory.
 
 	npm install node-red-contrib-opcua
 
+or run command for global installation.
+
+	npm install -g node-red-contrib-opcua
 
 Usage
 -----
@@ -25,17 +28,17 @@ Usage
 Use OpcUa-Item to define variables.
 Use OpcUa-Client to read / write / subscribe / browse OPC UA server.
 
-See some flows under [Examples] (examples).
+See some flows under [Examples](examples).
 
 Here you got some ready to use examples.
 You can use the Import in Node-RED in the right upper corner menu.
 
-![node-red-opcua-flow] (images/Example.png)
+![node-red-opcua-flow](images/Example.png)
 
 Examples are available for Schneider IGSS and Prosys Simulation Server as Node-RED flow.
 Search for OPC UA on: http://flows.nodered.org/
 
-![node-red-opcua-flow-Prosys] (images/PROSYS-OPC-UA-EXAMPLE.png)
+![node-red-opcua-flow-Prosys](images/PROSYS-OPC-UA-EXAMPLE.png)
 
 # Author
 

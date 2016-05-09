@@ -19,6 +19,7 @@
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
+    var opcuaBasics = require('./opcua-basics');
 
     function OpcUaItemNode(n) {
 
@@ -31,14 +32,32 @@ module.exports = function (RED) {
 
         var node = this;
 
+        function verbose_warn(logMessage) {
+            if (RED.settings.verbose) {
+                node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage);
+            }
+        }
+
+        function verbose_log(logMessage) {
+            if (RED.settings.verbose) {
+                node.log(logMessage);
+            }
+        }
+
         node.on("input", function (msg) {
 
             msg.topic = node.item;
             msg.datatype = node.datatype;
             msg.browseName = node.name;
 
+            verbose_log('node value:' + node.value);
+
             if (node.value) {
-                msg.payload = node.value;
+                msg.payload = opcuaBasics.build_new_value_by_datatype(node.datatype, node.value);
+                verbose_warn("setting value by Item " + msg.payload);
+            } else {
+                msg.payload = opcuaBasics.build_new_value_by_datatype(msg.datatype, msg.payload);
+                verbose_warn("setting value by Input " + msg.payload);
             }
 
             node.send(msg);

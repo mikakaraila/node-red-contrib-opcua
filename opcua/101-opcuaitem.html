@@ -21,10 +21,10 @@ limitations under the License.
         category: 'opcua',
         color:"#3FADB5",
         defaults: {
-            item: {value:"", required:true},
-            datatype: {value:"",required:true},
-            value: {value:""},
-            name: {value:""}
+            item: {value: "", required: true},
+            datatype: {value: "Integer", required: true},
+            value: {value: null},
+            name: {value: ""}
         },
         inputs:1,
         outputs:1,
@@ -44,7 +44,7 @@ limitations under the License.
 <script type="text/x-red" data-template-name="OpcUa-Item">
     <div class="form-row">
         <label for="node-input-item"><i class="icon-tasks"></i> Item</label>
-        <input type="text" id="node-input-item" placeholder="ns=2;s=MyVariable2">
+        <input type="text" id="node-input-item" placeholder="ns=2;s=MySwitch or ns=2;i=1234">
     </div>
     <div class="form-row">
         <label for="node-input-datatype"><i class="icon-tasks"></i> Type</label>
@@ -74,4 +74,5 @@ limitations under the License.
     <p>Item contains valid OPC UA address like ns=2;i=4 OR ns=3;s=MyVariable</p>
     <p>There are not all Types possible for now, but you can select some.</p>
     <p>Value is needed only if item will be written to OPC UA server.</p>
+    <p>If value isn't filled, OpcUa-Item sends input <strong>payload</strong>.</p>
 </script>
