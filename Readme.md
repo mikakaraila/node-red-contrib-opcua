@@ -3,7 +3,7 @@
 node-red-contrib-opcua
 ========================
 
-![opcuanode](images/opcuanode.png)
+![opcuanodeLogo64](images/opcuanodeLogo64.png)
 
 A [Node-RED][1] nodes to communicate or serve via [OPC UA](https://www.npmjs.com/package/node-opcua).
 
