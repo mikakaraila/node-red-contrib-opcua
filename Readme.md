@@ -3,7 +3,7 @@
 node-red-contrib-opcua
 ========================
 
-![opcuanode](images/opcuanode.png)
+![opcuanodeLogo64](images/opcuanodeLogo64.png)
 
 A [Node-RED][1] nodes to communicate or serve via [OPC UA](https://www.npmjs.com/package/node-opcua).
 
@@ -38,7 +38,7 @@ You can use the Import in Node-RED in the right upper corner menu.
 Examples are available for Schneider IGSS and Prosys Simulation Server as Node-RED flow.
 Search for OPC UA on: http://flows.nodered.org/
 
-![node-red-opcua-flow-Prosys](images/PROSYS-OPC-UA-EXAMPLE.png)
+![node-red-opcua-flow-Prosys](images/PROSYS-OPC-UA-EXAMPLE2.png)
 
 # Author
 
