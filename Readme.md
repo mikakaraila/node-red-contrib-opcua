@@ -1,4 +1,7 @@
-[![OPC UA](http://b.repl.ca/v1/OPC-UA-blue.png)](http://opcfoundation.org/)
+[![NPM download](https://img.shields.io/npm/dm/node-red-contrib-opcua.svg)](http://www.npm-stats.com/~packages/node-red-contrib-opcua)
+[![NPM version](https://badge.fury.io/js/node-red-contrib-opcua.png)](http://badge.fury.io/js/node-red-contrib-opcua)
+
+![Node-RED OPC UA](http://b.repl.ca/v1/Node--RED-OPC_UA-blue.png)
 
 node-red-contrib-opcua
 ========================
