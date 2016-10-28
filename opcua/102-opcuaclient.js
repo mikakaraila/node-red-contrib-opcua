@@ -40,6 +40,11 @@ module.exports = function (RED) {
         var node = this;
 
         var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
+        var userIdentity = {};
+        if (opcuaEndpoint.login) {
+            userIdentity.userName = opcuaEndpoint.credentials.user,
+            userIdentity.password = opcuaEndpoint.credentials.password
+        };
         var items = [];
         var subscription; // only one subscription needed to hold multiple monitored Items
 
@@ -176,7 +181,7 @@ module.exports = function (RED) {
                 function (callback) {
                     verbose_log("async series - create session ...");
                     try {
-                        node.client.createSession(function (err, session) {
+                        node.client.createSession(userIdentity, function (err, session) {
                             if (!err) {
                                 node.session = session;
                                 node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
