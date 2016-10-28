@@ -25,7 +25,6 @@ module.exports = function (RED) {
 
         this.endpoint = n.endpoint;
         this.login = n.login;
-        this.credentials = n.credentials;
 
         if (this.credentials) {
             this.user = this.credentials.user;
