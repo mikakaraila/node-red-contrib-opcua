@@ -40,11 +40,6 @@ module.exports = function (RED) {
         var node = this;
 
         var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
-        var userIdentity = {};
-        if (opcuaEndpoint.login) {
-            userIdentity.userName = opcuaEndpoint.credentials.user,
-            userIdentity.password = opcuaEndpoint.credentials.password
-        };
         var items = [];
         var subscription; // only one subscription needed to hold multiple monitored Items
 
@@ -181,7 +176,7 @@ module.exports = function (RED) {
                 function (callback) {
                     verbose_log("async series - create session ...");
                     try {
-                        node.client.createSession(userIdentity, function (err, session) {
+                        node.client.createSession(function (err, session) {
                             if (!err) {
                                 node.session = session;
                                 node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
@@ -334,8 +329,11 @@ module.exports = function (RED) {
                         if (dataValue) {
                             try {
                                 verbose_log("\tValue : " + dataValue.value.value);
-                                verbose_log("\tDataType: " + dataValue.value.dataType);
-
+                                verbose_log("\tDataType: " + dataValue.value.dataType + " ("+dataValue.value.dataType.toString()+")");
+								verbose_log("\tMessage: " + msg.topic + " ("+msg.datatype+")");
+								if (msg.datatype.localeCompare(dataValue.value.dataType.toString())!=0) {
+									node.error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + dataValue.value.dataType.toString());
+								}
                                 if (dataValue.value.dataType === opcua.DataType.UInt16) {
                                     verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
                                 }
@@ -346,7 +344,7 @@ module.exports = function (RED) {
                                     verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
                                 }
                                 else {
-                                    verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16));
+                                    verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16).red.bold);
                                 }
 
                                 node.send(msg);
@@ -354,7 +352,9 @@ module.exports = function (RED) {
                             catch (e) {
 
                                 if (dataValue) {
-                                    node.error("\tBad read: " + dataValue.statusCode, msg);
+                                    node.error("\tBad read: " + (dataValue.statusCode.toString(16)).red.bold);
+									node.error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
+									node.error("\tData:" + JSON.stringify(dataValue));
                                 }
                                 else {
                                     node.error(e.message);
@@ -374,7 +374,12 @@ module.exports = function (RED) {
             var ns = msg.topic.substring(3, 4); // Parse namespace, ns=2
             var s = msg.topic.substring(7);    // Parse nodeId string, s=1:PST-007-Alarm-Level@Training?SETPOINT
 
-            var nodeid = new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
+            var nodeid = {}; // new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
+            verbose_log(opcua.browse_service.makeBrowsePath(msg.topic, "."));
+            if (msg.topic.substring(6,7)=='s')
+                nodeid = new nodeId.NodeId(nodeId.NodeIdType.STRING, s, parseInt(ns));
+            else
+                nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, parseInt(s), parseInt(ns));
 
             verbose_log("msg=" + JSON.stringify(msg));
             verbose_log("namespace=" + ns);
@@ -651,7 +656,6 @@ module.exports = function (RED) {
             }
 
             if (node.session) {
-
                 node.session.close(function (err) {
 
                     verbose_log("Session closed");

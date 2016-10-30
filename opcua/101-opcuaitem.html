@@ -22,7 +22,7 @@ limitations under the License.
         color:"#3FADB5",
         defaults: {
             item: {value: "", required: true},
-            datatype: {value: "Integer", required: true},
+            datatype: {value: "", required: true},
             value: {value: null},
             name: {value: ""}
         },
@@ -49,17 +49,23 @@ limitations under the License.
     <div class="form-row">
         <label for="node-input-datatype"><i class="icon-tasks"></i> Type</label>
         <select type="text" id="node-input-datatype">
-            <option value="Integer">Integer</option>
+            <option value="Int8">Int8</option>
+            <option value="Int16">Int16</option>
+            <option value="Int32">Int32</option>
+            <option value="UInt8">UInt8</option>
+            <option value="UInt16">UInt16</option>
+            <option value="UInt32">UInt32</option>
+            <option value="Byte">Byte</option>
+            <option value="SByte">SByte</option>
             <option value="Float">Float</option>
             <option value="Double">Double</option>
-            <option value="UInt16">unsigned Int16</option>
             <option value="Boolean">Boolean</option>
             <option value="String">String</option>
         </select>
     </div>
     <div class="form-row">
         <label for="node-input-value"><i class="icon-tag"></i> Value</label>
-        <input type="text" id="node-input-value" placeholder="test">
+        <input type="text" id="node-input-value" placeholder="">
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>

@@ -325,17 +325,25 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
             nValue = new opcua.Variant({dataType: opcua.DataType.Float, value: parseFloat(value)});
             break;
         case "Double":
-            nValue = new opcua.Variant({
-                dataType: opcua.DataType.Double,
-                value: parseFloat(value)
-            });
+            nValue = new opcua.Variant({dataType: opcua.DataType.Double, value: parseFloat(value)});
+            break;
+        case "Int32":
+            nValue = new opcua.Variant({dataType: opcua.DataType.Int32, value: parseInt(value)});
+            break;
+        case "Int16":
+            nValue = new opcua.Variant({dataType: opcua.DataType.Int16, value: parseInt(value)});
+            break;
+        case "Int8":
+            nValue = new opcua.Variant({dataType: opcua.DataType.Int8, value: parseInt(value)});
+            break;
+        case "UInt32":
+            nValue = new opcua.Variant({dataType: opcua.DataType.UInt32, value: parseInt(value)});
             break;
         case "UInt16":
-            var uint16 = new Uint16Array([value]);
-            nValue = new opcua.Variant({dataType: opcua.DataType.UInt16, value: uint16[0]});
-            break;
-        case "Integer":
             nValue = new opcua.Variant({dataType: opcua.DataType.UInt16, value: parseInt(value)});
+            break;
+        case "UInt8":
+            nValue = new opcua.Variant({dataType: opcua.DataType.UInt8, value: parseInt(value)});
             break;
         case "Boolean":
             if (value && value !== "false") {
@@ -366,14 +374,31 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
             nValue = parseFloat(value);
             break;
         case "Double":
-            nValue = parseFloat(value);
+            nValue = parseFloat(value); // (Double) or Float64 ?
+            break;
+        case "Int8":
+            var int8 = new Int8Array([value]);
+            nValue = int8[0];
+            break;
+        case "Int16":
+            var int16 = new Int16Array([value]);
+            nValue = int16[0];
+            break;
+        case "Int32":
+            var int32 = new Int32Array([value]);
+            nValue = int32[0];
+            break;
+        case "UInt8":
+            var uint8 = new Uint8Array([value]);
+            nValue = uint8[0];
             break;
         case "UInt16":
             var uint16 = new Uint16Array([value]);
             nValue = uint16[0];
             break;
-        case "Integer":
-            nValue = parseInt(value);
+        case "UInt32":
+            var uint32 = new Uint32Array([value]);
+            nValue = uint32[0];
             break;
         case "Boolean":
             if (value && value !== "false") {
