@@ -306,7 +306,7 @@ module.exports = function (RED) {
                     break;
             }
 
-            node.send(msg);
+            //node.send(msg); // msg.payload is here actual inject caused wrong values
         });
 
         function read_action_input(msg) {
