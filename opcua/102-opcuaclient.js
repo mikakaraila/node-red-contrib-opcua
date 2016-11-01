@@ -257,14 +257,14 @@ module.exports = function (RED) {
 
             if (!node.action) {
                 verbose_warn("can't work without action (read, write, browse ...)");
-                node.send(msg);
+                //node.send(msg); // do not send in case of error
                 return;
             }
 
             if (!node.client || !node.session) {
                 verbose_warn("can't work without OPC UA Session");
                 reset_opcua_client(connect_opcua_client);
-                node.send(msg);
+                //node.send(msg); // do not send in case of error
                 return;
             }
 
@@ -273,13 +273,13 @@ module.exports = function (RED) {
             if (!node.session.sessionId == "terminated") {
                 verbose_warn("terminated OPC UA Session");
                 reset_opcua_client(connect_opcua_client);
-                node.send(msg);
+                //node.send(msg); // do not send in case of error
                 return;
             }
 
             if (!msg || !msg.topic) {
                 verbose_warn("can't work without OPC UA NodeId - msg.topic");
-                node.send(msg);
+                //node.send(msg); // do not send in case of error
                 return;
             }
 
