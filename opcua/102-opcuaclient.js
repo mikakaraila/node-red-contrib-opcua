@@ -381,8 +381,6 @@ module.exports = function (RED) {
 
             var nodeid = {}; // new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
             verbose_log(opcua.browse_service.makeBrowsePath(msg.topic, "."));
-		
-            //if (msg.topic.substring(6,7)=='s') //(6,7) gets the "="
 	    if (msg.topic.substring(5,6)=='s')
                 nodeid = new nodeId.NodeId(nodeId.NodeIdType.STRING, s, parseInt(ns));
             else
