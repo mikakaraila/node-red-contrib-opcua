@@ -185,6 +185,7 @@ module.exports = function (RED) {
                             if (!err) {
                                 node.session = session;
                                 node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
+								node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
                                 verbose_log("session active");
                                 set_node_status_to("session active");
                                 callback();
@@ -314,61 +315,66 @@ module.exports = function (RED) {
             verbose_log("reading");
 
             items[0] = msg.topic; // TODO support for multiple item reading
+			if (node.session) {
+				node.session.readVariableValue(items, function (err, dataValues, diagnostics) {
+					if (err) {
+						verbose_log('diagnostics:' + diagnostics);
+						node.error(err);
+						set_node_status_to("error");
+						reset_opcua_client(connect_opcua_client);
+					} else {
 
-            node.session.readVariableValue(items, function (err, dataValues, diagnostics) {
-                if (err) {
-                    verbose_log('diagnostics:' + diagnostics);
-                    node.error(err);
-                    set_node_status_to("error");
-                    reset_opcua_client(connect_opcua_client);
-                } else {
+						set_node_status_to("active reading");
 
-                    set_node_status_to("active reading");
+						for (var i = 0; i < dataValues.length; i++) {
 
-                    for (var i = 0; i < dataValues.length; i++) {
+							var dataValue = dataValues[i];
 
-                        var dataValue = dataValues[i];
+							verbose_log("\tNode : " + (msg.topic).cyan.bold);
 
-                        verbose_log("\tNode : " + (msg.topic).cyan.bold);
+							if (dataValue) {
+								try {
+									verbose_log("\tValue : " + dataValue.value.value);
+									verbose_log("\tDataType: " + dataValue.value.dataType + " ("+dataValue.value.dataType.toString()+")");
+									verbose_log("\tMessage: " + msg.topic + " ("+msg.datatype+")");
+									if (msg.datatype.localeCompare(dataValue.value.dataType.toString())!=0) {
+										node.error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + dataValue.value.dataType.toString());
+									}
+									if (dataValue.value.dataType === opcua.DataType.UInt16) {
+										verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
+									}
 
-                        if (dataValue) {
-                            try {
-                                verbose_log("\tValue : " + dataValue.value.value);
-                                verbose_log("\tDataType: " + dataValue.value.dataType + " ("+dataValue.value.dataType.toString()+")");
-								verbose_log("\tMessage: " + msg.topic + " ("+msg.datatype+")");
-								if (msg.datatype.localeCompare(dataValue.value.dataType.toString())!=0) {
-									node.error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + dataValue.value.dataType.toString());
+									msg.payload = dataValue.value.value;
+
+									if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
+										verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
+									}
+									else {
+										verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16).red.bold);
+									}
+
+									node.send(msg);
 								}
-                                if (dataValue.value.dataType === opcua.DataType.UInt16) {
-                                    verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
-                                }
+								catch (e) {
 
-                                msg.payload = dataValue.value.value;
-
-                                if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
-                                    verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
-                                }
-                                else {
-                                    verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16).red.bold);
-                                }
-
-                                node.send(msg);
-                            }
-                            catch (e) {
-
-                                if (dataValue) {
-                                    node.error("\tBad read: " + (dataValue.statusCode.toString(16)).red.bold);
-									node.error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
-									node.error("\tData:" + JSON.stringify(dataValue));
-                                }
-                                else {
-                                    node.error(e.message);
-                                }
-                            }
-                        }
-                    }
-                }
-            });
+									if (dataValue) {
+										node.error("\tBad read: " + (dataValue.statusCode.toString(16)).red.bold);
+										node.error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
+										node.error("\tData:" + JSON.stringify(dataValue));
+									}
+									else {
+										node.error(e.message);
+									}
+								}
+							}
+						}
+					}
+				});
+			}
+			else {
+				set_node_status_to("Session invalid");
+				node.error("Session is not active!")
+			}
         }
 
         function write_action_input(msg) {
@@ -393,18 +399,23 @@ module.exports = function (RED) {
             verbose_log(nodeid.toString());
 
             var opcuaVariant = opcuaBasics.build_new_variant(opcua, msg.datatype, msg.payload);
-
-            node.session.writeSingleNode(nodeid, opcuaVariant, function (err) {
-                if (err) {
-                    set_node_status_to("error");
-                    node.error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
-                    reset_opcua_client(connect_opcua_client);
-                }
-                else {
-                    set_node_status_to("active writing");
-                    verbose_log("Value written!");
-                }
-            });
+			if (node.session) {
+				node.session.writeSingleNode(nodeid, opcuaVariant, function (err) {
+					if (err) {
+						set_node_status_to("error");
+						node.error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
+						reset_opcua_client(connect_opcua_client);
+					}
+					else {
+						set_node_status_to("active writing");
+						verbose_log("Value written!");
+					}
+				});
+			}
+			else {
+				set_node_status_to("Session invalid");
+				node.error("Session is not active!")
+			}
         }
 
         function subscribe_action_input(msg) {
