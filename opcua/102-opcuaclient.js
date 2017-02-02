@@ -313,8 +313,22 @@ module.exports = function (RED) {
         function read_action_input(msg) {
 
             verbose_log("reading");
-
-            items[0] = msg.topic; // TODO support for multiple item reading
+			var item="";
+			if (msg.topic) {
+				var n = msg.topic.indexOf("datatype=");
+				if (n>0) {
+					msg.datatype=msg.topic.substring(n+9);
+					item=msg.topic.substring(0,n-1);
+					msg.topic=item;
+					verbose_log(JSON.stringify(msg));
+				}
+				
+			}
+			if (item.length>0)
+				items[0]=item;
+			else
+				items[0] = msg.topic; // TODO support for multiple item reading
+			
 			if (node.session) {
 				node.session.readVariableValue(items, function (err, dataValues, diagnostics) {
 					if (err) {
