@@ -41,7 +41,8 @@ module.exports = function (RED) {
         var equipmentNotFound = true;
         var initialized = false;
         var server = null;
-
+		var folder = null;
+		
         function verbose_warn(logMessage) {
             if (RED.settings.verbose) {
                 node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaServerNode: ' + logMessage);
@@ -237,9 +238,22 @@ module.exports = function (RED) {
 
         //######################################################################################
         node.on("input", function (msg) {
+			verbose_log(JSON.stringify(msg));
+            if (server == undefined || !initialized) {
+				node.error("Server is not running");
+				return false;
+			}
+                
 
-            if (server == undefined || !initialized)
-                return false;
+            var payload = msg.payload;
+
+            if (contains_messageType(payload)) {
+                read_message(payload);
+            }
+            if (contains_opcua_command(payload)) {
+                execute_opcua_command(msg);
+            }
+
 
             if (equipmentNotFound) {
 
@@ -261,16 +275,6 @@ module.exports = function (RED) {
                     verbose_warn("Equipment Reference not found in VendorName");
                 }
 
-            }
-
-            var payload = msg.payload;
-
-            if (contains_messageType(payload)) {
-                read_message(payload);
-            }
-
-            if (contains_opcua_command(payload)) {
-                execute_opcua_command(payload);
             }
 
             node.send(msg);
@@ -307,11 +311,11 @@ module.exports = function (RED) {
             return payload.hasOwnProperty('opcuaCommand');
         }
 
-        function execute_opcua_command(payload) {
-
+        function execute_opcua_command(msg) {
+			var payload = msg.payload;
             var addressSpace = server.engine.addressSpace;
             var name;
-
+			console.log("Executiong command"+msg.payload);
             switch (payload.opcuaCommand) {
 
                 case "restartOPCUAServer":
@@ -340,6 +344,86 @@ module.exports = function (RED) {
                         nodeId: "ns=4;s=".concat(name),
                         browseName: name
                     });
+                    break;
+
+				case "setFolder":
+                    verbose_warn("set Folder".concat(msg.topic)); // Example topic format ns=4;s=FolderName
+					folder = addressSpace.findNode(msg.topic);
+					console.log(msg.topic);
+					console.log(folder.toString());
+                    break;
+
+				case "addFolder":
+                    verbose_warn("adding Folder".concat(msg.topic)); // Example topic format ns=4;s=FolderName
+					var parentFolder = addressSpace.rootFolder.objects;
+					if (folder!=null)
+						console.log(folder.toString());
+					if (folder!=null) {
+						parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
+					}
+					console.log(parentFolder.toString());
+					folder = addressSpace.addObject({
+							organizedBy: addressSpace.findNode(parentFolder.nodeId),
+							nodeId: msg.topic,
+							browseName: msg.topic.substring(7)
+					});
+					console.log(folder.toString());
+                    break;
+					
+				 case "addVariable":
+                    verbose_warn("adding Node".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
+					var datatype = "";
+					var opcuaDataType = null;
+					var e = msg.topic.indexOf("datatype=");
+					
+					var parentFolder = addressSpace.rootFolder.objects;
+					if (folder!=null)
+						console.log(folder.toString());
+					if (folder!=null) {
+						parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
+					}
+					
+					var value=null;
+					if (e>0)
+					{
+						name = msg.topic.substring(0,e-1);
+						datatype = msg.topic.substring(e+9);
+						value=0;
+						if (datatype=="Int32") {
+							opcuaDataType = opcua.DataType.Int32;
+						}
+						if (datatype=="Int16") {
+							opcuaDataType = opcua.DataType.Int16;
+						}
+						if (datatype=="UInt32") {
+							opcuaDataType = opcua.DataType.UInt32;
+						}
+						if (datatype=="UInt16") {
+							opcuaDataType = opcua.DataType.UInt16;
+						}
+						if (datatype=="Double") {
+							opcuaDataType = opcua.DataType.Double;
+						}
+						if (datatype=="Float") {
+							opcuaDataType = opcua.DataType.Float;
+						}
+						if (datatype=="String") {
+							opcuaDataType = opcua.DataType.String;
+							value="";
+						}
+						if (datatype=="Boolean") {
+							opcuaDataType = opcua.DataType.Boolean;
+							value = true;
+						}
+						console.log(opcuaDataType.toString());
+						addressSpace.addVariable({
+							organizedBy: addressSpace.findNode(parentFolder.nodeId),
+							nodeId: name,
+							browseName: name.substring(7), // or displayName
+							dataType: opcuaDataType,
+							value: new opcua.Variant({dataType: opcuaDataType, value: value})
+						});
+					}
                     break;
 
                 case "deleteNode":
