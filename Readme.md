@@ -76,7 +76,9 @@ TBD List
 |  Server            |                           |                           |
 |      Commands      |                           |                           |
 |                    | Restart                   | :white_check_mark:        |
-|                    | Add Variable              | :new_moon:                |
+|                    | Add Folder                | :white_check_mark:        |
+|                    | Set Folder                | :white_check_mark:        |
+|                    | Add Variable              | :white_check_mark:        |
 |                    | Add Object                | :new_moon:                |
 |                    | Add Method                | :new_moon:                |
 |                    | Add Equipment             | :first_quarter_moon:      |
