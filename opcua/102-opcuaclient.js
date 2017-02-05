@@ -351,8 +351,11 @@ module.exports = function (RED) {
 									verbose_log("\tValue : " + dataValue.value.value);
 									verbose_log("\tDataType: " + dataValue.value.dataType + " ("+dataValue.value.dataType.toString()+")");
 									verbose_log("\tMessage: " + msg.topic + " ("+msg.datatype+")");
-									if (msg.datatype.localeCompare(dataValue.value.dataType.toString())!=0) {
+									if (msg.datatype!=null && msg.datatype.localeCompare(dataValue.value.dataType.toString())!=0) {
 										node.error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + dataValue.value.dataType.toString());
+									}
+									if (msg.datatype==null) {
+										node.warn("msg.datatype == null, if you use inject check topic is format 'ns=2;s=MyLevel;datatype=Float'");
 									}
 									if (dataValue.value.dataType === opcua.DataType.UInt16) {
 										verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
