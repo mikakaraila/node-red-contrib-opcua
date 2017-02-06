@@ -400,8 +400,15 @@ module.exports = function (RED) {
 
             // Topic value: ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT
             var ns = msg.topic.substring(3, 4); // Parse namespace, ns=2
-            var s = msg.topic.substring(7);    // Parse nodeId string, s=1:PST-007-Alarm-Level@Training?SETPOINT
-
+			var dIndex = msg.topic.indexOf("datatype=");
+			var s = "";
+			if (msg.datatype==null && dIndex>0) {
+				msg.datatype=msg.topic.substring(dIndex+9);
+				s = msg.topic.substring(7, dIndex-1);
+			}
+			else {
+				s = msg.topic.substring(7);    // Parse nodeId string, s=1:PST-007-Alarm-Level@Training?SETPOINT
+			}
             var nodeid = {}; // new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
             verbose_log(opcua.browse_service.makeBrowsePath(msg.topic, "."));
 	    if (msg.topic.substring(5,6)=='s')
