@@ -315,7 +315,7 @@ module.exports = function (RED) {
 			var payload = msg.payload;
             var addressSpace = server.engine.addressSpace;
             var name;
-			console.log("Executiong command"+msg.payload);
+			
             switch (payload.opcuaCommand) {
 
                 case "restartOPCUAServer":
@@ -349,25 +349,19 @@ module.exports = function (RED) {
 				case "setFolder":
                     verbose_warn("set Folder".concat(msg.topic)); // Example topic format ns=4;s=FolderName
 					folder = addressSpace.findNode(msg.topic);
-					console.log(msg.topic);
-					console.log(folder.toString());
                     break;
 
 				case "addFolder":
                     verbose_warn("adding Folder".concat(msg.topic)); // Example topic format ns=4;s=FolderName
 					var parentFolder = addressSpace.rootFolder.objects;
-					if (folder!=null)
-						console.log(folder.toString());
 					if (folder!=null) {
 						parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
 					}
-					console.log(parentFolder.toString());
 					folder = addressSpace.addObject({
 							organizedBy: addressSpace.findNode(parentFolder.nodeId),
 							nodeId: msg.topic,
 							browseName: msg.topic.substring(7)
 					});
-					console.log(folder.toString());
                     break;
 					
 				 case "addVariable":
@@ -377,8 +371,6 @@ module.exports = function (RED) {
 					var e = msg.topic.indexOf("datatype=");
 					
 					var parentFolder = addressSpace.rootFolder.objects;
-					if (folder!=null)
-						console.log(folder.toString());
 					if (folder!=null) {
 						parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
 					}
@@ -415,7 +407,7 @@ module.exports = function (RED) {
 							opcuaDataType = opcua.DataType.Boolean;
 							value = true;
 						}
-						console.log(opcuaDataType.toString());
+						verbose_log(opcuaDataType.toString());
 						addressSpace.addVariable({
 							organizedBy: addressSpace.findNode(parentFolder.nodeId),
 							nodeId: name,
