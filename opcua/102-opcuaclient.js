@@ -21,6 +21,8 @@ module.exports = function (RED) {
     var opcua = require('node-opcua');
     var opcuaBasics = require('./opcua-basics');
     var nodeId = require('node-opcua/lib/datamodel/nodeid');
+	var coerceNodeId = require("node-opcua/lib/datamodel/nodeid").coerceNodeId;
+	var makeNodeId = require("node-opcua/lib/datamodel/nodeid").makeNodeId;	
     var browse_service = require("node-opcua/lib/services/browse_service");
     var async = require("async");
     var treeify = require('treeify');
@@ -443,7 +445,7 @@ module.exports = function (RED) {
         }
 
         function subscribe_action_input(msg) {
-
+			
             verbose_log("subscribing");
 
             if (!subscription) {
@@ -469,7 +471,12 @@ module.exports = function (RED) {
         function subscribe_monitoredItem(subscription, msg) {
 
             verbose_log("Session subscriptionId: " + subscription.subscriptionId);
-
+			var nodeStr=msg.topic;
+			var dTypeIndex = nodeStr.indexOf(";datatype=");
+			if (dTypeIndex>0)
+				nodeStr=nodeStr.substring(0,dTypeIndex);
+			
+			console.log("nodeStr="+nodeStr);
             var monitoredItem = monitoredItems.get({"topicName": msg.topic});
 
             if (!monitoredItem) {
@@ -482,10 +489,22 @@ module.exports = function (RED) {
 
                 verbose_log(msg.topic + " samplingInterval " + interval);
                 verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
-
+				
+				// Validate nodeId
+				try {
+					var nodeId = coerceNodeId(nodeStr);
+					if (nodeId && nodeId.isEmpty()) {
+						node.error(" Invalid empty node in getObject");
+					}
+					//makeNodeId(nodeStr); // above is enough
+				}
+				catch(err) {
+					node.error(err);
+					return;
+				}
                 monitoredItem = subscription.monitor(
                     {
-                        nodeId: msg.topic,
+                        nodeId: nodeStr,
                         attributeId: opcua.AttributeIds.Value
                     },
                     {
@@ -496,16 +515,17 @@ module.exports = function (RED) {
                     3,
                     function (err) {
                         if (err) {
+							node.error("Check topic format for nodeId:"+msg.topic)
                             node.error('subscription.monitorItem:' + err);
-                            reset_opcua_client(connect_opcua_client);
+                            // reset_opcua_client(connect_opcua_client); // not actually needed
                         }
+						else
+						   monitoredItems.add({"topicName": nodeStr, mItem: monitoredItem});
                     }
                 );
 
-                monitoredItems.add({"topicName": msg.topic, mItem: monitoredItem});
-
                 monitoredItem.on("initialized", function () {
-                    verbose_log("initialized monitoredItem on " + msg.topic);
+                    verbose_log("initialized monitoredItem on " + nodeStr);
                 });
 
                 monitoredItem.on("changed", function (dataValue) {
@@ -526,13 +546,13 @@ module.exports = function (RED) {
                 });
 
                 monitoredItem.on("keepalive", function () {
-                    verbose_log("keepalive monitoredItem on " + msg.topic);
+                    verbose_log("keepalive monitoredItem on " + nodeStr);
                 });
 
                 monitoredItem.on("terminated", function () {
-                    verbose_log("terminated monitoredItem on " + msg.topic);
-                    if (monitoredItems.get({"topicName": msg.topic})) {
-                        monitoredItems.delete({"topicName": msg.topic});
+                    verbose_log("terminated monitoredItem on " + nodeStr);
+                    if (monitoredItems.get({"topicName": nodeStr})) {
+                        monitoredItems.delete({"topicName": nodeStr});
                     }
                 });
             }
@@ -605,7 +625,7 @@ module.exports = function (RED) {
 
                 verbose_log(msg.topic + " samplingInterval " + interval);
                 verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
-
+				// TODO read nodeId to validate it before subscription
                 monitoredItem = subscription.monitor(
                     {
                         nodeId: msg.topic, // serverObjectId
@@ -623,11 +643,12 @@ module.exports = function (RED) {
                             node.error('subscription.monitorEvent:' + err);
                             reset_opcua_client(connect_opcua_client);
                         }
+						else {
+							valid=true;
+						}
                     }
                 );
-
-                monitoredItems.add({"topicName": msg.topic, mItem: monitoredItem});
-
+				monitoredItems.add({"topicName": msg.topic, mItem: monitoredItem});
 
                 monitoredItem.on("initialized", function () {
                     verbose_log("monitored Event initialized");
