@@ -21,6 +21,7 @@ module.exports = function (RED) {
     var opcua = require('node-opcua');
     var opcuaBasics = require('./opcua-basics');
     var nodeId = require('node-opcua/lib/datamodel/nodeid');
+	var UAProxyManager = require("node-opcua/lib/client/proxy").UAProxyManager;
 	var coerceNodeId = require("node-opcua/lib/datamodel/nodeid").coerceNodeId;
 	var makeNodeId = require("node-opcua/lib/datamodel/nodeid").makeNodeId;	
     var browse_service = require("node-opcua/lib/services/browse_service");
@@ -293,6 +294,9 @@ module.exports = function (RED) {
                 case "read":
                     read_action_input(msg);
                     break;
+				case "info":
+					info_action_input(msg);
+					break;
                 case "write":
                     write_action_input(msg);
                     break;
@@ -396,6 +400,75 @@ module.exports = function (RED) {
 			}
         }
 
+		function info_action_input(msg) {
+            verbose_log("meta-data reading");
+			var item="";
+			if (msg.topic) {
+				var n = msg.topic.indexOf("datatype=");
+				if (n>0) {
+					msg.datatype=msg.topic.substring(n+9);
+					item=msg.topic.substring(0,n-1);
+					msg.topic=item;
+					verbose_log(JSON.stringify(msg));
+				}
+				
+			}
+			if (item.length>0)
+				items[0]=item;
+			else
+				items[0] = msg.topic; // TODO support for multiple item reading
+			
+			if (node.session) {
+				var nodeId = coerceNodeId(items[0]);
+				var typeStr="";
+				node.session.readVariableValue(nodeId, function(err,dataValue) {
+					if (!err) {
+						console.log(dataValue.value.dataType.toString());
+						typeStr = dataValue.value.dataType.toString();
+						}
+				});
+
+				var proxyManager = new UAProxyManager(node.session);
+				proxyManager.getObject(nodeId, function(err,data) {
+					if (!err) {
+						//console.log(data);
+						if (data.typeDefinition!="FolderType") {
+							var object = {};
+							try {
+								object = JSON.parse(JSON.stringify(data));
+							}
+							catch(err) {
+								node.error(err);
+								node.warn(data);
+								return;
+							}
+							// console.log(object);
+							msg.payload = {};
+
+							if (object.description!=null)
+								msg.payload.description = object.description;
+							else
+								msg.payload.description = "";
+							msg.payload.browseName = object.browseName.name;
+							msg.payload.userAccessLevel = object.userAccessLevel;
+							msg.payload.accessLevel = object.accessLevel;
+							msg.payload.type = typeStr;
+							node.send(msg);
+						}
+					}
+					else {
+						node.error(err);
+						set_node_status_to("error");
+						reset_opcua_client(connect_opcua_client);
+					}
+				})
+			}
+			else {
+				set_node_status_to("Session invalid");
+				node.error("Session is not active!")
+			}
+        }
+
         function write_action_input(msg) {
 
             verbose_log("writing");
@@ -421,6 +494,7 @@ module.exports = function (RED) {
             verbose_log("msg=" + JSON.stringify(msg));
             verbose_log("namespace=" + ns);
             verbose_log("string=" + s);
+			verbose_log("type=" + msg.datatype);
             verbose_log("value=" + msg.payload);
             verbose_log(nodeid.toString());
 
@@ -540,6 +614,23 @@ module.exports = function (RED) {
                     else {
                         verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16));
                     }
+					// Check if timestamps exists otherwise simulate them
+					if (dataValue.serverTimestamp!=null) {
+						msg.serverTimestamp = dataValue.serverTimestamp;
+						msg.serverPicoseconds = dataValue.serverPicoseconds;
+					}
+					else {
+						msg.serverTimestamp = new Date().getTime();;
+						msg.serverPicoseconds = 0;
+					}
+					if (dataValue.sourceTimestamp!=null) {
+						msg.sourceTimestamp = dataValue.sourceTimestamp;
+						msg.sourcePicoseconds = dataValue.sourcePicoseconds;
+					}
+					else {
+						msg.sourceTimestamp = new Date().getTime();;
+						msg.sourcPicoseconds = 0;
+					}
 
                     msg.payload = dataValue.value.value;
                     node.send(msg);
