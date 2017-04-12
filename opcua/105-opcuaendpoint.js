@@ -24,12 +24,20 @@ module.exports = function (RED) {
         RED.nodes.createNode(this, n);
 
         this.endpoint = n.endpoint;
+        this.secpolicy = n.secpolicy;
+        this.secmode = n.secmode;
         this.login = n.login;
 
         if (this.credentials) {
             this.user = this.credentials.user;
             this.password = this.credentials.password;
         }
+		
+        this.securityPolicy = opcua.SecurityPolicy[this.sign];
+        if ( this.securityPolicy == undefined ) this.securityPolicy = opcua.SecurityPolicy.None;
+
+        this.securityMode = opcua.MessageSecurityMode[this.msgsec];
+        if ( this.securityMode == undefined ) this.securityMode = opcua.MessageSecurityMode.NONE;
     }
 
     RED.nodes.registerType("OpcUa-Endpoint", OpcUaEndpointNode, {
