@@ -133,8 +133,6 @@ module.exports = function (RED) {
 	    var options = {};
 	    options.securityPolicy = opcuaEndpoint.securityPolicy;
 	    options.securityMode = opcuaEndpoint.securityMode;
-	    verbose_log.log("Client connection setting - Security Policy: " + options.securityPolicy);
-	    verbose_log.log("Client connection setting - Security Mode: " + options.securityMode);
 		
             node.client = new opcua.OPCUAClient(options);
             items = [];
