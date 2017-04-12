@@ -21,6 +21,8 @@ limitations under the License.
         category: 'config',
         defaults: {
             endpoint: {value: "", required: true},
+            secpolicy: {value: "None", required: true},
+            secmode: {value: "NONE", required: true},
             login: {value: false}
         },
         credentials: {
@@ -71,13 +73,21 @@ limitations under the License.
         <input type="text" id="node-config-input-endpoint">
     </div>
     <div class="form-row">
-        <label for="node-config-input-sign"><i class="icon-key"></i> Sign</label>
-        <select type="text" id="node-input-sign">
+        <label for="node-config-input-secpolicy"><i class="icon-key"></i> SecurityPolicy</label>
+        <select type="text" id="node-config-input-secpolicy">
             <option value="None">None</option>
-            <option value="Basic128Rsa15Signed">Basic128Rsa15 signed</option>
-            <option value="Basic256Signed">Basic256 signed</option>
-            <option value="Basic128Rsa15">Basic128Rsa15 signed+crypted</option>
-            <option value="Basic256Signed">Basic256 signed+crypted</option>
+            <option value="Basic128">Basic128</option>
+            <option value="Basic128Rsa15">Basic128Rsa15</option>
+            <option value="Basic256">Basic256</option>
+            <option value="Basic256Rsa15">Basic256Rsa15</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-secmode"><i class="icon-key"></i> SecurityMode</label>
+        <select type="text" id="node-config-input-secmode">
+            <option value="NONE">None</option>
+            <option value="SIGN">Sign</option>
+            <option value="SIGNANDENCRYPT">Sign&Encrypt</option>
         </select>
     </div>
     <div class="form-row">
