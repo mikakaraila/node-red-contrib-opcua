@@ -24,6 +24,8 @@ module.exports = function (RED) {
         RED.nodes.createNode(this, n);
 
         this.endpoint = n.endpoint;
+        this.securityPolicy = opcua.SecurityPolicy[n.secpolicy] || opcua.SecurityPolicy.None;
+        this.securityMode = opcua.MessageSecurityMode[n.secmode] || opcua.MessageSecurityMode.NONE;
         this.login = n.login;
 
         if (this.credentials) {

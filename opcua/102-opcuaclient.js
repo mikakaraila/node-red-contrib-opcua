@@ -21,9 +21,9 @@ module.exports = function (RED) {
     var opcua = require('node-opcua');
     var opcuaBasics = require('./opcua-basics');
     var nodeId = require('node-opcua/lib/datamodel/nodeid');
-	var UAProxyManager = require("node-opcua/lib/client/proxy").UAProxyManager;
-	var coerceNodeId = require("node-opcua/lib/datamodel/nodeid").coerceNodeId;
-	var makeNodeId = require("node-opcua/lib/datamodel/nodeid").makeNodeId;	
+    var UAProxyManager = require("node-opcua/lib/client/proxy").UAProxyManager;
+    var coerceNodeId = require("node-opcua/lib/datamodel/nodeid").coerceNodeId;
+    var makeNodeId = require("node-opcua/lib/datamodel/nodeid").makeNodeId;	
     var browse_service = require("node-opcua/lib/services/browse_service");
     var async = require("async");
     var treeify = require('treeify');
@@ -129,7 +129,12 @@ module.exports = function (RED) {
 
             node.client = null;
             verbose_warn("create Client ...");
-            node.client = new opcua.OPCUAClient();
+		
+	    var options = {};
+	    options.securityPolicy = opcuaEndpoint.securityPolicy;
+	    options.securityMode = opcuaEndpoint.securityMode;
+		
+            node.client = new opcua.OPCUAClient(options);
             items = [];
             node.items = items;
             set_node_status_to("create client");
