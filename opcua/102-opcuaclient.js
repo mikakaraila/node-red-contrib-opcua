@@ -45,33 +45,15 @@ module.exports = function (RED) {
         var userIdentity = {};
 		var connectionOption = {};
 		
-		// Initialize as None
-		connectionOption.securityMode = connectionOption.securityMode ||  opcua.MessageSecurityMode.NONE;
-        connectionOption.securityPolicy = connectionOption.securityPolicy || opcua.SecurityPolicy.None;
+        connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
+        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] ||  opcua.MessageSecurityMode.NONE;
 		
 		verbose_log(opcuaEndpoint);
         if (opcuaEndpoint.login) {
             userIdentity.userName = opcuaEndpoint.credentials.user;
             userIdentity.password = opcuaEndpoint.credentials.password;
         }
-		if (opcuaEndpoint.security) {	
-			if (opcuaEndpoint.security == "Basic128Rsa15 signed") {
-				connectionOption.securityPolicy = opcua.SecurityPolicy.Basic128Rsa15 || opcua.SecurityPolicy.None;
-				connectionOption.securityMode = MessageSecurityMode.SIGN;
-			}
-			if (opcuaEndpoint.security == "Basic256 signed") {
-				connectionOption.securityPolicy = opcua.SecurityPolicy.Basic256 || opcua.SecurityPolicy.None;
-				connectionOption.securityMode = MessageSecurityMode.SIGN;
-			}
-			if (opcuaEndpoint.security == "Basic128Rsa15 signed+crypted") {
-				connectionOption.securityPolicy = opcua.SecurityPolicy.Basic128Rsa15 || opcua.SecurityPolicy.None;
-				connectionOption.securityMode = MessageSecurityMode.SIGNANDENCRYPT;
-			}
-			if (opcuaEndpoint.security == "Basic256 signed+crypted") {
-				connectionOption.securityPolicy = opcua.SecurityPolicy.Basic256 || opcua.SecurityPolicy.None;
-				connectionOption.securityMode = MessageSecurityMode.SIGNANDENCRYPT;
-			}
-		}
+
         var items = [];
         var subscription; // only one subscription needed to hold multiple monitored Items
 
