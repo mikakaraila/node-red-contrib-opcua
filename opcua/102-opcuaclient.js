@@ -41,13 +41,37 @@ module.exports = function (RED) {
         this.timeUnit = n.timeUnit;
 
         var node = this;
-
         var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
         var userIdentity = {};
+		var connectionOption = {};
+		
+		// Initialize as None
+		connectionOption.securityMode = connectionOption.securityMode ||  opcua.MessageSecurityMode.NONE;
+        connectionOption.securityPolicy = connectionOption.securityPolicy || opcua.SecurityPolicy.None;
+		
+		verbose_log(opcuaEndpoint);
         if (opcuaEndpoint.login) {
-            userIdentity.userName = opcuaEndpoint.credentials.user,
-            userIdentity.password = opcuaEndpoint.credentials.password
-        };
+            userIdentity.userName = opcuaEndpoint.credentials.user;
+            userIdentity.password = opcuaEndpoint.credentials.password;
+        }
+		if (opcuaEndpoint.security) {	
+			if (opcuaEndpoint.security == "Basic128Rsa15 signed") {
+				connectionOption.securityPolicy = opcua.SecurityPolicy.Basic128Rsa15 || opcua.SecurityPolicy.None;
+				connectionOption.securityMode = MessageSecurityMode.SIGN;
+			}
+			if (opcuaEndpoint.security == "Basic256 signed") {
+				connectionOption.securityPolicy = opcua.SecurityPolicy.Basic256 || opcua.SecurityPolicy.None;
+				connectionOption.securityMode = MessageSecurityMode.SIGN;
+			}
+			if (opcuaEndpoint.security == "Basic128Rsa15 signed+crypted") {
+				connectionOption.securityPolicy = opcua.SecurityPolicy.Basic128Rsa15 || opcua.SecurityPolicy.None;
+				connectionOption.securityMode = MessageSecurityMode.SIGNANDENCRYPT;
+			}
+			if (opcuaEndpoint.security == "Basic256 signed+crypted") {
+				connectionOption.securityPolicy = opcua.SecurityPolicy.Basic256 || opcua.SecurityPolicy.None;
+				connectionOption.securityMode = MessageSecurityMode.SIGNANDENCRYPT;
+			}
+		}
         var items = [];
         var subscription; // only one subscription needed to hold multiple monitored Items
 
@@ -126,10 +150,10 @@ module.exports = function (RED) {
         }
 
         function create_opcua_client(callback) {
-
             node.client = null;
             verbose_warn("create Client ...");
-            node.client = new opcua.OPCUAClient();
+			verbose_log(connectionOption);
+            node.client = new opcua.OPCUAClient(connectionOption);
             items = [];
             node.items = items;
             set_node_status_to("create client");
