@@ -22,10 +22,11 @@ module.exports = function (RED) {
     function OpcUaEndpointNode(n) {
 
         RED.nodes.createNode(this, n);
-		console.log(n);
+	
         this.endpoint = n.endpoint;
+	this.securityPolicy = n.secpol;
+	this.securityMode = n.secmode;
         this.login = n.login;
-		this.security = n.security;
 		
         if (this.credentials) {
             this.user = this.credentials.user;
