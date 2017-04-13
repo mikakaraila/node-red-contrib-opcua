@@ -21,7 +21,8 @@ limitations under the License.
         category: 'config',
         defaults: {
             endpoint: {value: "", required: true},
-            login: {value: false}
+            login: {value: false},
+			security: {value: ""}
         },
         credentials: {
             user: {type: "text"},
@@ -63,16 +64,14 @@ limitations under the License.
     });
 </script>
 
-
-
 <script type="text/x-red" data-template-name="OpcUa-Endpoint">
     <div class="form-row">
         <label for="node-config-input-endpoint"><i class="icon-link"></i> Endpoint</label>
         <input type="text" id="node-config-input-endpoint">
     </div>
     <div class="form-row">
-        <label for="node-config-input-sign"><i class="icon-key"></i> Sign</label>
-        <select type="text" id="node-input-sign">
+        <label for="node-config-input-security"><i class="icon-key"></i> Sign</label>
+        <select type="text" id="node-config-input-security">
             <option value="None">None</option>
             <option value="Basic128Rsa15Signed">Basic128Rsa15 signed</option>
             <option value="Basic256Signed">Basic256 signed</option>
