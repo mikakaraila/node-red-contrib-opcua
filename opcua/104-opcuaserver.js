@@ -77,6 +77,17 @@ module.exports = function (RED) {
             server.buildInfo.buildDate = new Date(2016, 3, 24);
             verbose_warn("init next...");
             server.initialize(post_initialize);
+			var hostname = os.hostname();
+			var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840/UADiscovery";
+			verbose_log("\nregistering server to :".yellow + discovery_server_endpointUrl);
+			server.registerServer(discovery_server_endpointUrl, function (err) {
+				if (err) {
+					// cannot register server in discovery
+					verbose_warn("     warning : cannot register server into registry server");
+				} else {
+					verbose_log("     registering server to the discovery server : done.".cyan);
+                }
+			});
         }
 
         function construct_my_address_space(addressSpace) {
