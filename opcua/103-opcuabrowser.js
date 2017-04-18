@@ -36,6 +36,10 @@ module.exports = function (RED) {
 
         var opcuaEndpoint = RED.nodes.getNode(config.endpoint);
 
+        var connectionOption = {};
+        connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
+        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.NONE;
+
         node.status({fill: "gray", shape: "dot", text: "no Items"});
 
         node.add_item = function (item) {
@@ -47,7 +51,7 @@ module.exports = function (RED) {
         function setupClient(url, callback) {
 
             // new OPC UA Client and browse from Objects ns=0;s=Objects
-            var browseClient = new opcua.OPCUAClient();
+            var browseClient = new opcua.OPCUAClient(connectionOption);
             var browseSession;
 
             async.series([
