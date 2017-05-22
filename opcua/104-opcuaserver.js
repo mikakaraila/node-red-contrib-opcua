@@ -31,10 +31,11 @@ module.exports = function (RED) {
         this.endpoint = n.endpoint;
 
         var node = this;
-
+        var variables = {
+            Counter: 0,
+        }
         var equipmentCounter = 0;
         var physicalAssetCounter = 0;
-        var counterValue = 0;
         var equipment;
         var physicalAssets;
         var vendorName;
@@ -158,7 +159,7 @@ module.exports = function (RED) {
 
                 value: {
                     get: function () {
-                        return new opcua.Variant({dataType: opcua.DataType.UInt16, value: counterValue});
+                        return new opcua.Variant({dataType: opcua.DataType.UInt16, value: variables.Counter});
                     }
                 }
             });
@@ -302,16 +303,9 @@ module.exports = function (RED) {
         }
 
         function read_message(payload) {
-
             switch (payload.messageType) {
-
                 case 'Variable':
-                    if (payload.variableName == "Counter") {
-                        // Code for the Node-RED function to send the data by an inject
-                        // msg = { payload : { "messageType" : "Variable", "variableName": "Counter", "variableValue": msg.payload }};
-                        // return msg;
-                        counterValue = payload.variableValue;
-                    }
+                    variables[payload.variableName] = payload.variableValue;
                     break;
                 default:
                     break;
@@ -386,12 +380,13 @@ module.exports = function (RED) {
 						parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
 					}
 					
-					var value=null;
 					if (e>0)
 					{
 						name = msg.topic.substring(0,e-1);
 						datatype = msg.topic.substring(e+9);
-						value=0;
+                        var browseName = name.substring(7);
+                        variables[browseName] = 0;
+
 						if (datatype=="Int32") {
 							opcuaDataType = opcua.DataType.Int32;
 						}
@@ -412,19 +407,23 @@ module.exports = function (RED) {
 						}
 						if (datatype=="String") {
 							opcuaDataType = opcua.DataType.String;
-							value="";
+							variables[browseName] = "";
 						}
 						if (datatype=="Boolean") {
 							opcuaDataType = opcua.DataType.Boolean;
-							value = true;
+							variables[browseName] = true;
 						}
 						verbose_log(opcuaDataType.toString());
 						addressSpace.addVariable({
-							organizedBy: addressSpace.findNode(parentFolder.nodeId),
+							componentOf: addressSpace.findNode(parentFolder.nodeId),
 							nodeId: name,
-							browseName: name.substring(7), // or displayName
+							browseName: browseName, // or displayName
 							dataType: opcuaDataType,
-							value: new opcua.Variant({dataType: opcuaDataType, value: value})
+							value: {
+                                get: function() {
+                                    return new opcua.Variant({dataType: opcuaDataType, value: variables[browseName]})
+                                }
+                            }
 						});
 					}
                     break;
