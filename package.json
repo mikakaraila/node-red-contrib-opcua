@@ -41,5 +41,11 @@
   "homepage": "https://github.com/mikakaraila/node-red-contrib-opcua#readme",
   "scripts": {
     "test": "karma start opcua.conf.js --log-level debug --single-run"
+  },
+  "devDependencies": {
+    "jasmine-core": "^2.6.3",
+    "karma": "^1.7.0",
+    "karma-chrome-launcher": "^2.1.1",
+    "karma-jasmine": "^1.1.0"
   }
 }
