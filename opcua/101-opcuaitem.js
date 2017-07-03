@@ -52,7 +52,7 @@ module.exports = function (RED) {
 
             verbose_log('node value:' + node.value);
 
-            if (node.value) {
+            if (msg.payload.length>0 && node.value) {
 				if (node.datatype) {
 					msg.payload = opcuaBasics.build_new_value_by_datatype(node.datatype, node.value);
 				}
@@ -61,8 +61,10 @@ module.exports = function (RED) {
 				}
                 verbose_warn("setting value by Item " + msg.payload);
             } else {
-                msg.payload = opcuaBasics.build_new_value_by_datatype(msg.datatype, msg.payload);
-                verbose_warn("setting value by Input " + msg.payload);
+				if (msg.payload.length>0) {
+                    msg.payload = opcuaBasics.build_new_value_by_datatype(msg.datatype, msg.payload);
+                    verbose_warn("setting value by Input " + msg.payload);
+				}
             }
 
             node.send(msg);
