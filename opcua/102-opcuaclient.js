@@ -263,6 +263,11 @@ module.exports = function (RED) {
     create_opcua_client(connect_opcua_client);
 
     node.on("input", function (msg) {
+	  if (msg.action) {
+          verbose_log("Action on msg:" + msg.action);
+		  node.action=msg.action;
+	  }
+	  
       if (!node.action) {
         verbose_warn("can't work without action (read, write, browse ...)");
         //node.send(msg); // do not send in case of error
@@ -305,6 +310,9 @@ module.exports = function (RED) {
           break;
         case "subscribe":
           subscribe_action_input(msg);
+          break;
+		case "unsubscribe":
+          unsubscribe_action_input(msg);
           break;
         case "browse":
           browse_action_input(msg);
@@ -537,6 +545,26 @@ module.exports = function (RED) {
       }
     }
 
+    function unsubscribe_action_input(msg) {
+      verbose_log("unsubscribing");
+      if (!subscription) {
+        // first build and start subscription and subscribe on its started event by callback
+        var timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
+        subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
+      } else {
+        // otherwise check if its terminated start to renew the subscription
+        if (subscription.subscriptionId != "terminated") {
+          set_node_status_to("active subscribing");
+          unsubscribe_monitoredItem(subscription, msg); // Call to terminate monitoredItem
+        } else {
+          subscription = null;
+          monitoredItems.clear();
+          set_node_status_to("terminated");
+          reset_opcua_client(connect_opcua_client);
+        }
+      }
+    }
+
     function subscribe_monitoredItem(subscription, msg) {
       verbose_log("Session subscriptionId: " + subscription.subscriptionId);
       var nodeStr=msg.topic;
@@ -550,7 +578,7 @@ module.exports = function (RED) {
 
       if (!monitoredItem) {
         var interval = 100;
-        if (typeof msg.payload === 'number') {
+        if (msg.payload.length>0 && typeof msg.payload === 'number') {
             interval = Number(msg.payload);
         }
 
@@ -640,7 +668,37 @@ module.exports = function (RED) {
 
       return monitoredItem;
     }
+	
+	function unsubscribe_monitoredItem(subscription, msg) {
+      verbose_log("Session subscriptionId: " + subscription.subscriptionId);
+      var nodeStr=msg.topic;
+      var dTypeIndex = nodeStr.indexOf(";datatype=");
+      if (dTypeIndex>0) {
+        nodeStr=nodeStr.substring(0,dTypeIndex);
+      }
 
+      var monitoredItem = monitoredItems.get({"topicName": msg.topic});
+	  if (monitoredItem) {
+		  // Validate nodeId
+		  try {
+			var nodeId = coerceNodeId(nodeStr);
+			if (nodeId && nodeId.isEmpty()) {
+			  node.error(" Invalid empty node in getObject");
+			}
+		  } catch(err) {
+			node.error(err);
+			return;
+		  }
+	      monitoredItem.mItem.terminate();
+		  verbose_log("Unsubscribed (terminated) monitored item: " + msg.topic);
+		  monitoredItems.delete({"topicName": msg.topic});
+		  return;
+		}
+		else {
+			node.error("Item not monitored:"+msg.topic)
+		}
+	}
+	  
     function browse_action_input(msg) {
       verbose_log("browsing");
       var NodeCrawler = opcua.NodeCrawler;
@@ -735,7 +793,7 @@ module.exports = function (RED) {
             monitoredItems.delete({"topicName": msg.topic});
           }
 
-          node.err("monitored Event ", msg.eventTypeId, " ERROR".red, err_message);
+          node.error("monitored Event ", msg.eventTypeId, " ERROR".red, err_message);
           set_node_status_to("error");
         });
 
