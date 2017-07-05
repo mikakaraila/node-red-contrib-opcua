@@ -352,12 +352,12 @@ module.exports = function (RED) {
                     break;
 
 				case "setFolder":
-                    verbose_warn("set Folder".concat(msg.topic)); // Example topic format ns=4;s=FolderName
+                    verbose_warn("set Folder ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
 					folder = addressSpace.findNode(msg.topic);
                     break;
 
 				case "addFolder":
-                    verbose_warn("adding Folder".concat(msg.topic)); // Example topic format ns=4;s=FolderName
+                    verbose_warn("adding Folder ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
 					var parentFolder = addressSpace.rootFolder.objects;
 					if (folder!=null) {
 						parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
@@ -370,7 +370,7 @@ module.exports = function (RED) {
                     break;
 					
 				 case "addVariable":
-                    verbose_warn("adding Node".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
+                    verbose_warn("adding Node ".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
 					var datatype = "";
 					var opcuaDataType = null;
 					var e = msg.topic.indexOf("datatype=");
@@ -415,7 +415,7 @@ module.exports = function (RED) {
 						}
 						verbose_log(opcuaDataType.toString());
 						addressSpace.addVariable({
-							componentOf: addressSpace.findNode(parentFolder.nodeId),
+							organizedBy: addressSpace.findNode(parentFolder.nodeId),
 							nodeId: name,
 							browseName: browseName, // or displayName
 							dataType: opcuaDataType,
