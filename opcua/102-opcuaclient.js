@@ -430,7 +430,6 @@ module.exports = function (RED) {
         var typeStr="";
         node.session.readVariableValue(nodeId, function(err,dataValue) {
           if (!err) {
-            console.log(dataValue.value.dataType.toString());
             typeStr = dataValue.value.dataType.toString();
           }
         });
@@ -573,7 +572,6 @@ module.exports = function (RED) {
         nodeStr=nodeStr.substring(0,dTypeIndex);
       }
 
-      console.log("nodeStr="+nodeStr);
       var monitoredItem = monitoredItems.get({"topicName": msg.topic});
 
       if (!monitoredItem) {
