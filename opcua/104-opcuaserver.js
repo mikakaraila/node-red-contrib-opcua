@@ -21,6 +21,7 @@ module.exports = function (RED) {
     var opcua = require('node-opcua');
     var path = require('path');
     var os = require("os");
+	var opcuaBasics = require('./opcua-basics');
 
     function OpcUaServerNode(n) {
 
