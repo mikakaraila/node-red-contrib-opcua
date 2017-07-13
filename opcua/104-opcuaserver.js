@@ -420,10 +420,14 @@ module.exports = function (RED) {
 							browseName: browseName, // or displayName
 							dataType: opcuaDataType,
 							value: {
-                                get: function() {
-                                    return new opcua.Variant({dataType: opcuaDataType, value: variables[browseName]})
-                                }
-                            }
+								get: function() {
+									return new opcua.Variant({dataType: opcuaDataType, value: variables[browseName]})
+								},
+								set: function (variant) {
+									variables[browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType, variant.value);
+								return opcua.StatusCodes.Good;
+								}
+							}
 						});
 					}
                     break;
