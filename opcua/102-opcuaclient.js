@@ -564,6 +564,14 @@ module.exports = function (RED) {
       }
     }
 
+    function convertAndCheckInterval(interval) {
+      var n = Number(interval);
+      if (isNaN(n)) {
+        n = 100;
+      }
+      return n;
+    }	  
+	  
     function subscribe_monitoredItem(subscription, msg) {
       verbose_log("Session subscriptionId: " + subscription.subscriptionId);
       var nodeStr=msg.topic;
@@ -575,11 +583,7 @@ module.exports = function (RED) {
       var monitoredItem = monitoredItems.get({"topicName": msg.topic});
 
       if (!monitoredItem) {
-        var interval = 100;
-        if (msg.payload.length>0 && typeof msg.payload === 'number') {
-            interval = Number(msg.payload);
-        }
-
+        var interval = convertAndCheckInterval(msg.payload);
         verbose_log(msg.topic + " samplingInterval " + interval);
         verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
 
@@ -743,12 +747,7 @@ module.exports = function (RED) {
       var monitoredItem = monitoredItems.get({"topicName": msg.topic});
 
       if (!monitoredItem) {
-        var interval = 100;
-
-        if (typeof msg.payload === 'number') {
-          interval = Number(msg.payload);
-        }
-
+        var interval = convertAndCheckInterval(msg.payload);
         verbose_log(msg.topic + " samplingInterval " + interval);
         verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
         // TODO read nodeId to validate it before subscription
