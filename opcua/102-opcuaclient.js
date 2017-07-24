@@ -649,7 +649,7 @@ module.exports = function (RED) {
             msg.sourcePicoseconds = dataValue.sourcePicoseconds;
           } else {
             msg.sourceTimestamp = new Date().getTime();;
-            msg.sourcPicoseconds = 0;
+            msg.sourcePicoseconds = 0;
           }
 
           msg.payload = dataValue.value.value;
