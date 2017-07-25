@@ -707,14 +707,15 @@ module.exports = function (RED) {
     function browse_action_input(msg) {
       verbose_log("browsing");
       var NodeCrawler = opcua.NodeCrawler;
-      var crawler = new NodeCrawler(node.session);
+	  if (node.session) {
+		var crawler = new NodeCrawler(node.session);
 
-      crawler.read(msg.topic, function (err, obj) {
-        var newMessage = opcuaBasics.buildBrowseMessage(msg.topic);
-        if (!err) {
-          set_node_status_to("active browsing");
+		crawler.read(msg.topic, function (err, obj) {
+          var newMessage = opcuaBasics.buildBrowseMessage(msg.topic);
+          if (!err) {
+            set_node_status_to("active browsing");
 
-          treeify.asLines(obj, true, true, function (line) {
+            treeify.asLines(obj, true, true, function (line) {
 
             verbose_log(line);
             if (line.indexOf("browseName") > 0) {
@@ -736,12 +737,18 @@ module.exports = function (RED) {
             set_node_status_to("browse done");
 
           });
-        } else {
-          node.error(err.message);
-          set_node_status_to("error browsing");
-          reset_opcua_client(connect_opcua_client);
-        }
-      });
+          } else {
+            node.error(err.message);
+            set_node_status_to("error browsing");
+            reset_opcua_client(connect_opcua_client);
+          }
+		});
+	  }
+	  else {
+        node.error("Session is not active!");
+		set_node_status_to("Session invalid");
+        reset_opcua_client(connect_opcua_client);
+	  }
     }
 
     function subscribe_monitoredEvent(subscription, msg) {
