@@ -43,6 +43,8 @@ module.exports = function (RED) {
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
     var userIdentity = {};
     var connectionOption = {};
+    var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
+    var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
 
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] ||  opcua.MessageSecurityMode.NONE;
@@ -171,6 +173,7 @@ module.exports = function (RED) {
     function set_node_status_to(statusValue) {
       verbose_log("Client status: " + statusValue);
       var statusParameter = opcuaBasics.get_node_status(statusValue);
+      currentStatus = statusValue;
       node.status({fill: statusParameter.fill, shape: statusParameter.shape, text: statusParameter.status});
     }
 
@@ -197,6 +200,10 @@ module.exports = function (RED) {
                 node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
                 verbose_log("session active");
                 set_node_status_to("session active");
+                for(var i in cmdQueue) {
+                  processInputMsg(cmdQueue[i]);
+                }
+                cmdQueue = [];
                 callback();
               } else {
                 set_node_status_to("session error");
@@ -262,11 +269,11 @@ module.exports = function (RED) {
 
     create_opcua_client(connect_opcua_client);
 
-    node.on("input", function (msg) {
-	  if (msg.action) {
-          verbose_log("Action on msg:" + msg.action);
-		  node.action=msg.action;
-	  }
+    function processInputMsg(msg) {
+      if (msg.action) {
+            verbose_log("Action on msg:" + msg.action);
+        node.action=msg.action;
+      }
 	  
       if (!node.action) {
         verbose_warn("can't work without action (read, write, browse ...)");
@@ -275,8 +282,15 @@ module.exports = function (RED) {
       }
 
       if (!node.client || !node.session) {
-        verbose_warn("can't work without OPC UA Session");
-        reset_opcua_client(connect_opcua_client);
+        if(currentStatus == 'connecting')
+        {
+          cmdQueue.push(msg);
+        }
+        else
+        {
+          verbose_warn("can't work without OPC UA Session");
+          reset_opcua_client(connect_opcua_client);
+        }
         //node.send(msg); // do not send in case of error
         return;
       }
@@ -324,7 +338,8 @@ module.exports = function (RED) {
           break;
       }
       //node.send(msg); // msg.payload is here actual inject caused wrong values
-    });
+    }
+    node.on("input", processInputMsg);
 
     function read_action_input(msg) {
 
