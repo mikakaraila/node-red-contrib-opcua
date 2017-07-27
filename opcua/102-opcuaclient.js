@@ -31,6 +31,7 @@ module.exports = function (RED) {
   var Set = require("collections/set");
   var DataType = opcua.DataType;
   var AttributeIds = opcua.AttributeIds;
+  var TimestampsToReturn = require("node-opcua/lib/services/read_service").TimestampsToReturn;
 
   function OpcUaClientNode(n) {
     RED.nodes.createNode(this, n);
@@ -370,9 +371,11 @@ module.exports = function (RED) {
             reset_opcua_client(connect_opcua_client);
           } else {
             set_node_status_to("active reading");
+			
             for (var i = 0; i < dataValues.length; i++) {
               var dataValue = dataValues[i];
               verbose_log("\tNode : " + (msg.topic).cyan.bold);
+			  verbose_log(dataValue.toString());
               if (dataValue) {
                 try {
                   verbose_log("\tValue : " + dataValue.value.value);
@@ -382,7 +385,7 @@ module.exports = function (RED) {
                     node.error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + dataValue.value.dataType.toString());
                   }
                   if (msg.datatype==null) {
-                    node.warn("msg.datatype == null, if you use inject check topic is format 'ns=2;s=MyLevel;datatype=Float'");
+                    node.warn("msg.datatype == null, if you use inject check topic is format 'ns=2;s=MyLevel;datatype=Double'");
                   }
                   if (dataValue.value.dataType === opcua.DataType.UInt16) {
                     verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
@@ -624,7 +627,7 @@ module.exports = function (RED) {
             queueSize: 10,
             discardOldest: true
           },
-          3,
+          TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
           function (err) {
             if (err) {
               node.error("Check topic format for nodeId:"+msg.topic)
@@ -643,7 +646,7 @@ module.exports = function (RED) {
         monitoredItem.on("changed", function (dataValue) {
           set_node_status_to("active subscribed");
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
-
+		  verbose_log(dataValue.toString());
           if (dataValue.statusCode === opcua.StatusCodes.Good) {
               verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
           } else {
@@ -664,7 +667,7 @@ module.exports = function (RED) {
             msg.sourcePicoseconds = dataValue.sourcePicoseconds;
           } else {
             msg.sourceTimestamp = new Date().getTime();;
-            msg.sourcPicoseconds = 0;
+            msg.sourcePicoseconds = 0;
           }
 
           msg.payload = dataValue.value.value;
@@ -719,14 +722,15 @@ module.exports = function (RED) {
     function browse_action_input(msg) {
       verbose_log("browsing");
       var NodeCrawler = opcua.NodeCrawler;
-      var crawler = new NodeCrawler(node.session);
+	  if (node.session) {
+		var crawler = new NodeCrawler(node.session);
 
-      crawler.read(msg.topic, function (err, obj) {
-        var newMessage = opcuaBasics.buildBrowseMessage(msg.topic);
-        if (!err) {
-          set_node_status_to("active browsing");
+		crawler.read(msg.topic, function (err, obj) {
+          var newMessage = opcuaBasics.buildBrowseMessage(msg.topic);
+          if (!err) {
+            set_node_status_to("active browsing");
 
-          treeify.asLines(obj, true, true, function (line) {
+            treeify.asLines(obj, true, true, function (line) {
 
             verbose_log(line);
             if (line.indexOf("browseName") > 0) {
@@ -748,12 +752,18 @@ module.exports = function (RED) {
             set_node_status_to("browse done");
 
           });
-        } else {
-          node.error(err.message);
-          set_node_status_to("error browsing");
-          reset_opcua_client(connect_opcua_client);
-        }
-      });
+          } else {
+            node.error(err.message);
+            set_node_status_to("error browsing");
+            reset_opcua_client(connect_opcua_client);
+          }
+		});
+	  }
+	  else {
+        node.error("Session is not active!");
+		set_node_status_to("Session invalid");
+        reset_opcua_client(connect_opcua_client);
+	  }
     }
 
     function subscribe_monitoredEvent(subscription, msg) {
