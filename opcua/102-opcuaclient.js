@@ -44,6 +44,8 @@ module.exports = function (RED) {
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
     var userIdentity = {};
     var connectionOption = {};
+    var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
+    var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
 
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] ||  opcua.MessageSecurityMode.NONE;
@@ -172,6 +174,7 @@ module.exports = function (RED) {
     function set_node_status_to(statusValue) {
       verbose_log("Client status: " + statusValue);
       var statusParameter = opcuaBasics.get_node_status(statusValue);
+      currentStatus = statusValue;
       node.status({fill: statusParameter.fill, shape: statusParameter.shape, text: statusParameter.status});
     }
 
@@ -198,6 +201,10 @@ module.exports = function (RED) {
                 node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
                 verbose_log("session active");
                 set_node_status_to("session active");
+                for(var i in cmdQueue) {
+                  processInputMsg(cmdQueue[i]);
+                }
+                cmdQueue = [];
                 callback();
               } else {
                 set_node_status_to("session error");
@@ -263,12 +270,12 @@ module.exports = function (RED) {
 
     create_opcua_client(connect_opcua_client);
 
-    node.on("input", function (msg) {
-	  if (msg.action) {
-          verbose_log("Action on msg:" + msg.action);
-		  node.action=msg.action;
-	  }
-	  
+    function processInputMsg(msg) {
+      if (msg.action) {
+            verbose_log("Action on msg:" + msg.action);
+        node.action=msg.action;
+      }
+
       if (!node.action) {
         verbose_warn("can't work without action (read, write, browse ...)");
         //node.send(msg); // do not send in case of error
@@ -276,8 +283,15 @@ module.exports = function (RED) {
       }
 
       if (!node.client || !node.session) {
-        verbose_warn("can't work without OPC UA Session");
-        reset_opcua_client(connect_opcua_client);
+        if(currentStatus == 'connecting')
+        {
+          cmdQueue.push(msg);
+        }
+        else
+        {
+          verbose_warn("can't work without OPC UA Session");
+          reset_opcua_client(connect_opcua_client);
+        }
         //node.send(msg); // do not send in case of error
         return;
       }
@@ -312,7 +326,7 @@ module.exports = function (RED) {
         case "subscribe":
           subscribe_action_input(msg);
           break;
-		case "unsubscribe":
+        case "unsubscribe":
           unsubscribe_action_input(msg);
           break;
         case "browse":
@@ -325,7 +339,8 @@ module.exports = function (RED) {
           break;
       }
       //node.send(msg); // msg.payload is here actual inject caused wrong values
-    });
+    }
+    node.on("input", processInputMsg);
 
     function read_action_input(msg) {
 
@@ -356,11 +371,11 @@ module.exports = function (RED) {
             reset_opcua_client(connect_opcua_client);
           } else {
             set_node_status_to("active reading");
-			
+
             for (var i = 0; i < dataValues.length; i++) {
               var dataValue = dataValues[i];
               verbose_log("\tNode : " + (msg.topic).cyan.bold);
-			  verbose_log(dataValue.toString());
+              verbose_log(dataValue.toString());
               if (dataValue) {
                 try {
                   verbose_log("\tValue : " + dataValue.value.value);
@@ -566,15 +581,15 @@ module.exports = function (RED) {
         }
       }
     }
-	
-	function convertAndCheckInterval(interval) {
-		var n = Number(interval);
-		if (isNaN(n)) {
-			n = 100;
-		}
-		return n;
-	}
-	
+
+    function convertAndCheckInterval(interval) {
+      var n = Number(interval);
+      if (isNaN(n)) {
+        n = 100;
+      }
+      return n;
+    }
+
     function subscribe_monitoredItem(subscription, msg) {
       verbose_log("Session subscriptionId: " + subscription.subscriptionId);
       var nodeStr=msg.topic;
@@ -631,7 +646,7 @@ module.exports = function (RED) {
         monitoredItem.on("changed", function (dataValue) {
           set_node_status_to("active subscribed");
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
-		  verbose_log(dataValue.toString());
+          verbose_log(dataValue.toString());
           if (dataValue.statusCode === opcua.StatusCodes.Good) {
               verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
           } else {
@@ -673,8 +688,8 @@ module.exports = function (RED) {
 
       return monitoredItem;
     }
-	
-	function unsubscribe_monitoredItem(subscription, msg) {
+
+    function unsubscribe_monitoredItem(subscription, msg) {
       verbose_log("Session subscriptionId: " + subscription.subscriptionId);
       var nodeStr=msg.topic;
       var dTypeIndex = nodeStr.indexOf(";datatype=");
@@ -683,34 +698,34 @@ module.exports = function (RED) {
       }
 
       var monitoredItem = monitoredItems.get({"topicName": msg.topic});
-	  if (monitoredItem) {
-		  // Validate nodeId
-		  try {
-			var nodeId = coerceNodeId(nodeStr);
-			if (nodeId && nodeId.isEmpty()) {
-			  node.error(" Invalid empty node in getObject");
-			}
-		  } catch(err) {
-			node.error(err);
-			return;
-		  }
-	      monitoredItem.mItem.terminate();
-		  verbose_log("Unsubscribed (terminated) monitored item: " + msg.topic);
-		  monitoredItems.delete({"topicName": msg.topic});
-		  return;
-		}
-		else {
-			node.error("Item not monitored:"+msg.topic)
-		}
-	}
-	  
+      if (monitoredItem) {
+          // Validate nodeId
+          try {
+            var nodeId = coerceNodeId(nodeStr);
+            if (nodeId && nodeId.isEmpty()) {
+              node.error(" Invalid empty node in getObject");
+            }
+          } catch(err) {
+            node.error(err);
+            return;
+          }
+          monitoredItem.mItem.terminate();
+          verbose_log("Unsubscribed (terminated) monitored item: " + msg.topic);
+          monitoredItems.delete({"topicName": msg.topic});
+          return;
+        }
+        else {
+            node.error("Item not monitored:"+msg.topic)
+        }
+    }
+
     function browse_action_input(msg) {
       verbose_log("browsing");
       var NodeCrawler = opcua.NodeCrawler;
-	  if (node.session) {
-		var crawler = new NodeCrawler(node.session);
+      if (node.session) {
+        var crawler = new NodeCrawler(node.session);
 
-		crawler.read(msg.topic, function (err, obj) {
+        crawler.read(msg.topic, function (err, obj) {
           var newMessage = opcuaBasics.buildBrowseMessage(msg.topic);
           if (!err) {
             set_node_status_to("active browsing");
@@ -742,13 +757,13 @@ module.exports = function (RED) {
             set_node_status_to("error browsing");
             reset_opcua_client(connect_opcua_client);
           }
-		});
-	  }
-	  else {
+        });
+      }
+      else {
         node.error("Session is not active!");
-		set_node_status_to("Session invalid");
+        set_node_status_to("Session invalid");
         reset_opcua_client(connect_opcua_client);
-	  }
+      }
     }
 
     function subscribe_monitoredEvent(subscription, msg) {
