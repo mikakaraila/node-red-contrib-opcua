@@ -43,8 +43,12 @@ module.exports = function (RED) {
         var equipmentNotFound = true;
         var initialized = false;
         var server = null;
-		var folder = null;
-		
+        var folder = null;
+
+        function node_error(err) {
+          node.error(err, err);
+        }
+
         function verbose_warn(logMessage) {
             if (RED.settings.verbose) {
                 node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaServerNode: ' + logMessage);
@@ -239,7 +243,7 @@ module.exports = function (RED) {
             }
             else {
                 node.status({fill: "gray", shape: "dot", text: "not running"});
-                node.error("server is not initialized")
+                node_error("server is not initialized")
             }
         }
 
@@ -253,10 +257,10 @@ module.exports = function (RED) {
         node.on("input", function (msg) {
 			verbose_log(JSON.stringify(msg));
             if (server == undefined || !initialized) {
-				node.error("Server is not running");
+				node_error("Server is not running");
 				return false;
 			}
-                
+
 
             var payload = msg.payload;
 
@@ -273,7 +277,7 @@ module.exports = function (RED) {
                 var addressSpace = server.engine.addressSpace;
 
                 if (addressSpace === undefined) {
-                    node.error("addressSpace undefinded");
+                    node_error("addressSpace undefinded");
                     return false;
                 }
 
@@ -321,7 +325,7 @@ module.exports = function (RED) {
 			var payload = msg.payload;
             var addressSpace = server.engine.addressSpace;
             var name;
-			
+
             switch (payload.opcuaCommand) {
 
                 case "restartOPCUAServer":
@@ -369,18 +373,18 @@ module.exports = function (RED) {
 							browseName: msg.topic.substring(7)
 					});
                     break;
-					
+
 				 case "addVariable":
                     verbose_warn("adding Node ".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
 					var datatype = "";
 					var opcuaDataType = null;
 					var e = msg.topic.indexOf("datatype=");
-					
+
 					var parentFolder = addressSpace.rootFolder.objects;
 					if (folder!=null) {
 						parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
 					}
-					
+
 					if (e>0)
 					{
 						name = msg.topic.substring(0,e-1);
@@ -435,7 +439,7 @@ module.exports = function (RED) {
 
                 case "deleteNode":
                     if (addressSpace === undefined) {
-                        node.error("addressSpace undefinded");
+                        node_error("addressSpace undefinded");
                         return false;
                     }
 
@@ -448,7 +452,7 @@ module.exports = function (RED) {
                     break;
 
                 default:
-                    node.error("unknown OPC UA Command");
+                    node_error("unknown OPC UA Command");
             }
 
         }
@@ -471,7 +475,7 @@ module.exports = function (RED) {
             if (server) {
                 verbose_warn("Restart OPC UA Server done");
             } else {
-                node.error("can not restart OPC UA Server");
+                node_error("can not restart OPC UA Server");
             }
         }
 

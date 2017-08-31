@@ -66,6 +66,10 @@ module.exports = function (RED) {
       return object.topicName;
     }); // multiple monitored Items should be registered only once
 
+    function node_error(err) {
+      node.error(err, err);
+    }
+
     function verbose_warn(logMessage) {
       if (RED.settings.verbose) {
         node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage);
@@ -218,7 +222,7 @@ module.exports = function (RED) {
       ],
       function (err) {
         if (err) {
-          node.error(node.name + " OPC UA connection error: " + err.message);
+          node_error(node.name + " OPC UA connection error: " + err.message);
           verbose_log(err);
           node.session = null;
           close_opcua_client(set_node_status_to("connection error"));
@@ -366,7 +370,7 @@ module.exports = function (RED) {
         node.session.readVariableValue(items, function (err, dataValues, diagnostics) {
           if (err) {
             verbose_log('diagnostics:' + diagnostics);
-            node.error(err);
+            node_error(err);
             set_node_status_to("error");
             reset_opcua_client(connect_opcua_client);
           } else {
@@ -382,7 +386,7 @@ module.exports = function (RED) {
                   verbose_log("\tDataType: " + dataValue.value.dataType + " ("+dataValue.value.dataType.toString()+")");
                   verbose_log("\tMessage: " + msg.topic + " ("+msg.datatype+")");
                   if (msg.datatype!=null && msg.datatype.localeCompare(dataValue.value.dataType.toString())!=0) {
-                    node.error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + dataValue.value.dataType.toString());
+                    node_error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + dataValue.value.dataType.toString());
                   }
                   if (msg.datatype==null) {
                     node.warn("msg.datatype == null, if you use inject check topic is format 'ns=2;s=MyLevel;datatype=Double'");
@@ -404,12 +408,12 @@ module.exports = function (RED) {
                 }
                 catch (e) {
                   if (dataValue) {
-                    node.error("\tBad read: " + (dataValue.statusCode.toString(16)).red.bold);
-                    node.error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
-                    node.error("\tData:" + JSON.stringify(dataValue));
+                    node_error("\tBad read: " + (dataValue.statusCode.toString(16)).red.bold);
+                    node_error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
+                    node_error("\tData:" + JSON.stringify(dataValue));
                   }
                   else {
-                    node.error(e.message);
+                    node_error(e.message);
                   }
                 }
               }
@@ -419,7 +423,7 @@ module.exports = function (RED) {
       }
       else {
         set_node_status_to("Session invalid");
-        node.error("Session is not active!")
+        node_error("Session is not active!")
       }
     }
 
@@ -462,7 +466,7 @@ module.exports = function (RED) {
                 object = JSON.parse(JSON.stringify(data));
               }
               catch(err) {
-                node.error(err);
+                node_error(err);
                 node.warn(data);
                 return;
               }
@@ -482,7 +486,7 @@ module.exports = function (RED) {
               node.send(msg);
             }
           } else {
-            node.error(err);
+            node_error(err);
             set_node_status_to("error");
             reset_opcua_client(connect_opcua_client);
           }
@@ -490,7 +494,7 @@ module.exports = function (RED) {
       }
       else {
         set_node_status_to("Session invalid");
-        node.error("Session is not active!")
+        node_error("Session is not active!")
       }
     }
 
@@ -529,7 +533,7 @@ module.exports = function (RED) {
         node.session.writeSingleNode(nodeid, opcuaVariant, function (err) {
           if (err) {
             set_node_status_to("error");
-            node.error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
+            node_error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
             reset_opcua_client(connect_opcua_client);
           } else {
             set_node_status_to("active writing");
@@ -538,7 +542,7 @@ module.exports = function (RED) {
         });
       } else {
         set_node_status_to("Session invalid");
-        node.error("Session is not active!")
+        node_error("Session is not active!")
       }
     }
 
@@ -609,11 +613,11 @@ module.exports = function (RED) {
         try {
           var nodeId = coerceNodeId(nodeStr);
           if (nodeId && nodeId.isEmpty()) {
-            node.error(" Invalid empty node in getObject");
+            node_error(" Invalid empty node in getObject");
           }
           //makeNodeId(nodeStr); // above is enough
         } catch(err) {
-          node.error(err);
+          node_error(err);
           return;
         }
 
@@ -630,8 +634,8 @@ module.exports = function (RED) {
           TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
           function (err) {
             if (err) {
-              node.error("Check topic format for nodeId:"+msg.topic)
-              node.error('subscription.monitorItem:' + err);
+              node_error("Check topic format for nodeId:"+msg.topic)
+              node_error('subscription.monitorItem:' + err);
               // reset_opcua_client(connect_opcua_client); // not actually needed
             } else {
               monitoredItems.add({"topicName": nodeStr, mItem: monitoredItem});
@@ -703,10 +707,10 @@ module.exports = function (RED) {
           try {
             var nodeId = coerceNodeId(nodeStr);
             if (nodeId && nodeId.isEmpty()) {
-              node.error(" Invalid empty node in getObject");
+              node_error(" Invalid empty node in getObject");
             }
           } catch(err) {
-            node.error(err);
+            node_error(err);
             return;
           }
           monitoredItem.mItem.terminate();
@@ -715,7 +719,7 @@ module.exports = function (RED) {
           return;
         }
         else {
-            node.error("Item not monitored:"+msg.topic)
+            node_error("Item not monitored:"+msg.topic)
         }
     }
 
@@ -753,14 +757,14 @@ module.exports = function (RED) {
 
           });
           } else {
-            node.error(err.message);
+            node_error(err.message);
             set_node_status_to("error browsing");
             reset_opcua_client(connect_opcua_client);
           }
         });
       }
       else {
-        node.error("Session is not active!");
+        node_error("Session is not active!");
         set_node_status_to("Session invalid");
         reset_opcua_client(connect_opcua_client);
       }
@@ -790,7 +794,7 @@ module.exports = function (RED) {
           3,
           function (err) {
             if (err) {
-              node.error('subscription.monitorEvent:' + err);
+              node_error('subscription.monitorEvent:' + err);
               reset_opcua_client(connect_opcua_client);
             } else {
               valid=true;
@@ -815,7 +819,7 @@ module.exports = function (RED) {
             monitoredItems.delete({"topicName": msg.topic});
           }
 
-          node.error("monitored Event ", msg.eventTypeId, " ERROR".red, err_message);
+          node_error("monitored Event " + msg.eventTypeId + " ERROR".red + err_message);
           set_node_status_to("error");
         });
 
@@ -867,7 +871,7 @@ module.exports = function (RED) {
           verbose_log("Session closed");
           set_node_status_to("session closed");
           if (err) {
-            node.error(node.name + " " + err);
+            node_error(node.name + " " + err);
           }
 
           node.session = null;
@@ -889,7 +893,7 @@ module.exports = function (RED) {
         node.session.close(function (err) {
           verbose_log("Session closed on error emit");
           if (err) {
-            node.error(node.name + " " + err);
+            node_error(node.name + " " + err);
           }
 
           set_node_status_to("session closed");
