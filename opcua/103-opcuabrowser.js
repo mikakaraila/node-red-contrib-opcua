@@ -48,6 +48,10 @@ module.exports = function (RED) {
             }
         };
 
+        function node_error(err) {
+          node.error(err, err);
+        }
+
         function setupClient(url, callback) {
 
             // new OPC UA Client and browse from Objects ns=0;s=Objects
@@ -99,7 +103,7 @@ module.exports = function (RED) {
                     node.warn("close browse session");
                     browseSession.close(function (err) {
                         if (err) {
-                            node.error("session closed failed on browse");
+                            node_error("session closed failed on browse");
                         }
                         callback(err);
                     });
@@ -115,7 +119,7 @@ module.exports = function (RED) {
 
         setupClient(opcuaEndpoint.endpoint, function (err) {
             if (err) {
-                node.error(err);
+                node_error(err);
                 node.status({fill: "red", shape: "dot", text: "Error Items: " + node.items.length});
             }
 
@@ -164,7 +168,7 @@ module.exports = function (RED) {
 
             setupClient(opcuaEndpoint.endpoint, function (err) {
                 if (err) {
-                    node.error(err);
+                    node_error(err);
                     node.status({fill: "red", shape: "dot", text: "Error Items: " + node.items.length});
                 }
                 node.log("Browse loading Items done ...");
