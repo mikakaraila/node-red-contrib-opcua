@@ -792,8 +792,6 @@ module.exports = function (RED) {
             if (err) {
               node.error('subscription.monitorEvent:' + err);
               reset_opcua_client(connect_opcua_client);
-            } else {
-              valid=true;
             }
           }
         );
