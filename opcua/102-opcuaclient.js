@@ -1,6 +1,6 @@
 /**
 
- Copyright 2015 Valmet Automation Inc.
+ Copyright 2018 Valmet Automation Inc.
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ module.exports = function (RED) {
   var async = require("async");
   var treeify = require('treeify');
   var Set = require("collections/set");
+  var path = require("path");
   var DataType = opcua.DataType;
   var AttributeIds = opcua.AttributeIds;
   var TimestampsToReturn = require("node-opcua/lib/services/read_service").TimestampsToReturn;
@@ -49,7 +50,9 @@ module.exports = function (RED) {
 
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] ||  opcua.MessageSecurityMode.NONE;
-
+	connectionOption.certificateFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
+	connectionOption.privateKeyFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
+    verbose_log(connectionOption);
     verbose_log(opcuaEndpoint);
 
     if (opcuaEndpoint.login) {
@@ -183,13 +186,16 @@ module.exports = function (RED) {
     }
 
     function connect_opcua_client() {
-      node.session = null;
+      //node.session = null;
       async.series([
         // First connect to server´s endpoint
         function (callback) {
           verbose_log("async series - connecting ", opcuaEndpoint.endpoint);
           try {
             set_node_status_to("connecting");
+			if (!node.client) {
+				verbose_log("No client to connect...");
+			}
             node.client.connect(opcuaEndpoint.endpoint, callback);
           } catch (err) {
             callback(err);
@@ -272,14 +278,21 @@ module.exports = function (RED) {
       return newSubscription;
     }
 
-    create_opcua_client(connect_opcua_client);
-
+	if (!node.client) {
+		create_opcua_client(connect_opcua_client);
+	}
+	
     function processInputMsg(msg) {
+	  if (msg.action=="reconnect") {
+		cmdQueue = [];
+		// msg.endpoint can be used to change endpoint
+        reconnect(msg);
+		return;
+	  }
       if (msg.action) {
-            verbose_log("Action on msg:" + msg.action);
+        verbose_log("Action on msg:" + msg.action);
         node.action=msg.action;
       }
-
       if (!node.action) {
         verbose_warn("can't work without action (read, write, browse ...)");
         //node.send(msg); // do not send in case of error
@@ -459,7 +472,6 @@ module.exports = function (RED) {
         var proxyManager = new UAProxyManager(node.session);
         proxyManager.getObject(nodeId, function(err,data) {
           if (!err) {
-            //console.log(data);
             if (data.typeDefinition!="FolderType") {
               var object = {};
               try {
@@ -470,7 +482,6 @@ module.exports = function (RED) {
                 node.warn(data);
                 return;
               }
-              // console.log(object);
               msg.payload = {};
 
               if (object.description!=null){
@@ -717,10 +728,10 @@ module.exports = function (RED) {
           verbose_log("Unsubscribed (terminated) monitored item: " + msg.topic);
           monitoredItems.delete({"topicName": msg.topic});
           return;
-        }
-        else {
-            node_error("Item not monitored:"+msg.topic)
-        }
+      }
+      else {
+          node_error("Item not monitored:"+msg.topic)
+      }
     }
 
     function browse_action_input(msg) {
@@ -858,6 +869,27 @@ module.exports = function (RED) {
       }
     }
 
+	function reconnect(msg) {
+		if (msg && msg.OpcUaEndpoint) {
+			opcuaEndpoint = msg.OpcUaEndpoint; // Check all parameters!
+			verbose_log("Using new endpoint:"+JSON.stringify(opcuaEndpoint));
+		}
+		else {
+			verbose_log("Using endpoint:"+JSON.stringify(opcuaEndpoint));
+		}
+		// First close subscriptions etc.
+		if (subscription && subscription.isActive()) {
+			subscription.terminate();
+		}
+		
+		// Now reconnect and use msg parameters
+		subscription = null;
+        monitoredItems.clear();
+		//reset_opcua_client(connect_opcua_client);
+        set_node_status_to("reconnectiong...");
+		create_opcua_client(connect_opcua_client);
+	}
+	
     node.on("close", function () {
       if (subscription && subscription.isActive()) {
         subscription.terminate();

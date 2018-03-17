@@ -75,7 +75,9 @@ module.exports = function (RED) {
             server = new opcua.OPCUAServer({
                 port: node.port,
                 nodeset_filename: xmlFiles,
-                resourcePath: node.endpoint || "UA/SimpleNodeRedServer"
+                resourcePath: node.endpoint || "UA/SimpleNodeRedServer",
+				certificateFile: path.join(__dirname, "../../../node_modules/node-opcua-server/certificates/server_selfsigned_cert_2048.pem"),
+				privateKeyFile: path.join(__dirname, "../../../node_modules/node-opcua-server/certificates/PKI/own/private/private_key.pem")
             });
 
             server.buildInfo.productName = node.name.concat("OPC UA server");
@@ -85,7 +87,9 @@ module.exports = function (RED) {
             server.initialize(post_initialize);
 			var hostname = os.hostname();
 			var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840/UADiscovery";
+			/*
 			verbose_log("\nregistering server to :".yellow + discovery_server_endpointUrl);
+			// TODO wrong path created for certificateFile
 			server.registerServer(discovery_server_endpointUrl, function (err) {
 				if (err) {
 					// cannot register server in discovery
@@ -94,6 +98,7 @@ module.exports = function (RED) {
 					verbose_log("     registering server to the discovery server : done.".cyan);
                 }
 			});
+			*/
         }
 
         function construct_my_address_space(addressSpace) {

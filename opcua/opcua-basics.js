@@ -334,7 +334,7 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
             nValue = new opcua.Variant({ dataType: opcua.DataType.Int16, value: parseInt(value) });
             break;
         case "Int8":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.Int8, value: parseInt(value) });
+            nValue = new opcua.Variant({ dataType: opcua.DataType.SByte, value: parseInt(value) });
             break;
         case "UInt32":
             nValue = new opcua.Variant({ dataType: opcua.DataType.UInt32, value: parseInt(value) });
@@ -343,7 +343,7 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
             nValue = new opcua.Variant({ dataType: opcua.DataType.UInt16, value: parseInt(value) });
             break;
         case "UInt8":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.UInt8, value: parseInt(value) });
+            nValue = new opcua.Variant({ dataType: opcua.DataType.Byte, value: parseInt(value) });
             break;
         case "Boolean":
             if (value && value !== "false") {
@@ -358,6 +358,9 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
             break;
         case "Byte":
             nValue = new opcua.Variant({ dataType: opcua.DataType.Byte, value: value });
+            break;
+		case "SByte":
+            nValue = new opcua.Variant({ dataType: opcua.DataType.SByte, value: value });
             break;
         default:
             nValue = new opcua.Variant({ dataType: opcua.DataType.BaseDataType, value: value });
@@ -379,6 +382,10 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
         case "Double":
             nValue = parseFloat(value); // (Double) or Float64 ?
             break;
+		case "SByte":
+            var int8 = parseInt(value);
+            nValue = int8;
+            break;
         case "Int8":
             var int8 = new Int8Array([value]);
             nValue = int8[0];
@@ -390,6 +397,10 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
         case "Int32":
             var int32 = new Int32Array([value]);
             nValue = int32[0];
+            break;
+		case "Byte":
+            var uint8 = parseInt(value);
+            nValue = uint8;
             break;
         case "UInt8":
             var uint8 = new Uint8Array([value]);

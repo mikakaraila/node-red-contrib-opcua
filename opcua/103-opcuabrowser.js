@@ -20,7 +20,8 @@ module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
     var async = require("async");
-
+	var path = require("path");
+	
     function OpcUaBrowserNode(config) {
 
         RED.nodes.createNode(this, config);
@@ -39,7 +40,9 @@ module.exports = function (RED) {
         var connectionOption = {};
         connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
         connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.NONE;
-
+		connectionOption.certificateFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
+		connectionOption.privateKeyFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
+    
         node.status({fill: "gray", shape: "dot", text: "no Items"});
 
         node.add_item = function (item) {
