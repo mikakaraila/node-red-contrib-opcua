@@ -21,10 +21,10 @@ module.exports = function (RED) {
 
   var opcua = require('node-opcua')
   var opcuaBasics = require('./opcua-basics');
-  var nodeId = require('node-opcua/lib/datamodel/nodeid');
-  var UAProxyManager = require("node-opcua/lib/client/proxy").UAProxyManager;
-  var coerceNodeId = require("node-opcua/lib/datamodel/nodeid").coerceNodeId;
-  var makeNodeId = require("node-opcua/lib/datamodel/nodeid").makeNodeId;
+  var nodeId = require('node-opcua-nodeid/src/nodeid');
+  var UAProxyManager = require("node-opcua-client-proxy/src/proxy").UAProxyManager;
+  var coerceNodeId = require("node-opcua-nodeid/src/nodeid").coerceNodeId;
+  var makeNodeId = require("node-opcua-nodeid/src/nodeid").makeNodeId
   var browse_service = require("node-opcua/lib/services/browse_service");
   var async = require("async");
   var treeify = require('treeify');
@@ -32,7 +32,8 @@ module.exports = function (RED) {
   var path = require("path");
   var DataType = opcua.DataType;
   var AttributeIds = opcua.AttributeIds;
-  var TimestampsToReturn = require("node-opcua/lib/services/read_service").TimestampsToReturn;
+  var read_service = require("node-opcua-service-read");
+  var TimestampsToReturn = read_service.TimestampsToReturn;
 
   function OpcUaClientNode(n) {
     RED.nodes.createNode(this, n);
