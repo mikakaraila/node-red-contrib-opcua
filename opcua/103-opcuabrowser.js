@@ -19,6 +19,7 @@
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
+	var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
     var async = require("async");
 	var path = require("path");
 	
@@ -42,7 +43,7 @@ module.exports = function (RED) {
         connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.NONE;
 		connectionOption.certificateFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
 		connectionOption.privateKeyFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
-    
+		connectionOption.endpoint_must_exist = false;
         node.status({fill: "gray", shape: "dot", text: "no Items"});
 
         node.add_item = function (item) {
@@ -82,13 +83,15 @@ module.exports = function (RED) {
                 // step 3 : browse
                 function (callback) {
                     node.warn("browseTopic:" + browseTopic);
-                    browseSession.browse(browseTopic, function (err, browse_result) {
+                    browseSession.browse(coerceNodeId(browseTopic), function (err, browse_result) {
+						console.log(browse_result);
                         if (!err) {
-                            browse_result.forEach(function (result) {
-                                result.references.forEach(function (reference) {
-                                    node.add_item(reference);
-                                });
-                            });
+							var nodes = browse_result.references;
+							if (nodes instanceof Array) {
+								nodes.forEach(function (reference) {
+									node.add_item(reference);
+								});
+							}
                         }
 
                         node.status({fill: "green", shape: "dot", text: "Items: " + node.items.length});

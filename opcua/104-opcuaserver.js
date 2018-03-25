@@ -131,11 +131,11 @@ module.exports = function (RED) {
                 componentOf: vendorName,
                 nodeId: "ns=4;s=MyVariable2",
                 browseName: "MyVariable2",
-                dataType: opcua.DataType.Double,
+                dataType: "Double",
 
                 value: {
                     get: function () {
-                        return new opcua.Variant({dataType: opcua.DataType.Double, value: variable2});
+                        return new opcua.Variant({dataType: "Double", value: variable2});
                     },
                     set: function (variant) {
                         variable2 = parseFloat(variant.value);
@@ -150,7 +150,7 @@ module.exports = function (RED) {
                 componentOf: vendorName,
                 nodeId: "ns=4;s=FreeMemory",
                 browseName: "FreeMemory",
-                dataType: opcua.DataType.Double,
+                dataType: "Double",
 
                 value: {
                     get: function () {
@@ -165,7 +165,7 @@ module.exports = function (RED) {
                 componentOf: vendorName,
                 nodeId: "ns=4;s=Counter",
                 browseName: "Counter",
-                dataType: opcua.DataType.UInt16,
+                dataType: "UInt16",
 
                 value: {
                     get: function () {

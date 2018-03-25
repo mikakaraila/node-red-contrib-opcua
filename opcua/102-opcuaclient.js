@@ -21,9 +21,16 @@ module.exports = function (RED) {
 
   var opcua = require('node-opcua')
   var opcuaBasics = require('./opcua-basics');
-  var nodeId = require('node-opcua-nodeid/src/nodeid');
-  var UAProxyManager = require("node-opcua-client-proxy/src/proxy").UAProxyManager;
-  var coerceNodeId = require("node-opcua-nodeid/src/nodeid").coerceNodeId;
+  var assert = require("node-opcua-assert");
+  //var nodeId = require('node-opcua-nodeid/src/nodeid');
+  //var UAProxyManager = require("node-opcua-client-proxy/src/proxy").UAProxyManager;
+  //var coerceNodeId = require("node-opcua-nodeid/src/nodeid").coerceNodeId;
+  //var makeNodeId = require("node-opcua-nodeid/src/nodeid").makeNodeId
+  var nodeId = require("node-opcua-nodeid");
+  var UAProxyManager = require("node-opcua-client-proxy").UAProxyManager;
+  var ClientSubscription = require("node-opcua-client").ClientSubscription;
+  var ClientSession = opcua.ClientSession;
+  var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
   var makeNodeId = require("node-opcua-nodeid/src/nodeid").makeNodeId
   var browse_service = require("node-opcua-service-browse");
   var async = require("async");
@@ -53,6 +60,7 @@ module.exports = function (RED) {
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] ||  opcua.MessageSecurityMode.NONE;
 	connectionOption.certificateFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
 	connectionOption.privateKeyFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
+	connectionOption.endpoint_must_exist = false;
     verbose_log(connectionOption);
     verbose_log(opcuaEndpoint);
 
@@ -469,9 +477,12 @@ module.exports = function (RED) {
             typeStr = dataValue.value.dataType.toString();
           }
         });
-
+		// Create new ClientSession
+		node.client.keepSessionAlive = true;
+		var session = new ClientSession(node.client);
         var proxyManager = new UAProxyManager(node.session);
-        proxyManager.getObject(nodeId, function(err,data) {
+		console.log(nodeId.toString());
+		proxyManager.getObject(nodeId.toString(), function(err,data) {
           if (!err) {
             if (data.typeDefinition!="FolderType") {
               var object = {};
@@ -502,7 +513,7 @@ module.exports = function (RED) {
             set_node_status_to("error");
             reset_opcua_client(connect_opcua_client);
           }
-        })
+		});
       }
       else {
         set_node_status_to("Session invalid");
@@ -525,7 +536,7 @@ module.exports = function (RED) {
       }
 
       var nodeid = {}; // new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
-      verbose_log(opcua.browse_service.makeBrowsePath(msg.topic, "."));
+      verbose_log(opcua.makeBrowsePath(msg.topic, "."));
 
       if (msg.topic.substring(5,6)=='s') {
         nodeid = new nodeId.NodeId(nodeId.NodeIdType.STRING, s, parseInt(ns));
@@ -541,8 +552,9 @@ module.exports = function (RED) {
       verbose_log(nodeid.toString());
 
       var opcuaVariant = opcuaBasics.build_new_variant(opcua, msg.datatype, msg.payload);
+	  var opcuaDataValue = opcuaBasics.build_new_dataValue(opcua, msg.datatype, msg.payload);
       if (node.session) {
-        node.session.writeSingleNode(nodeid, opcuaVariant, function (err) {
+        node.session.writeSingleNode( nodeid.toString(), opcuaDataValue, function (err) {			
           if (err) {
             set_node_status_to("error");
             node_error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
