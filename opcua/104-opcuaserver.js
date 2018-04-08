@@ -428,7 +428,7 @@ module.exports = function (RED) {
 							organizedBy: addressSpace.findNode(parentFolder.nodeId),
 							nodeId: name,
 							browseName: browseName, // or displayName
-							dataType: opcuaDataType,
+							dataType: datatype, // opcuaDataType,
 							value: {
 								get: function() {
 									return new opcua.Variant({dataType: opcuaDataType, value: variables[browseName]})
