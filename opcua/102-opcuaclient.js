@@ -45,21 +45,33 @@ module.exports = function (RED) {
   function OpcUaClientNode(n) {
     RED.nodes.createNode(this, n);
     this.name = n.name;
+	this.certpath = n.path;
     this.action = n.action;
     this.time = n.time;
     this.timeUnit = n.timeUnit;
-
+	
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
     var userIdentity = {};
     var connectionOption = {};
     var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
     var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
-
+	var certpath="";
+	
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] ||  opcua.MessageSecurityMode.NONE;
-	connectionOption.certificateFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
-	connectionOption.privateKeyFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
+	if (node.certpath==undefined) {
+		certpath = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/");
+	}
+	else {
+		// expect that certpath is absolute
+		certpath = node.certpath;
+	} 
+	connectionOption.certificateFile = path.join(certpath, "client_selfsigned_cert_1024.pem");
+	connectionOption.privateKeyFile = path.join(certpath, "PKI/own/private/private_key.pem");
+	if (!require('fs').existsSync(connectionOption.certificateFile)) {
+	  node.error("\tCannot read:" + connectionOption.certificateFile + " file.");
+	}
 	connectionOption.endpoint_must_exist = false;
     verbose_log(connectionOption);
     verbose_log(opcuaEndpoint);
