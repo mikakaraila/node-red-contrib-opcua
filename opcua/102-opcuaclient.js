@@ -736,7 +736,6 @@ module.exports = function (RED) {
       if (dTypeIndex>0) {
         nodeStr=nodeStr.substring(0,dTypeIndex);
       }
-
       var monitoredItem = monitoredItems.get({"topicName": msg.topic});
       if (monitoredItem) {
           // Validate nodeId
@@ -749,9 +748,17 @@ module.exports = function (RED) {
             node_error(err);
             return;
           }
-          monitoredItem.mItem.terminate();
-          verbose_log("Unsubscribed (terminated) monitored item: " + msg.topic);
-          monitoredItems.delete({"topicName": msg.topic});
+          // Use session to unscubscribe monitoredItem
+          node.session.deleteMonitoredItems({subscriptionId: subscription.subscriptionId, monitoredItemIds: [monitoredItem.mItem.monitoredItemId]}, function(error, response) { 
+            if (error) {
+              node_error("Unscrubscibe error "+ error);
+            }
+            else {
+              verbose_log("Unsubscribed (terminated) monitored item: " + msg.topic);
+              monitoredItems.delete({"topicName": msg.topic});
+            }
+          });
+
           return;
       }
       else {
