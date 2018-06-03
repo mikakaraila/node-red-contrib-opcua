@@ -72,7 +72,14 @@ module.exports = function (RED) {
 	if (!require('fs').existsSync(connectionOption.certificateFile)) {
 	  node.error("\tCannot read:" + connectionOption.certificateFile + " file.");
 	}
-	connectionOption.endpoint_must_exist = false;
+    connectionOption.endpoint_must_exist = false;
+    connectionOption.defaultSecureTokenLifetime = 40000;
+    connectionOption.connectionStrategy= {
+        maxRetry: 10512000,      // 10 years should be enough. No infinite parameter for backoff.
+        initialDelay: 2000,
+        maxDelay: 30*1000
+    };
+    connectionOption.keepSessionAlive = true;
     verbose_log(connectionOption);
     verbose_log(opcuaEndpoint);
 
@@ -229,7 +236,7 @@ module.exports = function (RED) {
               if (!err) {
                 node.session = session;
                 node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
-                node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
+                //node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
                 verbose_log("session active");
                 set_node_status_to("session active");
                 for(var i in cmdQueue) {
