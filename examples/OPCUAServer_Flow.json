@@ -65,7 +65,7 @@
     "z": "30ded7dc.266628",
     "name": "deleteNode PhysicalAsset2",
     "topic": "",
-    "payload": "{ \"opcuaCommand\": \"deleteNode\", \"nodeId\": \"ns=4;s=PhysicalAsset2\" }",
+    "payload": "{ \"opcuaCommand\": \"deleteNode\", \"nodeId\": \"ns=1;s=PhysicalAsset2\" }",
     "payloadType": "json",
     "repeat": "",
     "crontab": "",
