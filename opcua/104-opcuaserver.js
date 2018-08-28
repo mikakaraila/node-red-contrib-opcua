@@ -105,21 +105,21 @@ module.exports = function (RED) {
 
             verbose_warn('Server add VendorName ...');
 
-            vendorName = addressSpace.addObject({
+            vendorName = addressSpace.getOwnNamespace().addObject({
                 organizedBy: addressSpace.rootFolder.objects,
-                nodeId: "ns=4;s=VendorName",
+                nodeId: "ns=1;s=VendorName",
                 browseName: "VendorName"
             });
 
-            equipment = addressSpace.addObject({
+            equipment = addressSpace.getOwnNamespace().addObject({
                 organizedBy: vendorName,
-                nodeId: "ns=4;s=Equipment",
+                nodeId: "ns=1;s=Equipment",
                 browseName: "Equipment"
             });
 
-            physicalAssets = addressSpace.addObject({
+            physicalAssets = addressSpace.getOwnNamespace().addObject({
                 organizedBy: vendorName,
-                nodeId: "ns=4;s=PhysicalAssets",
+                nodeId: "ns=1;s=PhysicalAssets",
                 browseName: "Physical Assets"
             });
 
@@ -127,9 +127,9 @@ module.exports = function (RED) {
 
             var variable2 = 10.0;
 
-            addressSpace.addVariable({
+            addressSpace.getOwnNamespace().addVariable({
                 componentOf: vendorName,
-                nodeId: "ns=4;s=MyVariable2",
+                nodeId: "ns=1;s=MyVariable2",
                 browseName: "MyVariable2",
                 dataType: "Double",
 
@@ -146,9 +146,9 @@ module.exports = function (RED) {
 
             verbose_warn('Server add FreeMemory ...');
 
-            addressSpace.addVariable({
+            addressSpace.getOwnNamespace().addVariable({
                 componentOf: vendorName,
-                nodeId: "ns=4;s=FreeMemory",
+                nodeId: "ns=1;s=FreeMemory",
                 browseName: "FreeMemory",
                 dataType: "Double",
 
@@ -161,9 +161,9 @@ module.exports = function (RED) {
 
             verbose_warn('Server add Counter ...');
 
-            addressSpace.addVariable({
+            addressSpace.getOwnNamespace().addVariable({
                 componentOf: vendorName,
-                nodeId: "ns=4;s=Counter",
+                nodeId: "ns=1;s=Counter",
                 browseName: "Counter",
                 dataType: "UInt16",
 
@@ -174,7 +174,7 @@ module.exports = function (RED) {
                 }
             });
 
-            var method = addressSpace.addMethod(
+            var method = addressSpace.getOwnNamespace().addMethod(
                 vendorName, {
                     browseName: "Bark",
 
@@ -286,7 +286,7 @@ module.exports = function (RED) {
                     return false;
                 }
 
-                var rootFolder = addressSpace.findNode("ns=4;s=VendorName");
+                var rootFolder = addressSpace.findNode("ns=1;s=VendorName");
                 var references = rootFolder.findReferences("Organizes", true);
 
                 if (findReference(references, equipment.nodeId)) {
@@ -342,9 +342,9 @@ module.exports = function (RED) {
                     equipmentCounter++;
                     name = payload.nodeName.concat(equipmentCounter);
 
-                    addressSpace.addObject({
+                    addressSpace.getOwnNamespace().addObject({
                         organizedBy: addressSpace.findNode(equipment.nodeId),
-                        nodeId: "ns=4;s=".concat(name),
+                        nodeId: "ns=1;s=".concat(name),
                         browseName: name
                     });
                     break;
@@ -356,7 +356,7 @@ module.exports = function (RED) {
 
                     addressSpace.addObject({
                         organizedBy: addressSpace.findNode(physicalAssets.nodeId),
-                        nodeId: "ns=4;s=".concat(name),
+                        nodeId: "ns=1;s=".concat(name),
                         browseName: name
                     });
                     break;
@@ -372,7 +372,7 @@ module.exports = function (RED) {
 					if (folder!=null) {
 						parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
 					}
-					folder = addressSpace.addObject({
+					folder = addressSpace.getOwnNamespace().addObject({
 							organizedBy: addressSpace.findNode(parentFolder.nodeId),
 							nodeId: msg.topic,
 							browseName: msg.topic.substring(7)
@@ -424,7 +424,7 @@ module.exports = function (RED) {
 							variables[browseName] = true;
 						}
 						verbose_log(opcuaDataType.toString());
-						addressSpace.addVariable({
+						addressSpace.getOwnNamespace().addVariable({
 							organizedBy: addressSpace.findNode(parentFolder.nodeId),
 							nodeId: name,
 							browseName: browseName, // or displayName
