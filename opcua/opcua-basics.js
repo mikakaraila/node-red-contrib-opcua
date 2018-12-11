@@ -356,13 +356,13 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
         case "String":
             nValue = new opcua.Variant({ dataType: opcua.DataType.String, value: value });
             break;
-		case "DateTime":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.UtcTime, value: Date.parse(value) });
+        case "DateTime":
+            nValue = { dataType: opcua.DataType.DateTime, value: new Date(value) };
             break;
         case "Byte":
             nValue = new opcua.Variant({ dataType: opcua.DataType.Byte, value: value });
             break;
-		case "SByte":
+        case "SByte":
             nValue = new opcua.Variant({ dataType: opcua.DataType.SByte, value: value });
             break;
         default:
