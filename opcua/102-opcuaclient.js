@@ -61,7 +61,7 @@ module.exports = function (RED) {
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] ||  opcua.MessageSecurityMode.NONE;
 	if (node.certpath==undefined) {
-		certpath = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/");
+		certpath = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/");
 	}
 	else {
 		// expect that certpath is absolute
