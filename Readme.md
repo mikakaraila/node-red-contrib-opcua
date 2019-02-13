@@ -43,7 +43,7 @@ Search for OPC UA on: http://flows.nodered.org/
 
 ![node-red-opcua-flow-Prosys](images/PROSYS-OPC-UA-EXAMPLE2.png)
 
-# Author
+# Authors
 
 * since 2015 [Mika Karaila][2]
 * since 2016 [Klaus Landsdorf][3]
