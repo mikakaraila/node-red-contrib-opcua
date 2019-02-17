@@ -19,17 +19,17 @@
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
-	var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
+    var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
     var async = require("async");
-	var path = require("path");
-	
+    var path = require("path");
+
     function OpcUaBrowserNode(config) {
 
         RED.nodes.createNode(this, config);
 
-        this.item = config.item;         // OPC UA address: ns=2;i=4 OR ns=3;s=MyVariable
+        this.item = config.item; // OPC UA address: ns=2;i=4 OR ns=3;s=MyVariable
         this.datatype = config.datatype; // String;
-        this.topic = config.topic;       // ns=3;s=MyVariable from input
+        this.topic = config.topic; // ns=3;s=MyVariable from input
         this.items = config.items;
 
         var node = this;
@@ -41,19 +41,25 @@ module.exports = function (RED) {
         var connectionOption = {};
         connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
         connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.NONE;
-		connectionOption.certificateFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
-		connectionOption.privateKeyFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
-		connectionOption.endpoint_must_exist = false;
-        node.status({fill: "gray", shape: "dot", text: "no Items"});
+        connectionOption.certificateFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
+        connectionOption.privateKeyFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
+        connectionOption.endpoint_must_exist = false;
+        node.status({
+            fill: "gray",
+            shape: "dot",
+            text: "no Items"
+        });
 
         node.add_item = function (item) {
             if (item) {
-                node.items.add({'item': item});
+                node.items.add({
+                    'item': item
+                });
             }
         };
 
         function node_error(err) {
-          node.error(err, err);
+            node.error(err, err);
         }
 
         function setupClient(url, callback) {
@@ -74,8 +80,7 @@ module.exports = function (RED) {
                             browseSession = session;
                             node.log("start browse session on " + opcuaEndpoint.endpoint);
                             callback();
-                        }
-                        else {
+                        } else {
                             callback(err);
                         }
                     });
@@ -84,17 +89,21 @@ module.exports = function (RED) {
                 function (callback) {
                     node.warn("browseTopic:" + browseTopic);
                     browseSession.browse(coerceNodeId(browseTopic), function (err, browse_result) {
-						console.log(browse_result);
+                        console.log(browse_result);
                         if (!err) {
-							var nodes = browse_result.references;
-							if (nodes instanceof Array) {
-								nodes.forEach(function (reference) {
-									// TODO Fix later node.add_item(reference);
-								});
-							}
+                            var nodes = browse_result.references;
+                            if (nodes instanceof Array) {
+                                nodes.forEach(function (reference) {
+                                    // TODO Fix later node.add_item(reference);
+                                });
+                            }
                         }
 
-                        node.status({fill: "green", shape: "dot", text: "Items: " + node.items.length});
+                        node.status({
+                            fill: "green",
+                            shape: "dot",
+                            text: "Items: " + node.items.length
+                        });
 
                         callback(err);
                     });
@@ -103,7 +112,10 @@ module.exports = function (RED) {
                 function (callback) {
 
                     node.warn("sending items " + node.items.length);
-                    var msg = {payload: node.items, endpoint: opcuaEndpoint.endpoint};
+                    var msg = {
+                        payload: node.items,
+                        endpoint: opcuaEndpoint.endpoint
+                    };
                     node.send(msg);
 
                     node.warn("close browse session");
@@ -126,7 +138,11 @@ module.exports = function (RED) {
         setupClient(opcuaEndpoint.endpoint, function (err) {
             if (err) {
                 node_error(err);
-                node.status({fill: "red", shape: "dot", text: "Error Items: " + node.items.length});
+                node.status({
+                    fill: "red",
+                    shape: "dot",
+                    text: "Error Items: " + node.items.length
+                });
             }
 
             node.log("Browse loading Items done ...");
@@ -154,14 +170,12 @@ module.exports = function (RED) {
                     default:
                         break;
                 }
-            }
-            else {
+            } else {
                 if (!node.topic && msg.topic) {
                     if (msg.topic) {
                         browseTopic = msg.topic;
                     }
-                }
-                else {
+                } else {
                     browseTopic = node.topic;
                 }
             }
@@ -175,7 +189,11 @@ module.exports = function (RED) {
             setupClient(opcuaEndpoint.endpoint, function (err) {
                 if (err) {
                     node_error(err);
-                    node.status({fill: "red", shape: "dot", text: "Error Items: " + node.items.length});
+                    node.status({
+                        fill: "red",
+                        shape: "dot",
+                        text: "Error Items: " + node.items.length
+                    });
                 }
                 node.log("Browse loading Items done ...");
             });

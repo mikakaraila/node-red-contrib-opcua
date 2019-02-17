@@ -22,12 +22,12 @@ module.exports = function (RED) {
     function OpcUaEndpointNode(n) {
 
         RED.nodes.createNode(this, n);
-	
+
         this.endpoint = n.endpoint;
-	this.securityPolicy = n.secpol;
-	this.securityMode = n.secmode;
+        this.securityPolicy = n.secpol;
+        this.securityMode = n.secmode;
         this.login = n.login;
-		
+
         if (this.credentials) {
             this.user = this.credentials.user;
             this.password = this.credentials.password;
@@ -37,8 +37,12 @@ module.exports = function (RED) {
     RED.nodes.registerType("OpcUa-Endpoint", OpcUaEndpointNode, {
 
         credentials: {
-            user: {type: "text"},
-            password: {type: "password"}
+            user: {
+                type: "text"
+            },
+            password: {
+                type: "password"
+            }
         }
     });
 

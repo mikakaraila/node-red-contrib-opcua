@@ -91,7 +91,7 @@ module.exports.collectAlarmFields = function (field, key, value, msg) {
             msg.Severity = value;
             break;
 
-        // ConditionType
+            // ConditionType
         case "ConditionClassId":
             msg.ConditionClassId = value;
             break;
@@ -123,7 +123,7 @@ module.exports.collectAlarmFields = function (field, key, value, msg) {
             msg.ClientUserId = value;
             break;
 
-        // AcknowledgeConditionType
+            // AcknowledgeConditionType
         case "AckedState":
             msg.AckedState = value.text;
             break;
@@ -131,7 +131,7 @@ module.exports.collectAlarmFields = function (field, key, value, msg) {
             msg.ConfirmedState = value.text;
             break;
 
-        // AlarmConditionType
+            // AlarmConditionType
         case "ActiveState":
             msg.ActiveState = value.text;
             break;
@@ -142,7 +142,7 @@ module.exports.collectAlarmFields = function (field, key, value, msg) {
             msg.SupressedState = value.text;
             break;
 
-        // Limits
+            // Limits
         case "HighHighLimit":
             msg.HighHighLimit = value;
             break;
@@ -260,8 +260,7 @@ module.exports.toInt32 = function (x) {
     if (uint16 >= Math.pow(2, 15)) {
         uint16 = x - Math.pow(2, 16);
         return uint16;
-    }
-    else {
+    } else {
         return uint16;
     }
 };
@@ -312,61 +311,112 @@ module.exports.get_node_status = function (statusValue) {
             break;
     }
 
-    return { fill: fillValue, shape: shapeValue, status: statusValue };
+    return {
+        fill: fillValue,
+        shape: shapeValue,
+        status: statusValue
+    };
 };
 
 
 module.exports.build_new_variant = function (opcua, datatype, value) {
 
-    var nValue = new opcua.Variant({ dataType: opcua.DataType.Float, value: 0.0 });
+    var nValue = new opcua.Variant({
+        dataType: opcua.DataType.Float,
+        value: 0.0
+    });
 
     switch (datatype) {
         case "Float":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.Float, value: parseFloat(value) });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.Float,
+                value: parseFloat(value)
+            });
             break;
         case "Double":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.Double, value: parseFloat(value) });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.Double,
+                value: parseFloat(value)
+            });
             break;
         case "Int32":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.Int32, value: parseInt(value) });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.Int32,
+                value: parseInt(value)
+            });
             break;
         case "Int16":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.Int16, value: parseInt(value) });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.Int16,
+                value: parseInt(value)
+            });
             break;
         case "Int8":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.SByte, value: parseInt(value) });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.SByte,
+                value: parseInt(value)
+            });
             break;
         case "UInt32":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.UInt32, value: parseInt(value) });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.UInt32,
+                value: parseInt(value)
+            });
             break;
         case "UInt16":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.UInt16, value: parseInt(value) });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.UInt16,
+                value: parseInt(value)
+            });
             break;
         case "UInt8":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.Byte, value: parseInt(value) });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.Byte,
+                value: parseInt(value)
+            });
             break;
         case "Boolean":
             if (value && value !== "false") {
-                nValue = new opcua.Variant({ dataType: opcua.DataType.Boolean, value: true });
-            }
-            else {
-                nValue = new opcua.Variant({ dataType: opcua.DataType.Boolean, value: false });
+                nValue = new opcua.Variant({
+                    dataType: opcua.DataType.Boolean,
+                    value: true
+                });
+            } else {
+                nValue = new opcua.Variant({
+                    dataType: opcua.DataType.Boolean,
+                    value: false
+                });
             }
             break;
         case "String":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.String, value: value });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.String,
+                value: value
+            });
             break;
         case "DateTime":
-            nValue = { dataType: opcua.DataType.DateTime, value: new Date(value) };
+            nValue = {
+                dataType: opcua.DataType.DateTime,
+                value: new Date(value)
+            };
             break;
         case "Byte":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.Byte, value: value });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.Byte,
+                value: value
+            });
             break;
         case "SByte":
-            nValue = new opcua.Variant({ dataType: opcua.DataType.SByte, value: value });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.SByte,
+                value: value
+            });
             break;
         default:
-            nValue = new opcua.Variant({ dataType: opcua.DataType.BaseDataType, value: value });
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.BaseDataType,
+                value: value
+            });
             break;
     }
 
@@ -385,7 +435,7 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
         case "Double":
             nValue = parseFloat(value); // (Double) or Float64 ?
             break;
-		case "SByte":
+        case "SByte":
             var int8 = parseInt(value);
             nValue = int8;
             break;
@@ -401,7 +451,7 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
             var int32 = new Int32Array([value]);
             nValue = int32[0];
             break;
-		case "Byte":
+        case "Byte":
             var uint8 = parseInt(value);
             nValue = uint8;
             break;
@@ -420,15 +470,14 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
         case "Boolean":
             if (value && value !== "false") {
                 nValue = true;
-            }
-            else {
+            } else {
                 nValue = false;
             }
             break;
         case "String":
             nValue = value.toString();
             break;
-		case "DateTime":
+        case "DateTime":
             nValue = value.toString();
             break;
         default:
@@ -441,55 +490,99 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
 
 module.exports.build_new_dataValue = function (opcua, datatype, value) {
 
-	var nValue = null;
+    var nValue = null;
 
     switch (datatype) {
         case "Float":
-            nValue = { dataType: opcua.DataType.Float, value: parseFloat(value) };
+            nValue = {
+                dataType: opcua.DataType.Float,
+                value: parseFloat(value)
+            };
             break;
         case "Double":
-            nValue = { dataType: opcua.DataType.Double, value: parseFloat(value) };
+            nValue = {
+                dataType: opcua.DataType.Double,
+                value: parseFloat(value)
+            };
             break;
         case "Int32":
-            nValue = { dataType: opcua.DataType.Int32, value: parseInt(value) };
+            nValue = {
+                dataType: opcua.DataType.Int32,
+                value: parseInt(value)
+            };
             break;
         case "Int16":
-            nValue = { dataType: opcua.DataType.Int16, value: parseInt(value) };
+            nValue = {
+                dataType: opcua.DataType.Int16,
+                value: parseInt(value)
+            };
             break;
         case "Int8":
-            nValue = { dataType: opcua.DataType.SByte, value: parseInt(value) };
+            nValue = {
+                dataType: opcua.DataType.SByte,
+                value: parseInt(value)
+            };
             break;
         case "UInt32":
-            nValue = { dataType: opcua.DataType.UInt32, value: parseInt(value) };
+            nValue = {
+                dataType: opcua.DataType.UInt32,
+                value: parseInt(value)
+            };
             break;
         case "UInt16":
-            nValue = { dataType: opcua.DataType.UInt16, value: parseInt(value) };
+            nValue = {
+                dataType: opcua.DataType.UInt16,
+                value: parseInt(value)
+            };
             break;
         case "UInt8":
-            nValue = { dataType: opcua.DataType.Byte, value: parseInt(value) };
+            nValue = {
+                dataType: opcua.DataType.Byte,
+                value: parseInt(value)
+            };
             break;
         case "Boolean":
             if (value && value !== "false") {
-                nValue = { dataType: opcua.DataType.Boolean, value: true };
-            }
-            else {
-                nValue = { dataType: opcua.DataType.Boolean, value: false };
+                nValue = {
+                    dataType: opcua.DataType.Boolean,
+                    value: true
+                };
+            } else {
+                nValue = {
+                    dataType: opcua.DataType.Boolean,
+                    value: false
+                };
             }
             break;
         case "String":
-            nValue = { dataType: opcua.DataType.String, value: value };
+            nValue = {
+                dataType: opcua.DataType.String,
+                value: value
+            };
             break;
-		case "DateTime":
-            nValue = { dataType: opcua.DataType.UtcTime, value: Date.parse(value) };
+        case "DateTime":
+            nValue = {
+                dataType: opcua.DataType.UtcTime,
+                value: Date.parse(value)
+            };
             break;
         case "Byte":
-            nValue = { dataType: opcua.DataType.Byte, value: parseInt(value) };
+            nValue = {
+                dataType: opcua.DataType.Byte,
+                value: parseInt(value)
+            };
             break;
-		case "SByte":
-            nValue = { dataType: opcua.DataType.SByte, value: parseInt(value) };
+        case "SByte":
+            nValue = {
+                dataType: opcua.DataType.SByte,
+                value: parseInt(value)
+            };
             break;
         default:
-            nValue = { dataType: opcua.DataType.BaseDataType, value: value };
+            nValue = {
+                dataType: opcua.DataType.BaseDataType,
+                value: value
+            };
             break;
     }
 

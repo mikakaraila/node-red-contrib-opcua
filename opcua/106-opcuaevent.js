@@ -25,9 +25,9 @@ module.exports = function (RED) {
 
         RED.nodes.createNode(this, n);
 
-        this.root = n.root;         	// OPC UA item nodeID
-        this.eventtype = n.eventtype; 	// eventType
-        this.name = n.name;			    // Node name
+        this.root = n.root; // OPC UA item nodeID
+        this.eventtype = n.eventtype; // eventType
+        this.name = n.name; // Node name
 
         var node = this;
 

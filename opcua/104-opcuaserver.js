@@ -21,7 +21,7 @@ module.exports = function (RED) {
     var opcua = require('node-opcua');
     var path = require('path');
     var os = require("os");
-	var opcuaBasics = require('./opcua-basics');
+    var opcuaBasics = require('./opcua-basics');
 
     function OpcUaServerNode(n) {
 
@@ -46,7 +46,7 @@ module.exports = function (RED) {
         var folder = null;
 
         function node_error(err) {
-          node.error(err, err);
+            node.error(err, err);
         }
 
         function verbose_warn(logMessage) {
@@ -61,10 +61,15 @@ module.exports = function (RED) {
             }
         }
 
-        node.status({fill: "red", shape: "ring", text: "Not running"});
+        node.status({
+            fill: "red",
+            shape: "ring",
+            text: "Not running"
+        });
 
         var xmlFiles = [path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml'),
-            path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')];
+            path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')
+        ];
         verbose_warn("node set:" + xmlFiles.toString());
 
         function initNewServer() {
@@ -76,8 +81,8 @@ module.exports = function (RED) {
                 port: node.port,
                 nodeset_filename: xmlFiles,
                 resourcePath: node.endpoint || "UA/SimpleNodeRedServer",
-				certificateFile: path.join(__dirname, "../../node_modules/node-opcua-server/certificates/server_selfsigned_cert_2048.pem"),
-				privateKeyFile: path.join(__dirname, "../../node_modules/node-opcua-server/certificates/PKI/own/private/private_key.pem")
+                certificateFile: path.join(__dirname, "../../node_modules/node-opcua-server/certificates/server_selfsigned_cert_2048.pem"),
+                privateKeyFile: path.join(__dirname, "../../node_modules/node-opcua-server/certificates/PKI/own/private/private_key.pem")
             });
 
             server.buildInfo.productName = node.name.concat("OPC UA server");
@@ -85,9 +90,9 @@ module.exports = function (RED) {
             server.buildInfo.buildDate = new Date(2016, 3, 24);
             verbose_warn("init next...");
             server.initialize(post_initialize);
-			var hostname = os.hostname();
-			var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840/UADiscovery";
-			/*
+            var hostname = os.hostname();
+            var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840/UADiscovery";
+            /*
 			verbose_log("\nregistering server to :".yellow + discovery_server_endpointUrl);
 			// TODO wrong path created for certificateFile
 			server.registerServer(discovery_server_endpointUrl, function (err) {
@@ -135,7 +140,10 @@ module.exports = function (RED) {
 
                 value: {
                     get: function () {
-                        return new opcua.Variant({dataType: "Double", value: variable2});
+                        return new opcua.Variant({
+                            dataType: "Double",
+                            value: variable2
+                        });
                     },
                     set: function (variant) {
                         variable2 = parseFloat(variant.value);
@@ -154,7 +162,10 @@ module.exports = function (RED) {
 
                 value: {
                     get: function () {
-                        return new opcua.Variant({dataType: opcua.DataType.Double, value: available_memory()});
+                        return new opcua.Variant({
+                            dataType: opcua.DataType.Double,
+                            value: available_memory()
+                        });
                     }
                 }
             });
@@ -169,7 +180,10 @@ module.exports = function (RED) {
 
                 value: {
                     get: function () {
-                        return new opcua.Variant({dataType: opcua.DataType.UInt16, value: variables.Counter});
+                        return new opcua.Variant({
+                            dataType: opcua.DataType.UInt16,
+                            value: variables.Counter
+                        });
                     }
                 }
             });
@@ -178,21 +192,25 @@ module.exports = function (RED) {
                 vendorName, {
                     browseName: "Bark",
 
-                    inputArguments: [
-                        {
-                            name: "nbBarks",
-                            description: {text: "specifies the number of time I should bark"},
-                            dataType: opcua.DataType.UInt32
-                        }, {
-                            name: "volume",
-                            description: {text: "specifies the sound volume [0 = quiet ,100 = loud]"},
-                            dataType: opcua.DataType.UInt32
-                        }
-                    ],
+                    inputArguments: [{
+                        name: "nbBarks",
+                        description: {
+                            text: "specifies the number of time I should bark"
+                        },
+                        dataType: opcua.DataType.UInt32
+                    }, {
+                        name: "volume",
+                        description: {
+                            text: "specifies the sound volume [0 = quiet ,100 = loud]"
+                        },
+                        dataType: opcua.DataType.UInt32
+                    }],
 
                     outputArguments: [{
                         name: "Barks",
-                        description: {text: "the generated barks"},
+                        description: {
+                            text: "the generated barks"
+                        },
                         dataType: opcua.DataType.String,
                         valueRank: 1
                     }]
@@ -242,12 +260,19 @@ module.exports = function (RED) {
                     var endpointUrl = server.endpoints[0].endpointDescriptions()[0].endpointUrl;
                     verbose_log(" the primary server endpoint url is " + endpointUrl);
                 });
-                node.status({fill: "green", shape: "dot", text: "running"});
+                node.status({
+                    fill: "green",
+                    shape: "dot",
+                    text: "running"
+                });
                 initialized = true;
                 verbose_warn("server initialized");
-            }
-            else {
-                node.status({fill: "gray", shape: "dot", text: "not running"});
+            } else {
+                node.status({
+                    fill: "gray",
+                    shape: "dot",
+                    text: "not running"
+                });
                 node_error("server is not initialized")
             }
         }
@@ -260,11 +285,11 @@ module.exports = function (RED) {
 
         //######################################################################################
         node.on("input", function (msg) {
-			verbose_log(JSON.stringify(msg));
+            verbose_log(JSON.stringify(msg));
             if (server == undefined || !initialized) {
-				node_error("Server is not running");
-				return false;
-			}
+                node_error("Server is not running");
+                return false;
+            }
 
 
             var payload = msg.payload;
@@ -292,8 +317,7 @@ module.exports = function (RED) {
                 if (findReference(references, equipment.nodeId)) {
                     verbose_warn("Equipment Reference found in VendorName");
                     equipmentNotFound = false;
-                }
-                else {
+                } else {
                     verbose_warn("Equipment Reference not found in VendorName");
                 }
 
@@ -327,7 +351,7 @@ module.exports = function (RED) {
         }
 
         function execute_opcua_command(msg) {
-			var payload = msg.payload;
+            var payload = msg.payload;
             var addressSpace = server.engine.addressSpace;
             var name;
 
@@ -361,85 +385,87 @@ module.exports = function (RED) {
                     });
                     break;
 
-				case "setFolder":
+                case "setFolder":
                     verbose_warn("set Folder ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
-					folder = addressSpace.findNode(msg.topic);
+                    folder = addressSpace.findNode(msg.topic);
                     break;
 
-				case "addFolder":
+                case "addFolder":
                     verbose_warn("adding Folder ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
-					var parentFolder = addressSpace.rootFolder.objects;
-					if (folder!=null) {
-						parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
-					}
-					folder = addressSpace.getOwnNamespace().addObject({
-							organizedBy: addressSpace.findNode(parentFolder.nodeId),
-							nodeId: msg.topic,
-							browseName: msg.topic.substring(7)
-					});
+                    var parentFolder = addressSpace.rootFolder.objects;
+                    if (folder != null) {
+                        parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
+                    }
+                    folder = addressSpace.getOwnNamespace().addObject({
+                        organizedBy: addressSpace.findNode(parentFolder.nodeId),
+                        nodeId: msg.topic,
+                        browseName: msg.topic.substring(7)
+                    });
                     break;
 
-				 case "addVariable":
+                case "addVariable":
                     verbose_warn("adding Node ".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
-					var datatype = "";
-					var opcuaDataType = null;
-					var e = msg.topic.indexOf("datatype=");
+                    var datatype = "";
+                    var opcuaDataType = null;
+                    var e = msg.topic.indexOf("datatype=");
 
-					var parentFolder = addressSpace.rootFolder.objects;
-					if (folder!=null) {
-						parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
-					}
+                    var parentFolder = addressSpace.rootFolder.objects;
+                    if (folder != null) {
+                        parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
+                    }
 
-					if (e>0)
-					{
-						name = msg.topic.substring(0,e-1);
-						datatype = msg.topic.substring(e+9);
+                    if (e > 0) {
+                        name = msg.topic.substring(0, e - 1);
+                        datatype = msg.topic.substring(e + 9);
                         var browseName = name.substring(7);
                         variables[browseName] = 0;
 
-						if (datatype=="Int32") {
-							opcuaDataType = opcua.DataType.Int32;
-						}
-						if (datatype=="Int16") {
-							opcuaDataType = opcua.DataType.Int16;
-						}
-						if (datatype=="UInt32") {
-							opcuaDataType = opcua.DataType.UInt32;
-						}
-						if (datatype=="UInt16") {
-							opcuaDataType = opcua.DataType.UInt16;
-						}
-						if (datatype=="Double") {
-							opcuaDataType = opcua.DataType.Double;
-						}
-						if (datatype=="Float") {
-							opcuaDataType = opcua.DataType.Float;
-						}
-						if (datatype=="String") {
-							opcuaDataType = opcua.DataType.String;
-							variables[browseName] = "";
-						}
-						if (datatype=="Boolean") {
-							opcuaDataType = opcua.DataType.Boolean;
-							variables[browseName] = true;
-						}
-						verbose_log(opcuaDataType.toString());
-						addressSpace.getOwnNamespace().addVariable({
-							organizedBy: addressSpace.findNode(parentFolder.nodeId),
-							nodeId: name,
-							browseName: browseName, // or displayName
-							dataType: datatype, // opcuaDataType,
-							value: {
-								get: function() {
-									return new opcua.Variant({dataType: opcuaDataType, value: variables[browseName]})
-								},
-								set: function (variant) {
-									variables[browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType, variant.value);
-								return opcua.StatusCodes.Good;
-								}
-							}
-						});
-					}
+                        if (datatype == "Int32") {
+                            opcuaDataType = opcua.DataType.Int32;
+                        }
+                        if (datatype == "Int16") {
+                            opcuaDataType = opcua.DataType.Int16;
+                        }
+                        if (datatype == "UInt32") {
+                            opcuaDataType = opcua.DataType.UInt32;
+                        }
+                        if (datatype == "UInt16") {
+                            opcuaDataType = opcua.DataType.UInt16;
+                        }
+                        if (datatype == "Double") {
+                            opcuaDataType = opcua.DataType.Double;
+                        }
+                        if (datatype == "Float") {
+                            opcuaDataType = opcua.DataType.Float;
+                        }
+                        if (datatype == "String") {
+                            opcuaDataType = opcua.DataType.String;
+                            variables[browseName] = "";
+                        }
+                        if (datatype == "Boolean") {
+                            opcuaDataType = opcua.DataType.Boolean;
+                            variables[browseName] = true;
+                        }
+                        verbose_log(opcuaDataType.toString());
+                        addressSpace.getOwnNamespace().addVariable({
+                            organizedBy: addressSpace.findNode(parentFolder.nodeId),
+                            nodeId: name,
+                            browseName: browseName, // or displayName
+                            dataType: datatype, // opcuaDataType,
+                            value: {
+                                get: function () {
+                                    return new opcua.Variant({
+                                        dataType: opcuaDataType,
+                                        value: variables[browseName]
+                                    })
+                                },
+                                set: function (variant) {
+                                    variables[browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType, variant.value);
+                                    return opcua.StatusCodes.Good;
+                                }
+                            }
+                        });
+                    }
                     break;
 
                 case "deleteNode":
