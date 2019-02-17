@@ -76,8 +76,8 @@ module.exports = function (RED) {
                 port: node.port,
                 nodeset_filename: xmlFiles,
                 resourcePath: node.endpoint || "UA/SimpleNodeRedServer",
-				certificateFile: path.join(__dirname, "../../../node_modules/node-opcua-server/certificates/server_selfsigned_cert_2048.pem"),
-				privateKeyFile: path.join(__dirname, "../../../node_modules/node-opcua-server/certificates/PKI/own/private/private_key.pem")
+				certificateFile: path.join(__dirname, "../../node_modules/node-opcua-server/certificates/server_selfsigned_cert_2048.pem"),
+				privateKeyFile: path.join(__dirname, "../../node_modules/node-opcua-server/certificates/PKI/own/private/private_key.pem")
             });
 
             server.buildInfo.productName = node.name.concat("OPC UA server");

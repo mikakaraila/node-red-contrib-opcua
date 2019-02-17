@@ -35,7 +35,8 @@ module.exports = function (RED) {
   var browse_service = require("node-opcua-service-browse");
   var async = require("async");
   var treeify = require('treeify');
-  var Set = require("collections/set");
+  // var Set = require("collections/set");
+  // var Set = require("Set"); // Set is replaced by Map now
   var path = require("path");
   var DataType = opcua.DataType;
   var AttributeIds = opcua.AttributeIds;
@@ -61,7 +62,7 @@ module.exports = function (RED) {
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] ||  opcua.MessageSecurityMode.NONE;
 	if (node.certpath==undefined) {
-		certpath = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/");
+		certpath = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/");
 	}
 	else {
 		// expect that certpath is absolute
@@ -91,11 +92,12 @@ module.exports = function (RED) {
     var items = [];
     var subscription; // only one subscription needed to hold multiple monitored Items
 
-    var monitoredItems = new Set(null, function (a, b) {
+    var monitoredItems = new Map(); /* Set(null, function (a, b) {
       return a.topicName === b.topicName;
     }, function (object) {
       return object.topicName;
     }); // multiple monitored Items should be registered only once
+    */
 
     function node_error(err) {
       node.error(err, err);
@@ -645,7 +647,7 @@ module.exports = function (RED) {
         nodeStr=nodeStr.substring(0,dTypeIndex);
       }
 
-      var monitoredItem = monitoredItems.get({"topicName": msg.topic});
+      var monitoredItem = monitoredItems.get(msg.topic); // {"topicName": msg.topic});
 
       if (!monitoredItem) {
         var interval = convertAndCheckInterval(msg.payload);
@@ -681,7 +683,7 @@ module.exports = function (RED) {
               node_error('subscription.monitorItem:' + err);
               // reset_opcua_client(connect_opcua_client); // not actually needed
             } else {
-              monitoredItems.add({"topicName": nodeStr, mItem: monitoredItem});
+              monitoredItems.set({"topicName": nodeStr, mItem: monitoredItem}); // Set use add
             }
           }
         );
@@ -849,7 +851,7 @@ module.exports = function (RED) {
             }
           }
         );
-        monitoredItems.add({"topicName": msg.topic, mItem: monitoredItem});
+        monitoredItems.set({"topicName": msg.topic, mItem: monitoredItem}); // Set add
         monitoredItem.on("initialized", function () {
           verbose_log("monitored Event initialized");
           set_node_status_to("initialized");

@@ -41,8 +41,8 @@ module.exports = function (RED) {
         var connectionOption = {};
         connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
         connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.NONE;
-		connectionOption.certificateFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
-		connectionOption.privateKeyFile = path.join(__dirname, "../../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
+		connectionOption.certificateFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
+		connectionOption.privateKeyFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
 		connectionOption.endpoint_must_exist = false;
         node.status({fill: "gray", shape: "dot", text: "no Items"});
 
@@ -89,7 +89,7 @@ module.exports = function (RED) {
 							var nodes = browse_result.references;
 							if (nodes instanceof Array) {
 								nodes.forEach(function (reference) {
-									node.add_item(reference);
+									// TODO Fix later node.add_item(reference);
 								});
 							}
                         }
