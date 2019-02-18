@@ -25,6 +25,8 @@ limitations under the License.
             action: {value: "read", required: true},
             time: {value: 10},
             timeUnit: {value: "s"},
+            certificate: {value: "n"},
+            localfile: {value: ""},
             name: {value: ""}
         },
         inputs: 1,
@@ -91,15 +93,21 @@ limitations under the License.
             <option value="h">hour(s)</option>
         </select>
     </div>
+    <div class="form-row" id="node-input-servercertificate">
+        <label for="node-input-location"><i class="icon-time"></i> Certificate</label>
+        <select id="node-input-certificate" style="width:72%;">
+            <option value="n">None, no certificate used</option>
+            <option value="l">Local file, give path with filename</option>
+        </select>
+    </div>
 	<div class="form-row">
-        <label for="node-input-path"><i class="icon-tasks"></i> Path to certificates</label>
-        <input type="text" id="node-input-path" placeholder="../../../node_modules/node-opcua-client/certificates/">
+        <label for="node-input-path"><i class="icon-tasks"></i> Local file</label>
+        <input type="text" id="node-input-localfile" placeholder="../../pki/server_certificate.pem">
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tasks"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="">
     </div>
-
 </script>
 
 <script type="text/x-red" data-help-name="OpcUa-Client">
@@ -116,6 +124,17 @@ limitations under the License.
 			<li>Info</li>
          </ul>
     </p>
+    <p>Server certificate options are:</p>
+    <p>
+        <ul>
+            <li>None</li>
+            <li>Local file</li>
+         </ul>
+    </p>
+    <p>Certificate is not needed if security is NONE.</p>
+    <p>Client will try to load server certificate from endpoint if server can provide it (copy server certificate under pki folder).</p>
+    <p>Local file with relative path and certificate filename can be then used to use server certificate (.pem ending file).</p>
+    <p>User can manually copy server certificate.</p>
     <p>Inject your OPC UA address (NodeId) by the <strong>Topic</strong> of an Inject node or with the OpcUa-Item cotrolled by an Inject node.</p>
     <p>To Read/Write inject the Topic for every operation.</p>
     <p>The value to Write should be injected by an OpcUa-Item.</p>

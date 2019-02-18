@@ -23,6 +23,7 @@ module.exports = function (RED) {
   var opcuaBasics = require('./opcua-basics');
   var assert = require("node-opcua-assert");
   var nodeId = require("node-opcua-nodeid");
+  var crypto_utils = opcua.crypto_utils;
   var UAProxyManager = require("node-opcua-client-proxy").UAProxyManager;
   var ClientSubscription = require("node-opcua-client").ClientSubscription;
   var ClientSession = opcua.ClientSession;
@@ -34,6 +35,7 @@ module.exports = function (RED) {
   // var Set = require("collections/set");
   // var Set = require("Set"); // Set is replaced by Map now
   var path = require("path");
+  var fs = require("fs");
   var DataType = opcua.DataType;
   var AttributeIds = opcua.AttributeIds;
   var read_service = require("node-opcua-service-read");
@@ -42,10 +44,14 @@ module.exports = function (RED) {
   function OpcUaClientNode(n) {
     RED.nodes.createNode(this, n);
     this.name = n.name;
-    this.certpath = n.path;
     this.action = n.action;
     this.time = n.time;
     this.timeUnit = n.timeUnit;
+    this.certificate = n.certificate; // n == NONE, l == Local file, e == Endpoint, u == Upload
+    this.localfile = n.localfile; // Local file
+    // this.upload = n.upload; // Upload
+    // this.certificate_filename = n.certificate_filename;
+    // this.certificate_data = n.certificate_data;
 
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
@@ -53,21 +59,20 @@ module.exports = function (RED) {
     var connectionOption = {};
     var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
     var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
-    var certpath = "";
 
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.NONE;
-    if (node.certpath == undefined) {
-      certpath = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/");
-    } else {
-      // expect that certpath is absolute
-      certpath = node.certpath;
+
+    if (node.certificate === "l" && node.localfile) {
+      verbose_log("Local certificate file " + node.localfile);
+      var certpath = path.join(__dirname, node.localfile);
+      var cert = crypto_utils.readCertificate(certpath);
+      connectionOption.serverCertificate = cert; // Use server certificate, not the client own as was in earlier code
     }
-    connectionOption.certificateFile = path.join(certpath, "client_selfsigned_cert_1024.pem");
-    connectionOption.privateKeyFile = path.join(certpath, "PKI/own/private/private_key.pem");
-    if (!require('fs').existsSync(connectionOption.certificateFile)) {
-      node.error("\tCannot read:" + connectionOption.certificateFile + " file.");
+    if (node.certificate === "n" || node.certificate === "") {
+      node.log("\tNo certificate used.");
     }
+
     connectionOption.endpoint_must_exist = false;
     connectionOption.defaultSecureTokenLifetime = 40000;
     connectionOption.connectionStrategy = {
@@ -233,6 +238,48 @@ module.exports = function (RED) {
             } catch (err) {
               callback(err);
             }
+          },
+          function (callback) {
+              // This will succeed first time only if security policy and mode are NONE
+              // Later user can use path and local fileto access server certificate file
+              node.client.getEndpoints(function (err, endpoints) {
+                if (!err) {
+                  endpoints.forEach(function (endpoint, i) {
+                    verbose_log("endpoint " + endpoint.endpointUrl + "");
+                    verbose_log("Application URI " + endpoint.server.applicationUri);
+                    verbose_log("Product URI " + endpoint.server.productUri);
+                    verbose_log("Application Name " + endpoint.server.applicationName.text);
+                    var applicationName = endpoint.server.applicationName.text;
+                    if (!applicationName) {
+                      applicationName = "OPCUA_Server";
+                    }
+                    verbose_log("Security Mode " + endpoint.securityMode.toString());
+                    verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
+                    verbose_log("Type " + endpoint.server.applicationType.key);
+                    verbose_log("certificate " + "..." + " /*endpoint.serverCertificate*/");
+                    endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
+                    verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
+                    var serverCertificate = endpoint.serverCertificate;
+                    // Use applicationName instead of fixed server_certificate
+                    var certificate_filename = path.join(__dirname, "../../PKI/" + applicationName + i + ".pem");
+                    if (serverCertificate) {
+                       fs.writeFile(certificate_filename, crypto_utils.toPem(serverCertificate, "CERTIFICATE"),function(){});
+                    }
+                  });
+
+                  endpoints.forEach(function (endpoint) {
+                    verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString()," Policy=", endpoint.securityPolicyUri);
+                    endpoint.userIdentityTokens.forEach(function (token) {
+                      verbose_log("policyId " + token.policyId);
+                      verbose_log("tokenType " + token.tokenType.toString());
+                      verbose_log("issuedTokenType " + token.issuedTokenType);
+                      verbose_log("issuerEndpointUrl " + token.issuerEndpointUrl);
+                      verbose_log("securityPolicyUri " + token.securityPolicyUri);
+                    });
+                  });
+                }
+              callback(err);
+            });
           },
           function (callback) {
             verbose_log("async series - create session ...");
