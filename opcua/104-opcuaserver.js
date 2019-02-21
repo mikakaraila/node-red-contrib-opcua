@@ -22,6 +22,7 @@ module.exports = function (RED) {
     var path = require('path');
     var os = require("os");
     var opcuaBasics = require('./opcua-basics');
+    var installedPath = require('get-installed-path');
 
     function OpcUaServerNode(n) {
 
@@ -74,15 +75,29 @@ module.exports = function (RED) {
 
         function initNewServer() {
 
+            console.log("JS folder:", path.join(__dirname, './node_modules'));
+            console.log("CWD: ", path.join(process.cwd(), '.node-red'));
+
             initialized = false;
             verbose_warn("create Server from XML ...");
+            var serverPkg = installedPath.getInstalledPathSync('node-opcua-server', {
+                paths: [
+                  path.join(__dirname, '..'),
+                  path.join(process.cwd(), '.node-red/node_modules'),
+                ],
+            })
+            if (!serverPkg)
+                verbose_warn("Cannot find node-opcua-server package with server certificate");
 
+            var certFile = path.join(serverPkg, "/certificates/server_selfsigned_cert_2048.pem");
+            var privFile = path.join(serverPkg, "/certificates/PKI/own/private/private_key.pem");
+            verbose_log("Using server certificate " + certFile);
             server = new opcua.OPCUAServer({
                 port: node.port,
                 nodeset_filename: xmlFiles,
                 resourcePath: node.endpoint || "UA/SimpleNodeRedServer",
-                certificateFile: path.join(__dirname, "../../../.node-red/node_modules/node-opcua-server/certificates/server_selfsigned_cert_2048.pem"),
-                privateKeyFile: path.join(__dirname, "../../../.node-red/node_modules/node-opcua-server/certificates/PKI/own/private/private_key.pem")
+                certificateFile: certFile,
+                privateKeyFile: privFile
             });
 
             server.buildInfo.productName = node.name.concat("OPC UA server");
