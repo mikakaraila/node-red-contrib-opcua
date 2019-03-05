@@ -40,6 +40,7 @@ module.exports = function (RED) {
   var AttributeIds = opcua.AttributeIds;
   var read_service = require("node-opcua-service-read");
   var TimestampsToReturn = read_service.TimestampsToReturn;
+  var subscription_service = require("node-opcua-service-subscription");
 
   function OpcUaClientNode(n) {
     RED.nodes.createNode(this, n);
@@ -47,6 +48,8 @@ module.exports = function (RED) {
     this.action = n.action;
     this.time = n.time;
     this.timeUnit = n.timeUnit;
+    this.deadbandtype = n.deadbandtype;
+    this.deadbandvalue = n.deadbandvalue;
     this.certificate = n.certificate; // n == NONE, l == Local file, e == Endpoint, u == Upload
     this.localfile = n.localfile; // Local file
     // this.upload = n.upload; // Upload
@@ -420,6 +423,9 @@ module.exports = function (RED) {
         case "subscribe":
           subscribe_action_input(msg);
           break;
+        case "monitor":
+          monitor_action_input(msg);
+          break;
         case "unsubscribe":
           unsubscribe_action_input(msg);
           break;
@@ -545,7 +551,7 @@ module.exports = function (RED) {
         node.client.keepSessionAlive = true;
         var session = new ClientSession(node.client);
         var proxyManager = new UAProxyManager(node.session);
-        console.log(nodeId.toString());
+        // console.log(nodeId.toString());
         proxyManager.getObject(nodeId.toString(), function (err, data) {
           if (!err) {
             if (data.typeDefinition != "FolderType") {
@@ -652,6 +658,26 @@ module.exports = function (RED) {
       }
     }
 
+    function monitor_action_input(msg) {
+      verbose_log("monitoring");
+      if (!subscription) {
+        // first build and start subscription and subscribe on its started event by callback
+        var timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
+        subscription = make_subscription(monitor_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
+      } else {
+        // otherwise check if its terminated start to renew the subscription
+        if (subscription.subscriptionId != "terminated") {
+          set_node_status_to("active monitoring");
+          monitor_monitoredItem(subscription, msg);
+        } else {
+          subscription = null;
+          monitoredItems.clear();
+          set_node_status_to("terminated");
+          reset_opcua_client(connect_opcua_client);
+        }
+      }
+    }
+
     function unsubscribe_action_input(msg) {
       verbose_log("unsubscribing");
       if (!subscription) {
@@ -736,6 +762,142 @@ module.exports = function (RED) {
 
         monitoredItem.on("changed", function (dataValue) {
           set_node_status_to("active subscribed");
+          verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
+          verbose_log(dataValue.toString());
+          if (dataValue.statusCode === opcua.StatusCodes.Good) {
+            verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
+          } else {
+            verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16));
+          }
+
+          // Check if timestamps exists otherwise simulate them
+          if (dataValue.serverTimestamp != null) {
+            msg.serverTimestamp = dataValue.serverTimestamp;
+            msg.serverPicoseconds = dataValue.serverPicoseconds;
+          } else {
+            msg.serverTimestamp = new Date().getTime();;
+            msg.serverPicoseconds = 0;
+          }
+
+          if (dataValue.sourceTimestamp != null) {
+            msg.sourceTimestamp = dataValue.sourceTimestamp;
+            msg.sourcePicoseconds = dataValue.sourcePicoseconds;
+          } else {
+            msg.sourceTimestamp = new Date().getTime();;
+            msg.sourcePicoseconds = 0;
+          }
+
+          msg.payload = dataValue.value.value;
+          node.send(msg);
+        });
+
+        monitoredItem.on("keepalive", function () {
+          verbose_log("keepalive monitoredItem on " + nodeStr);
+        });
+
+        monitoredItem.on("terminated", function () {
+          verbose_log("terminated monitoredItem on " + nodeStr);
+          if (monitoredItems.get({
+              "topicName": nodeStr
+            })) {
+            monitoredItems.delete({
+              "topicName": nodeStr
+            });
+          }
+        });
+      }
+
+      return monitoredItem;
+    }
+
+    function monitor_monitoredItem(subscription, msg) {
+      verbose_log("Session subscriptionId: " + subscription.subscriptionId);
+      var nodeStr = msg.topic;
+      var dTypeIndex = nodeStr.indexOf(";datatype=");
+      if (dTypeIndex > 0) {
+        nodeStr = nodeStr.substring(0, dTypeIndex);
+      }
+      var monitoredItem = monitoredItems.get(msg.topic); // {"topicName": msg.topic});
+      if (!monitoredItem) {
+        var interval = convertAndCheckInterval(msg.payload);
+        verbose_log(msg.topic + " samplingInterval " + interval);
+        verbose_warn("Monitoring: " + msg.topic + ' by interval of ' + interval + " ms");
+        verbose_log("Deadband type (a==absolute, p==percent) " + node.deadbandtype + " deadband value " + node.deadbandvalue);
+        // Validate nodeId
+        try {
+          var nodeId = coerceNodeId(nodeStr);
+          if (nodeId && nodeId.isEmpty()) {
+            node_error(" Invalid empty node in getObject");
+          }
+          //makeNodeId(nodeStr); // above is enough
+        } catch (err) {
+          node_error(err);
+          return;
+        }
+        var deadbandtype = subscription_service.DeadbandType.Absolute;
+        // NOTE differs from standard subscription monitor
+        if (node.deadbandType == "a") {
+          deadbandType = subscription_service.DeadbandType.Absolute;
+        }
+        if (node.deadbandType == "a") {
+          deadbandType = subscription_service.DeadbandType.Percent;
+        }
+        var dataChangeFilter = new subscription_service.DataChangeFilter({
+          trigger: subscription_service.DataChangeTrigger.StatusValue,
+          deadbandType: deadbandtype,
+          deadbandValue: node.deadbandvalue
+        });
+        /*
+        var  monitoredItemCreateRequest1 = new subscription_service.MonitoredItemCreateRequest({
+          itemToMonitor: {
+          nodeId: nodeStr,
+          attributeId: opcua.AttributeIds.Value
+          },
+          monitoringMode: subscription_service.MonitoringMode.Reporting,
+          requestedParameters: {
+            queueSize: 10,
+            samplingInterval: 100,
+            filter: new subscription_service.DataChangeFilter({
+              trigger: subscription_service.DataChangeTrigger.Status,
+              deadbandType: deadbandType,
+              deadbandValue: node.deadbandValue // from UI n.deadbandvalue
+           })
+          }
+        });
+        verbose_log("Monitoring parameters: " + monitoredItemCreateRequest1);
+        monitoredItem = subscription.createMonitoredItem(addressSpace, TimestampsToReturn.Both, monitoredItemCreateRequest1);
+        */
+
+        monitoredItem = subscription.monitor({
+            nodeId: nodeStr,
+            attributeId: opcua.AttributeIds.Value
+          }, {
+            samplingInterval: interval,
+            queueSize: 10,
+            discardOldest: true,
+            filter: dataChangeFilter
+          },
+          TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
+          function (err) {
+            if (err) {
+              node_error("Check topic format for nodeId:" + msg.topic)
+              node_error('subscription.monitorItem:' + err);
+              // reset_opcua_client(connect_opcua_client); // not actually needed
+            } else {
+              monitoredItems.set({
+                "topicName": nodeStr,
+                mItem: monitoredItem
+              }); // Set use add
+            }
+          }
+        );
+
+        monitoredItem.on("initialized", function () {
+          verbose_log("initialized monitoredItem on " + nodeStr);
+        });
+
+        monitoredItem.on("changed", function (dataValue) {
+          set_node_status_to("active monitoring");
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
           verbose_log(dataValue.toString());
           if (dataValue.statusCode === opcua.StatusCodes.Good) {

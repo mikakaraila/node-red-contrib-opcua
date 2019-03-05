@@ -23,6 +23,8 @@ limitations under the License.
         defaults: {
             endpoint: {value: "", required: true, type: "OpcUa-Endpoint"},
             action: {value: "read", required: true},
+            deadbandtype: {value: "a"},
+            deadbandvalue: {value: 1},
             time: {value: 10},
             timeUnit: {value: "s"},
             certificate: {value: "n"},
@@ -46,6 +48,7 @@ limitations under the License.
             try {
                 var inputAction = $('#node-input-action');
                 var inputTime = $('#node-input-timerow');
+                var inputDeadband = $('#node-input-deadband');
                 change_time_input(); // first to fit config now
                 inputAction.change(change_time_input);
 
@@ -54,12 +57,19 @@ limitations under the License.
             }
 
             function change_time_input() {
-                if (inputAction.val() == "subscribe" || inputAction.val() == "events") {
+                if (inputAction.val() == "subscribe" || inputAction.val() == "events" || inputAction.val() == "monitor") {
                     inputTime.show();
                 }
                 else {
                     inputTime.hide();
                 }
+                if (inputAction.val() == "monitor") {
+                    inputDeadband.show();
+                }
+                else {
+                    inputDeadband.hide();
+                }
+
             }
         }
     });
@@ -80,7 +90,8 @@ limitations under the License.
             <option value="subscribe">SUBSCRIBE</option>
 			<option value="unsubscribe">UNSUBSCRIBE</option>
             <option value="events">EVENTS</option>
-			<option value="info">INFO</option>
+            <option value="info">INFO</option>
+            <option value="monitor">MONITOR</option>
         </select>
     </div>
     <div class="form-row" id="node-input-timerow">
@@ -91,6 +102,14 @@ limitations under the License.
             <option value="s">second(s)</option>
             <option value="m">minute(s)</option>
             <option value="h">hour(s)</option>
+        </select>
+    </div>
+    <div class="form-row" id="node-input-deadband">
+        <label for="node-input-deadbandlabel"><i class="icon-time"></i> Deadband Type</label>
+        <input type="number" id="node-input-deadbandvalue" placeholder="number" style="max-width:120px">
+        <select id="node-input-deadbandtype" style="max-width:160px">
+            <option value="a">Absolute</option>
+            <option value="p">Percent</option>
         </select>
     </div>
     <div class="form-row" id="node-input-servercertificate">
@@ -121,7 +140,8 @@ limitations under the License.
             <li>Subscribe</li>
 			<li>Unsubscribe</li>
             <li>Event</li>
-			<li>Info</li>
+            <li>Info</li>
+            <li>Monitor</li>
          </ul>
     </p>
     <p>Server certificate options are:</p>
@@ -142,4 +162,5 @@ limitations under the License.
         Every inject subscribes a new monitored Item.</p>
     <p>Interval is setting for Client <strong>requestedPublishingInterval</strong> (default: 100ms).</p>
     <p>Input <strong>msg.payload</strong> can bring an samplingInterval for monitored Items/Events in subscription (default: 100ms).</p>
+    <p>Monitor will ask additional parameters like Absolute or Percent and deadband value</p>
 </script>
