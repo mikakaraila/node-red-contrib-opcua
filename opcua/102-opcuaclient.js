@@ -331,9 +331,9 @@ module.exports = function (RED) {
         verbose_log("Subscription without parameters");
         return newSubscription;
       }
-
+      verbose_log("Publishing interval " + JSON.stringify(parameters));
       newSubscription = new opcua.ClientSubscription(node.session, parameters);
-
+      verbose_log("Subscription " + newSubscription.toString());
       newSubscription.on("initialized", function () {
         verbose_log("Subscription initialized");
         set_node_status_to("initialized");
@@ -717,6 +717,7 @@ module.exports = function (RED) {
       var monitoredItem = monitoredItems.get(msg.topic); // {"topicName": msg.topic});
 
       if (!monitoredItem) {
+        verbose_log("Msg " + JSON.stringify(msg));
         var interval = convertAndCheckInterval(msg.payload);
         verbose_log(msg.topic + " samplingInterval " + interval);
         verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
@@ -1042,6 +1043,7 @@ module.exports = function (RED) {
       });
 
       if (!monitoredItem) {
+        verbose_log("Msg " + JSON.stringify(msg));
         var interval = convertAndCheckInterval(msg.payload);
         verbose_log(msg.topic + " samplingInterval " + interval);
         verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
