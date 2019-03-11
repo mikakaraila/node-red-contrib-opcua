@@ -33,6 +33,7 @@ module.exports = function (RED) {
   var async = require("async");
   var treeify = require('treeify');
   // var Set = require("collections/set");
+  var Map = require('es6-map');
   // var Set = require("Set"); // Set is replaced by Map now
   var path = require("path");
   var fs = require("fs");
@@ -96,13 +97,14 @@ module.exports = function (RED) {
     var subscription; // only one subscription needed to hold multiple monitored Items
 
     var monitoredItems = new Map();
-    /* Set(null, function (a, b) {
+    // var monitoredItems = new Set();
+    /*
+    var monitoredItems = new Set(null, function (a, b) {
          return a.topicName === b.topicName;
        }, function (object) {
          return object.topicName;
        }); // multiple monitored Items should be registered only once
-       */
-
+    */
     function node_error(err) {
       node.error(err, err);
     }
@@ -342,6 +344,7 @@ module.exports = function (RED) {
       newSubscription.on("started", function () {
         verbose_log("Subscription subscribed ID: " + newSubscription.subscriptionId);
         set_node_status_to("subscribed");
+        // monitoredItems = new Map();
         monitoredItems.clear();
         callback(newSubscription, msg);
       });
@@ -355,6 +358,7 @@ module.exports = function (RED) {
         verbose_log("Subscription terminated ID: " + newSubscription.subscriptionId);
         set_node_status_to("terminated");
         subscription = null;
+        // monitoredItems = new Map();
         monitoredItems.clear();
       });
 
@@ -651,6 +655,7 @@ module.exports = function (RED) {
           subscribe_monitoredItem(subscription, msg);
         } else {
           subscription = null;
+          // monitoredItems = new Map();
           monitoredItems.clear();
           set_node_status_to("terminated");
           reset_opcua_client(connect_opcua_client);
@@ -671,6 +676,7 @@ module.exports = function (RED) {
           monitor_monitoredItem(subscription, msg);
         } else {
           subscription = null;
+          // monitoredItems = new Map();
           monitoredItems.clear();
           set_node_status_to("terminated");
           reset_opcua_client(connect_opcua_client);
@@ -682,15 +688,17 @@ module.exports = function (RED) {
       verbose_log("unsubscribing");
       if (!subscription) {
         // first build and start subscription and subscribe on its started event by callback
-        var timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
-        subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
+        // var timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
+        // subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
+        verbose_warn("Cannot unscubscribe, no subscription");
       } else {
         // otherwise check if its terminated start to renew the subscription
         if (subscription.subscriptionId != "terminated") {
-          set_node_status_to("active subscribing");
+          set_node_status_to("unsubscribing");
           unsubscribe_monitoredItem(subscription, msg); // Call to terminate monitoredItem
         } else {
           subscription = null;
+          // monitoredItems = new Map();
           monitoredItems.clear();
           set_node_status_to("terminated");
           reset_opcua_client(connect_opcua_client);
@@ -714,13 +722,17 @@ module.exports = function (RED) {
         nodeStr = nodeStr.substring(0, dTypeIndex);
       }
 
-      var monitoredItem = monitoredItems.get(msg.topic); // {"topicName": msg.topic});
+      var monitoredItem = monitoredItems.get(msg.topic);
 
       if (!monitoredItem) {
         verbose_log("Msg " + JSON.stringify(msg));
-        var interval = convertAndCheckInterval(msg.payload);
+        var interval = 100; // Set as default if no payload
+        console.log(msg.payload);
+        if (msg.payload && Number(msg.payload > 100)) {
+          interval = convertAndCheckInterval(msg.payload);
+        }
         verbose_log(msg.topic + " samplingInterval " + interval);
-        verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
+        verbose_warn("Monitoring value: " + msg.topic + ' by interval of ' + interval.toString() + " ms");
 
         // Validate nodeId
         try {
@@ -749,10 +761,8 @@ module.exports = function (RED) {
               node_error('subscription.monitorItem:' + err);
               // reset_opcua_client(connect_opcua_client); // not actually needed
             } else {
-              monitoredItems.set({
-                "topicName": nodeStr,
-                mItem: monitoredItem
-              }); // Set use add
+              console.log(monitoredItem.monitoredItemId);
+              monitoredItems.set(nodeStr, monitoredItem.monitoredItemId);
             }
           }
         );
@@ -798,12 +808,8 @@ module.exports = function (RED) {
 
         monitoredItem.on("terminated", function () {
           verbose_log("terminated monitoredItem on " + nodeStr);
-          if (monitoredItems.get({
-              "topicName": nodeStr
-            })) {
-            monitoredItems.delete({
-              "topicName": nodeStr
-            });
+          if (monitoredItems.has(nodeStr)) {
+            monitoredItems.delete(nodeStr);
           }
         });
       }
@@ -818,7 +824,7 @@ module.exports = function (RED) {
       if (dTypeIndex > 0) {
         nodeStr = nodeStr.substring(0, dTypeIndex);
       }
-      var monitoredItem = monitoredItems.get(msg.topic); // {"topicName": msg.topic});
+      var monitoredItem = monitoredItems.get(msg.topic);
       if (!monitoredItem) {
         var interval = convertAndCheckInterval(msg.payload);
         verbose_log(msg.topic + " samplingInterval " + interval);
@@ -885,10 +891,8 @@ module.exports = function (RED) {
               node_error('subscription.monitorItem:' + err);
               // reset_opcua_client(connect_opcua_client); // not actually needed
             } else {
-              monitoredItems.set({
-                "topicName": nodeStr,
-                mItem: monitoredItem
-              }); // Set use add
+              console.log(monitoredItem.monitoredItemId);
+              monitoredItems.set(nodeStr, monitoredItem.monitoredItemId);
             }
           }
         );
@@ -934,12 +938,8 @@ module.exports = function (RED) {
 
         monitoredItem.on("terminated", function () {
           verbose_log("terminated monitoredItem on " + nodeStr);
-          if (monitoredItems.get({
-              "topicName": nodeStr
-            })) {
-            monitoredItems.delete({
-              "topicName": nodeStr
-            });
+          if (monitoredItems.has(nodeStr)) {
+            monitoredItems.delete(nodeStr);
           }
         });
       }
@@ -954,10 +954,9 @@ module.exports = function (RED) {
       if (dTypeIndex > 0) {
         nodeStr = nodeStr.substring(0, dTypeIndex);
       }
-      var monitoredItem = monitoredItems.get({
-        "topicName": msg.topic
-      });
-      if (monitoredItem) {
+      var monitoredItemId = monitoredItems.get(msg.topic);
+      console.log("Got:" + monitoredItemId);
+      if (monitoredItemId) {
         // Validate nodeId
         try {
           var nodeId = coerceNodeId(nodeStr);
@@ -971,15 +970,13 @@ module.exports = function (RED) {
         // Use session to unscubscribe monitoredItem
         node.session.deleteMonitoredItems({
           subscriptionId: subscription.subscriptionId,
-          monitoredItemIds: [monitoredItem.mItem.monitoredItemId]
+          monitoredItemIds: [monitoredItemId]
         }, function (error, response) {
           if (error) {
             node_error("Unscrubscibe error " + error);
           } else {
             verbose_log("Unsubscribed (terminated) monitored item: " + msg.topic);
-            monitoredItems.delete({
-              "topicName": msg.topic
-            });
+            monitoredItems.delete(msg.topic);
           }
         });
 
@@ -1038,9 +1035,7 @@ module.exports = function (RED) {
     function subscribe_monitoredEvent(subscription, msg) {
       verbose_log("Session subscriptionId: " + subscription.subscriptionId);
 
-      var monitoredItem = monitoredItems.get({
-        "topicName": msg.topic
-      });
+      var monitoredItem = monitoredItems.get(msg.topic);
 
       if (!monitoredItem) {
         verbose_log("Msg " + JSON.stringify(msg));
@@ -1065,10 +1060,8 @@ module.exports = function (RED) {
             }
           }
         );
-        monitoredItems.set({
-          "topicName": msg.topic,
-          mItem: monitoredItem
-        }); // Set add
+        console.log(monitoredItem.monitoredItemId);
+        monitoredItems.set(msg.topic, monitoredItem.monitoredItemId);
         monitoredItem.on("initialized", function () {
           verbose_log("monitored Event initialized");
           set_node_status_to("initialized");
@@ -1081,12 +1074,8 @@ module.exports = function (RED) {
 
         monitoredItem.on("error", function (err_message) {
           verbose_log("error monitored Event on " + msg.topic);
-          if (monitoredItems.get({
-              "topicName": msg.topic
-            })) {
-            monitoredItems.delete({
-              "topicName": msg.topic
-            });
+          if (monitoredItems.has(msg.topic)) {
+            monitoredItems.delete(msg.topic);
           }
 
           node_error("monitored Event " + msg.eventTypeId + " ERROR".red + err_message);
@@ -1099,12 +1088,8 @@ module.exports = function (RED) {
 
         monitoredItem.on("terminated", function () {
           verbose_log("terminated monitored Event on " + msg.topic);
-          if (monitoredItems.get({
-              "topicName": msg.topic
-            })) {
-            monitoredItems.delete({
-              "topicName": msg.topic
-            });
+          if (monitoredItems.has(msg.topic)) {
+            monitoredItems.delete(msg.topic);
           }
         });
       }
@@ -1127,6 +1112,7 @@ module.exports = function (RED) {
           subscribe_monitoredEvent(subscription, msg);
         } else {
           subscription = null;
+          // monitoredItems = new Map();
           monitoredItems.clear();
           set_node_status_to("terminated");
           reset_opcua_client(connect_opcua_client);
@@ -1148,6 +1134,7 @@ module.exports = function (RED) {
 
       // Now reconnect and use msg parameters
       subscription = null;
+      // monitoredItems = new Map();
       monitoredItems.clear();
       //reset_opcua_client(connect_opcua_client);
       set_node_status_to("reconnectiong...");
