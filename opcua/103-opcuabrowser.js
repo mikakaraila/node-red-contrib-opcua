@@ -34,7 +34,7 @@ module.exports = function (RED) {
 
         var node = this;
 
-        var browseTopic = "ns=0;i=85";
+        var browseTopic = "ns=0;i=85"; // Default root, server Objects
 
         var opcuaEndpoint = RED.nodes.getNode(config.endpoint);
 
@@ -53,8 +53,12 @@ module.exports = function (RED) {
         });
 
         node.add_item = function (item) {
+            console.log(item);
             if (item) {
-                node.items.add({
+                if (!node.items) {
+                    node.items = new Array();
+                }
+                node.items.push({
                     'item': item
                 });
             }
@@ -96,7 +100,8 @@ module.exports = function (RED) {
                             var nodes = browse_result.references;
                             if (nodes instanceof Array) {
                                 nodes.forEach(function (reference) {
-                                    // TODO Fix later node.add_item(reference);
+                                    // TODO Fix later 
+                                    node.add_item(reference);
                                 });
                             }
                         }
@@ -155,7 +160,7 @@ module.exports = function (RED) {
             browseTopic = null;
 
             node.warn("input browser");
-
+            
             if (msg.payload.hasOwnProperty('actiontype')) {
 
                 switch (msg.payload.actiontype) {
@@ -182,7 +187,7 @@ module.exports = function (RED) {
                 }
             }
 
-            node.items = []; // clear items - TODO: may it becomes usable in Edit window of the node
+            node.items = []; // new Array(); // clear items - TODO: may it becomes usable in Edit window of the node
 
             if (!browseTopic) {
                 browseTopic = browse_to_root();
