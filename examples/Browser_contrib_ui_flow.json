@@ -1,1 +1,92 @@
-[{"id":"a24729d8.6e3338","type":"tab","label":"Flow 1","disabled":false,"info":""},{"id":"a5c3b771.b035f","type":"ui_tab","z":"","name":"Home","icon":"dashboard","disabled":false,"hidden":false},{"id":"57e89fdc.43d9e","type":"ui_group","z":"","name":"Default","tab":"a5c3b771.b035f","disp":true,"width":"6","collapse":false},{"id":"30bfcadd.1595b6","type":"OpcUa-Endpoint","z":"","endpoint":"opc.tcp://TREL16087112.vstage.co:53530/OPCUA/SimulationServer","secpol":"None","secmode":"NONE","login":false},{"id":"9a453441.d77cc","type":"ui_base","theme":{"name":"theme-light","lightTheme":{"default":"#0094CE","baseColor":"#0094CE","baseFont":"-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif","edited":true,"reset":false},"darkTheme":{"default":"#097479","baseColor":"#097479","baseFont":"-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif","edited":false},"customTheme":{"name":"Untitled Theme 1","default":"#4B7930","baseColor":"#4B7930","baseFont":"-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"},"themeState":{"base-color":{"default":"#0094CE","value":"#0094CE","edited":false},"page-titlebar-backgroundColor":{"value":"#0094CE","edited":false},"page-backgroundColor":{"value":"#fafafa","edited":false},"page-sidebar-backgroundColor":{"value":"#ffffff","edited":false},"group-textColor":{"value":"#1bbfff","edited":false},"group-borderColor":{"value":"#ffffff","edited":false},"group-backgroundColor":{"value":"#ffffff","edited":false},"widget-textColor":{"value":"#111111","edited":false},"widget-backgroundColor":{"value":"#0094ce","edited":false},"widget-borderColor":{"value":"#ffffff","edited":false},"base-font":{"value":"-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"}},"angularTheme":{"primary":"indigo","accents":"blue","warn":"red","background":"grey"}},"site":{"name":"Node-RED Dashboard","hideToolbar":"false","allowSwipe":"false","lockMenu":"false","allowTempTheme":"true","dateFormat":"DD/MM/YYYY","sizes":{"sx":48,"sy":48,"gx":6,"gy":6,"cx":6,"cy":6,"px":0,"py":0}}},{"id":"715ed404.79906c","type":"ui_template","z":"a24729d8.6e3338","group":"57e89fdc.43d9e","name":"Browse","order":0,"width":"6","height":"11","format":"<div layout=\"row\" layout-align=\"space-between\">\n    <select ng-model=\"item\" ng-options=\"items.item.displayName.text for items in msg.payload\">\n        <option value=\"\">-- Objects Root --</option>\n    </select>\n    <button ng-click=\"send({payload: {actiontype: 'browse', root: item}})\">\n        Browse\n    </button>\n</div>\n<div layout=\"row\" layout-align=\"space-between\">\n    <ul>\n        <li ng-repeat=\"items in msg.payload\">\n          {{items.item.displayName.text}}: {{items.item.nodeId}}\n        </li>\n    </ul>\n</div>\n","storeOutMessages":true,"fwdInMessages":false,"templateScope":"local","x":250.49998474121094,"y":81.80000305175781,"wires":[["3da8dc2e.9c9f3c","1a39131f.0bb62d"]]},{"id":"3da8dc2e.9c9f3c","type":"ui_toast","z":"a24729d8.6e3338","position":"top right","displayTime":"2","highlight":"","outputs":0,"ok":"OK","cancel":"","topic":"Browsing...","name":"Action","x":471.49998474121094,"y":82.59999084472656,"wires":[]},{"id":"1a39131f.0bb62d","type":"OpcUa-Browser","z":"a24729d8.6e3338","endpoint":"30bfcadd.1595b6","item":"","datatype":"","topic":"ns=0;s=85/0:Simulation","items":[],"x":250.9000244140625,"y":187.40000915527344,"wires":[["715ed404.79906c"]]}]
+[
+    {
+        "id": "7355c7ff.6875b8",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "bcb8bf9d.d874e",
+        "type": "ui_template",
+        "z": "7355c7ff.6875b8",
+        "group": "95b70233.1d5dc",
+        "name": "Browse",
+        "order": 0,
+        "width": "6",
+        "height": "11",
+        "format": "<div layout=\"row\" layout-align=\"space-between\">\n    <select ng-model=\"item\" ng-options=\"items.item.displayName.text for items in msg.payload\">\n        <option value=\"\">-- Objects Root --</option>\n    </select>\n    <button ng-click=\"send({payload: {actiontype: 'browse', root: item}})\">\n        Browse\n    </button>\n</div>\n<div layout=\"row\" layout-align=\"space-between\">\n    <ul>\n        <li ng-repeat=\"items in msg.payload\">\n          {{items.item.displayName.text}}: {{items.item.nodeId}}\n        </li>\n    </ul>\n</div>\n",
+        "storeOutMessages": true,
+        "fwdInMessages": false,
+        "templateScope": "local",
+        "x": 250.49998474121094,
+        "y": 81.80000305175781,
+        "wires": [
+            [
+                "1db890d7.e582cf",
+                "420195c6.c1d27c"
+            ]
+        ]
+    },
+    {
+        "id": "1db890d7.e582cf",
+        "type": "ui_toast",
+        "z": "7355c7ff.6875b8",
+        "position": "top right",
+        "displayTime": "2",
+        "highlight": "",
+        "outputs": 0,
+        "ok": "OK",
+        "cancel": "",
+        "topic": "Browsing...",
+        "name": "Action",
+        "x": 471.49998474121094,
+        "y": 82.59999084472656,
+        "wires": []
+    },
+    {
+        "id": "420195c6.c1d27c",
+        "type": "OpcUa-Browser",
+        "z": "7355c7ff.6875b8",
+        "endpoint": "b8f39990.157038",
+        "item": "",
+        "datatype": "",
+        "topic": "ns=0;s=85/0:Simulation",
+        "items": [],
+        "x": 250.9000244140625,
+        "y": 187.40000915527344,
+        "wires": [
+            [
+                "bcb8bf9d.d874e"
+            ]
+        ]
+    },
+    {
+        "id": "95b70233.1d5dc",
+        "type": "ui_group",
+        "z": "",
+        "name": "Default",
+        "tab": "eaa395ff.8b6348",
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "b8f39990.157038",
+        "type": "OpcUa-Endpoint",
+        "z": "",
+        "endpoint": "opc.tcp://TREL16087112.vstage.co:53530/OPCUA/SimulationServer",
+        "secpol": "None",
+        "secmode": "NONE",
+        "login": false
+    },
+    {
+        "id": "eaa395ff.8b6348",
+        "type": "ui_tab",
+        "z": "",
+        "name": "Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
