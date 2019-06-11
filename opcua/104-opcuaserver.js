@@ -82,7 +82,7 @@ module.exports = function (RED) {
             verbose_warn("create Server from XML ...");
             var serverPkg = installedPath.getInstalledPathSync('node-opcua-server', {
                 paths: [
-                  path.join(__dirname, '..'),
+                  path.join(__dirname, '../..'),
                   path.join(process.cwd(), '.node-red/node_modules'),
                 ],
             })

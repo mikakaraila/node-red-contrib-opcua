@@ -846,7 +846,7 @@ module.exports = function (RED) {
         if (node.deadbandType == "a") {
           deadbandType = subscription_service.DeadbandType.Absolute;
         }
-        if (node.deadbandType == "a") {
+        if (node.deadbandType == "p") {
           deadbandType = subscription_service.DeadbandType.Percent;
         }
         var dataChangeFilter = new subscription_service.DataChangeFilter({
