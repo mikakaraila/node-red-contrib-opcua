@@ -106,7 +106,7 @@ module.exports = function (RED) {
        }); // multiple monitored Items should be registered only once
     */
     function node_error(err) {
-      node.error(err, err);
+      node.error("Error:", err);
     }
 
     function verbose_warn(logMessage) {

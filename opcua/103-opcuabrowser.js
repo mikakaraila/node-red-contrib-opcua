@@ -65,7 +65,7 @@ module.exports = function (RED) {
         };
 
         function node_error(err) {
-            node.error(err, err);
+            node.error("Error:", err);
         }
 
         function setupClient(url, callback) {

@@ -47,7 +47,7 @@ module.exports = function (RED) {
         var folder = null;
 
         function node_error(err) {
-            node.error(err, err);
+            node.error("Error:", err);
         }
 
         function verbose_warn(logMessage) {
