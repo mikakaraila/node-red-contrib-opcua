@@ -425,7 +425,9 @@ module.exports = function (RED) {
                     var datatype = "";
                     var opcuaDataType = null;
                     var e = msg.topic.indexOf("datatype=");
-
+                    if (e<0) {
+                        node_error("no datatype=Float or other type in addVariable ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
+                    }
                     var parentFolder = addressSpace.rootFolder.objects;
                     if (folder != null) {
                         parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
