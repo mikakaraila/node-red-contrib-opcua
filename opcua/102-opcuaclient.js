@@ -241,7 +241,10 @@ module.exports = function (RED) {
               }
               node.client.connect(opcuaEndpoint.endpoint, callback);
             } catch (err) {
-              callback(err);
+              if (err) {
+                set_node_status_to("invalid endpoint " + opcuaEndpoint.endpoint);
+              }
+              // callback(err);
             }
           },
           function (callback) {
