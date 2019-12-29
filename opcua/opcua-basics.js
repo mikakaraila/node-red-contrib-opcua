@@ -277,12 +277,15 @@ module.exports.get_node_status = function (statusValue) {
         case "connected":
         case "initialized":
         case "keepalive":
+        case "nodeId stored":
+        case "clear items":
             fillValue = "green";
             shapeValue = "ring";
             break;
 
         case "active":
         case "active reading":
+        case "active multiple reading":
         case "active writing":
         case "active subscribing":
         case "active subscribed":

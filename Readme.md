@@ -69,6 +69,7 @@ TBD List
 |                    | Simple UI interface       | :first_quarter_moon:      |
 |  Client            |                           |                           |
 |                    | Read                      | :white_check_mark:        |
+|                    | Read Multiple             | :white_check_mark:        |
 |                    | Write                     | :white_check_mark:        |
 |                    | Subscribe                 | :white_check_mark:        |
 |                    | AE                        | :new_moon:                |

@@ -63,6 +63,7 @@ module.exports = function (RED) {
     var connectionOption = {};
     var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
     var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
+    var multipleItems = []; // Store & read multiple nodeIds
 
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.NONE;
@@ -442,6 +443,9 @@ module.exports = function (RED) {
         case "events":
           subscribe_events_input(msg);
           break;
+        case "readmultiple":
+          readmultiple_action_input(msg);
+          break;
         default:
           break;
       }
@@ -511,6 +515,102 @@ module.exports = function (RED) {
                   if (dataValue) {
                     node_error("\tBad read: " + (dataValue.statusCode.toString(16)).red.bold);
                     node_error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
+                    node_error("\tData:" + JSON.stringify(dataValue));
+                  } else {
+                    node_error(e.message);
+                  }
+                }
+              }
+            }
+          }
+        });
+      } else {
+        set_node_status_to("Session invalid");
+        node_error("Session is not active!")
+      }
+    }
+
+    function readmultiple_action_input(msg) {
+
+      verbose_log("read multiple...");
+      var item = "";
+      // 
+      if (msg.topic) {
+        var n = msg.topic.indexOf("datatype=");
+        if (n > 0) {
+          msg.datatype = msg.topic.substring(n + 9);
+          item = msg.topic.substring(0, n - 1);
+          msg.topic = item;
+          verbose_log(JSON.stringify(msg));
+        }
+      }
+
+      // Store nodeId to read multipleItems array
+      if (msg.topic !== "readmultiple" && msg.topic !== "clearitems") {
+        if (item.length > 0) {
+          multipleItems.push(item);
+        } else {
+          multipleItems.push(msg.topic); // support for multiple item reading
+        }
+      }
+
+      if (msg.topic === "clearitems") {
+        verbose_log("clear items...");
+        multipleItems = [];
+        set_node_status_to("clear items");
+        return;
+      }
+
+      if (msg.topic !== "readmultiple") {
+        set_node_status_to("nodeId stored");
+        return;
+      }
+
+      if (node.session && msg.topic === "readmultiple") {
+        node.session.readVariableValue(multipleItems, function (err, dataValues, diagnostics) {
+          if (err) {
+            verbose_log('diagnostics:' + diagnostics);
+            node_error(err);
+            set_node_status_to("error");
+            reset_opcua_client(connect_opcua_client);
+          } else {
+            set_node_status_to("active multiple reading");
+
+            for (var i = 0; i < dataValues.length; i++) {
+              var dataValue = dataValues[i];
+              verbose_log("\tNode : " + (msg.topic).cyan.bold);
+              verbose_log(dataValue.toString());
+              if (dataValue) {
+                try {
+                  verbose_log("\tValue : " + dataValue.value.value);
+                  verbose_log("\tDataType: " + dataValue.value.dataType + " (" + dataValue.value.dataType.toString() + ")");
+                  // verbose_log("\tMessage: " + msg.topic + " (" + msg.datatype + ")");
+                  /*
+                  if (msg.datatype != null && msg.datatype.localeCompare(dataValue.value.dataType.toString()) != 0) {
+                    node_error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + dataValue.value.dataType.toString());
+                  }
+                  if (msg.datatype == null) {
+                    node.warn("msg.datatype == null, if you use inject check topic is format 'ns=2;s=MyLevel;datatype=Double'");
+                  }
+                  */
+                  if (dataValue.value.dataType === opcua.DataType.UInt16) {
+                    verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
+                  }
+
+                  msg.payload = dataValue.value.value;
+
+                  if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
+                    verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
+                  } else {
+                    verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16).red.bold);
+                  }
+                  // Use nodeId in topic, arrays are same length
+                  msg.topic=multipleItems[i];
+                  node.send(msg);
+                } catch (e) {
+                  if (dataValue) {
+                    node_error("\tBad read: " + (dataValue.statusCode.toString(16)).red.bold);
+                    // node_error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
                     node_error("\tData:" + JSON.stringify(dataValue));
                   } else {
                     node_error(e.message);

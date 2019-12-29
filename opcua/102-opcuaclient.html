@@ -92,6 +92,7 @@ limitations under the License.
             <option value="events">EVENTS</option>
             <option value="info">INFO</option>
             <option value="monitor">MONITOR</option>
+            <option value="readmultiple">READ MULTIPLE</option>
         </select>
     </div>
     <div class="form-row" id="node-input-timerow">
@@ -142,6 +143,7 @@ limitations under the License.
             <li>Event</li>
             <li>Info</li>
             <li>Monitor</li>
+            <li>Read Multiple</li>
          </ul>
     </p>
     <p>Server certificate options are:</p>
@@ -163,4 +165,7 @@ limitations under the License.
     <p>Interval is setting for Client <strong>requestedPublishingInterval</strong> (default: 100ms).</p>
     <p>Input <strong>msg.payload</strong> can bring an samplingInterval for monitored Items/Events in subscription (default: 100ms).</p>
     <p>Monitor will ask additional parameters like Absolute or Percent and deadband value</p>
+    <p>Read multiple will first store all input msg nodeId values to array</p>
+    <p> when input message is string readmultiple then actual read is done</p>
+    <p> when input message is string clearitems then nodeId array is cleared</p>
 </script>
