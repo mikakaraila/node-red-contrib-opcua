@@ -16,6 +16,19 @@
 
 "use strict";
 
+const typedArrays = {
+    SByte: Int8Array,
+    Byte: Uint8Array,
+    Int8: Int8Array,
+    UInt8: Uint8Array,
+    Int16: Int16Array,
+    Int32: Int32Array,
+    UInt16: Uint16Array,
+    UInt32: Uint32Array,
+    Float: Float32Array,
+    Double: Float64Array
+};
+
 module.exports.get_timeUnit_name = function (unit) {
 
     var unitAbbreviation = '';
@@ -326,7 +339,7 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
 
     var nValue = new opcua.Variant({
         dataType: opcua.DataType.Float,
-        value: 0.0
+        value: 0.0 
     });
 
     switch (datatype) {
@@ -421,6 +434,15 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
                 value: value
             });
             break;
+    }
+    // Checks if Array and grabs Data Type
+    var m = datatype.match(/\b(\w+) Array\b/);
+    if (m) {
+        nValue = new opcua.Variant({
+            dataType: opcua.DataType[m[1]],
+            value: value,
+            arrayType: opcua.VariantArrayType.Array
+        });
     }
 
     return nValue;
@@ -587,6 +609,16 @@ module.exports.build_new_dataValue = function (opcua, datatype, value) {
                 value: value
             };
             break;
+    }
+
+    // Checks if Array and grabs Data Type
+    var m = datatype.match(/\b(\w+) Array\b/);
+    if (m) {
+        nValue = {
+            dataType: opcua.DataType[m[1]],
+            value: typedArrays[m[1]].from(value),
+            arrayType: opcua.VariantArrayType.Array
+        };
     }
 
     return nValue;
