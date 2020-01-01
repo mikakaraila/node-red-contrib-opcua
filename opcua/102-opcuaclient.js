@@ -726,10 +726,19 @@ module.exports = function (RED) {
       verbose_log("value=" + msg.payload);
       verbose_log(nodeid.toString());
 
-      var opcuaVariant = opcuaBasics.build_new_variant(opcua, msg.datatype, msg.payload);
       var opcuaDataValue = opcuaBasics.build_new_dataValue(opcua, msg.datatype, msg.payload);
       if (node.session) {
-        node.session.writeSingleNode(nodeid.toString(), opcuaDataValue, function (err) {
+        const nodeToWrite = {
+          nodeId: nodeid.toString(),
+          attributeId: opcua.AttributeIds.Value,
+          indexRange: null,
+          value: new opcua.DataValue({value: opcuaDataValue})
+        };
+        if (msg.timestamp) {
+          nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();
+        }
+    
+        node.session.write(nodeToWrite, function (err) {
           if (err) {
             set_node_status_to("error");
             node_error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
@@ -1019,7 +1028,7 @@ module.exports = function (RED) {
             msg.serverTimestamp = dataValue.serverTimestamp;
             msg.serverPicoseconds = dataValue.serverPicoseconds;
           } else {
-            msg.serverTimestamp = new Date().getTime();;
+            msg.serverTimestamp = new Date().getTime();
             msg.serverPicoseconds = 0;
           }
 
@@ -1027,7 +1036,7 @@ module.exports = function (RED) {
             msg.sourceTimestamp = dataValue.sourceTimestamp;
             msg.sourcePicoseconds = dataValue.sourcePicoseconds;
           } else {
-            msg.sourceTimestamp = new Date().getTime();;
+            msg.sourceTimestamp = new Date().getTime();
             msg.sourcePicoseconds = 0;
           }
 
