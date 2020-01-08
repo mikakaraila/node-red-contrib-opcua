@@ -446,6 +446,9 @@ module.exports = function (RED) {
         case "readmultiple":
           readmultiple_action_input(msg);
           break;
+        case "writemultiple":
+          writemultiple_action_input(msg)
+          break;
         default:
           break;
       }
@@ -746,6 +749,68 @@ module.exports = function (RED) {
           } else {
             set_node_status_to("active writing");
             verbose_log("Value written!");
+          }
+        });
+      } else {
+        set_node_status_to("Session invalid");
+        node_error("Session is not active!")
+      }
+    }
+
+    function writemultiple_action_input(msg) {
+      verbose_log("writing multiple");
+      if (msg.topic) {
+        // Topic value: ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT
+        var ns = msg.topic.substring(3, 4); // Parse namespace, ns=2
+        var dIndex = msg.topic.indexOf("datatype=");
+        var s = "";
+
+        if (msg.datatype == null && dIndex > 0) {
+          msg.datatype = msg.topic.substring(dIndex + 9);
+          s = msg.topic.substring(7, dIndex - 1);
+        } else {
+          s = msg.topic.substring(7); // Parse nodeId string, s=1:PST-007-Alarm-Level@Training?SETPOINT
+        }
+
+        var nodeid = {}; // new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
+        verbose_log(opcua.makeBrowsePath(msg.topic, "."));
+
+        if (msg.topic.substring(5, 6) == 's') {
+          nodeid = new nodeId.NodeId(nodeId.NodeIdType.STRING, s, parseInt(ns));
+        } else {
+          nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, parseInt(s), parseInt(ns));
+        }
+      }
+
+      verbose_log("msg=" + JSON.stringify(msg));
+      verbose_log("namespace=" + ns);
+      verbose_log("string=" + s);
+      verbose_log("type=" + msg.datatype);
+      verbose_log("value=" + msg.payload);
+
+      if (node.session) {
+        const nodesToWrite = msg.payload.map(function (msgToWrite) {
+          var opcuaDataValue = opcuaBasics.build_new_dataValue(opcua, msgToWrite.datatype || msg.datatype, msgToWrite.value);
+          const nodeToWrite = {
+            nodeId: msgToWrite.nodeId || (nodeid && nodeid.toString()),
+            attributeId: opcua.AttributeIds.Value,
+            indexRange: null,
+            value: new opcua.DataValue({value: opcuaDataValue})
+          };
+          if (msgToWrite.timestamp || msg.timestamp) {
+            nodeToWrite.value.sourceTimestamp = new Date(msgToWrite.timestamp || msg.timestamp).getTime();
+          }
+          return nodeToWrite;
+        });
+        node.session.write(nodesToWrite, function (err, statusCode) {
+          if (err) {
+            set_node_status_to("error");
+            node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
+            reset_opcua_client(connect_opcua_client);
+          } else {
+            set_node_status_to("active writing");
+            verbose_log("Value written!");
+            node.send({payload:statusCode});
           }
         });
       } else {
