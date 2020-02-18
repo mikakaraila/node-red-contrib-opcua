@@ -53,7 +53,6 @@ module.exports = function (RED) {
         });
 
         node.add_item = function (item) {
-            console.log(item);
             if (item) {
                 if (!node.items) {
                     node.items = new Array();
@@ -95,7 +94,6 @@ module.exports = function (RED) {
                 function (callback) {
                     node.warn("browseTopic:" + browseTopic);
                     browseSession.browse(coerceNodeId(browseTopic), function (err, browse_result) {
-                        console.log(browse_result);
                         if (!err) {
                             var nodes = browse_result.references;
                             if (nodes instanceof Array) {

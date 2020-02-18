@@ -900,7 +900,6 @@ module.exports = function (RED) {
       if (!monitoredItem) {
         verbose_log("Msg " + JSON.stringify(msg));
         var interval = 100; // Set as default if no payload
-        console.log(msg.payload);
         if (msg.payload && Number(msg.payload > 100)) {
           interval = convertAndCheckInterval(msg.payload);
         }
@@ -930,7 +929,6 @@ module.exports = function (RED) {
           },
             TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
           );
-          console.log(monitoredItem.monitoredItemId);
           monitoredItems.set(nodeStr, monitoredItem.monitoredItemId);
         } catch (err) {
           node_error("Check topic format for nodeId:" + msg.topic)
@@ -1057,7 +1055,6 @@ module.exports = function (RED) {
           },
             TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
           );
-          console.log(monitoredItem.monitoredItemId);
           monitoredItems.set(nodeStr, monitoredItem.monitoredItemId);
         } catch (err) {
           node_error("Check topic format for nodeId:" + msg.topic)
