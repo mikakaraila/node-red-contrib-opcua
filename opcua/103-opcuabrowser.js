@@ -40,7 +40,7 @@ module.exports = function (RED) {
 
         var connectionOption = {};
         connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
-        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.NONE;
+        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
         // These are not used, wrong options to get connection to server
         // If certificate is needed then read it through endpoint as bytes
         // connectionOption.certificateFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
@@ -71,7 +71,7 @@ module.exports = function (RED) {
         function setupClient(url, callback) {
 
             // new OPC UA Client and browse from Objects ns=0;s=Objects
-            var browseClient = new opcua.OPCUAClient(connectionOption);
+            var browseClient = opcua.OPCUAClient.create(connectionOption);
             var browseSession;
 
             async.series([

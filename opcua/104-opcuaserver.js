@@ -97,7 +97,7 @@ module.exports = function (RED) {
             server = new opcua.OPCUAServer({
                 port: node.port,
                 nodeset_filename: xmlFiles,
-                resourcePath: node.endpoint || "UA/SimpleNodeRedServer",
+                resourcePath: node.endpoint ? (node.endpoint.startsWith("/") ? '' : '/') + node.endpoint : "/UA/SimpleNodeRedServer",
                 certificateFile: certFile,
                 privateKeyFile: privFile
             });
