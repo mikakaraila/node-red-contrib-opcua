@@ -21,15 +21,11 @@ module.exports = function (RED) {
 
   var opcua = require('node-opcua')
   var opcuaBasics = require('./opcua-basics');
-  var assert = require("node-opcua-assert");
   var nodeId = require("node-opcua-nodeid");
   var crypto_utils = opcua.crypto_utils;
   var UAProxyManager = require("node-opcua-client-proxy").UAProxyManager;
-  var ClientSubscription = require("node-opcua-client").ClientSubscription;
   var ClientSession = opcua.ClientSession;
   var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
-  var makeNodeId = require("node-opcua-nodeid/src/nodeid").makeNodeId
-  var browse_service = require("node-opcua-service-browse");
   var async = require("async");
   var treeify = require('treeify');
   // var Set = require("collections/set");
@@ -66,7 +62,7 @@ module.exports = function (RED) {
     var multipleItems = []; // Store & read multiple nodeIds
 
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
-    connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.NONE;
+    connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
 
     if (node.certificate === "l" && node.localfile) {
       verbose_log("Local certificate file " + node.localfile);
@@ -188,7 +184,7 @@ module.exports = function (RED) {
       node.client = null;
       verbose_warn("create Client ...");
       verbose_log(connectionOption);
-      node.client = new opcua.OPCUAClient(connectionOption);
+      node.client = opcua.OPCUAClient.create(connectionOption);
       items = [];
       node.items = items;
       set_node_status_to("create client");
@@ -232,89 +228,89 @@ module.exports = function (RED) {
     function connect_opcua_client() {
       //node.session = null;
       async.series([
-          // First connect to server´s endpoint
-          function (callback) {
-            verbose_log("async series - connecting ", opcuaEndpoint.endpoint);
-            try {
-              set_node_status_to("connecting");
-              if (!node.client) {
-                verbose_log("No client to connect...");
-              }
-              node.client.connect(opcuaEndpoint.endpoint, callback);
-            } catch (err) {
-              if (err) {
-                set_node_status_to("invalid endpoint " + opcuaEndpoint.endpoint);
-              }
-              // callback(err);
+        // First connect to server´s endpoint
+        function (callback) {
+          verbose_log("async series - connecting ", opcuaEndpoint.endpoint);
+          try {
+            set_node_status_to("connecting");
+            if (!node.client) {
+              verbose_log("No client to connect...");
             }
-          },
-          function (callback) {
-              // This will succeed first time only if security policy and mode are NONE
-              // Later user can use path and local fileto access server certificate file
-              node.client.getEndpoints(function (err, endpoints) {
-                if (!err) {
-                  endpoints.forEach(function (endpoint, i) {
-                    verbose_log("endpoint " + endpoint.endpointUrl + "");
-                    verbose_log("Application URI " + endpoint.server.applicationUri);
-                    verbose_log("Product URI " + endpoint.server.productUri);
-                    verbose_log("Application Name " + endpoint.server.applicationName.text);
-                    var applicationName = endpoint.server.applicationName.text;
-                    if (!applicationName) {
-                      applicationName = "OPCUA_Server";
-                    }
-                    verbose_log("Security Mode " + endpoint.securityMode.toString());
-                    verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
-                    verbose_log("Type " + endpoint.server.applicationType.key);
-                    verbose_log("certificate " + "..." + " /*endpoint.serverCertificate*/");
-                    endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
-                    verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
-                    var serverCertificate = endpoint.serverCertificate;
-                    // Use applicationName instead of fixed server_certificate
-                    var certificate_filename = path.join(__dirname, "../../PKI/" + applicationName + i + ".pem");
-                    if (serverCertificate) {
-                       fs.writeFile(certificate_filename, crypto_utils.toPem(serverCertificate, "CERTIFICATE"),function(){});
-                    }
-                  });
-
-                  endpoints.forEach(function (endpoint) {
-                    verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString()," Policy=", endpoint.securityPolicyUri);
-                    endpoint.userIdentityTokens.forEach(function (token) {
-                      verbose_log("policyId " + token.policyId);
-                      verbose_log("tokenType " + token.tokenType.toString());
-                      verbose_log("issuedTokenType " + token.issuedTokenType);
-                      verbose_log("issuerEndpointUrl " + token.issuerEndpointUrl);
-                      verbose_log("securityPolicyUri " + token.securityPolicyUri);
-                    });
-                  });
+            node.client.connect(opcuaEndpoint.endpoint, callback);
+          } catch (err) {
+            if (err) {
+              set_node_status_to("invalid endpoint " + opcuaEndpoint.endpoint);
+            }
+            // callback(err);
+          }
+        },
+        function (callback) {
+          // This will succeed first time only if security policy and mode are None
+          // Later user can use path and local fileto access server certificate file
+          node.client.getEndpoints(function (err, endpoints) {
+            if (!err) {
+              endpoints.forEach(function (endpoint, i) {
+                verbose_log("endpoint " + endpoint.endpointUrl + "");
+                verbose_log("Application URI " + endpoint.server.applicationUri);
+                verbose_log("Product URI " + endpoint.server.productUri);
+                verbose_log("Application Name " + endpoint.server.applicationName.text);
+                var applicationName = endpoint.server.applicationName.text;
+                if (!applicationName) {
+                  applicationName = "OPCUA_Server";
                 }
-              callback(err);
-            });
-          },
-          function (callback) {
-            verbose_log("async series - create session ...");
-            try {
-              node.client.createSession(userIdentity, function (err, session) {
-                if (!err) {
-                  node.session = session;
-                  node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
-                  //node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
-                  verbose_log("session active");
-                  set_node_status_to("session active");
-                  for (var i in cmdQueue) {
-                    processInputMsg(cmdQueue[i]);
-                  }
-                  cmdQueue = [];
-                  callback();
-                } else {
-                  set_node_status_to("session error");
-                  callback(err);
+                verbose_log("Security Mode " + endpoint.securityMode.toString());
+                verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
+                verbose_log("Type " + endpoint.server.applicationType.key);
+                verbose_log("certificate " + "..." + " /*endpoint.serverCertificate*/");
+                endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
+                verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
+                var serverCertificate = endpoint.serverCertificate;
+                // Use applicationName instead of fixed server_certificate
+                var certificate_filename = path.join(__dirname, "../../PKI/" + applicationName + i + ".pem");
+                if (serverCertificate) {
+                  fs.writeFile(certificate_filename, crypto_utils.toPem(serverCertificate, "CERTIFICATE"), function () { });
                 }
               });
-            } catch (err) {
-              callback(err);
+
+              endpoints.forEach(function (endpoint) {
+                verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString(), " Policy=", endpoint.securityPolicyUri);
+                endpoint.userIdentityTokens.forEach(function (token) {
+                  verbose_log("policyId " + token.policyId);
+                  verbose_log("tokenType " + token.tokenType.toString());
+                  verbose_log("issuedTokenType " + token.issuedTokenType);
+                  verbose_log("issuerEndpointUrl " + token.issuerEndpointUrl);
+                  verbose_log("securityPolicyUri " + token.securityPolicyUri);
+                });
+              });
             }
+            callback(err);
+          });
+        },
+        function (callback) {
+          verbose_log("async series - create session ...");
+          try {
+            node.client.createSession(userIdentity, function (err, session) {
+              if (!err) {
+                node.session = session;
+                node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
+                //node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
+                verbose_log("session active");
+                set_node_status_to("session active");
+                for (var i in cmdQueue) {
+                  processInputMsg(cmdQueue[i]);
+                }
+                cmdQueue = [];
+                callback();
+              } else {
+                set_node_status_to("session error");
+                callback(err);
+              }
+            });
+          } catch (err) {
+            callback(err);
           }
-        ],
+        }
+      ],
         function (err) {
           if (err) {
             node_error(node.name + " OPC UA connection error: " + err.message);
@@ -338,7 +334,7 @@ module.exports = function (RED) {
         return newSubscription;
       }
       verbose_log("Publishing interval " + JSON.stringify(parameters));
-      newSubscription = new opcua.ClientSubscription(node.session, parameters);
+      newSubscription = opcua.ClientSubscription.create(node.session, parameters);
       verbose_log("Subscription " + newSubscription.toString());
       newSubscription.on("initialized", function () {
         verbose_log("Subscription initialized");
@@ -608,7 +604,7 @@ module.exports = function (RED) {
                     verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16).red.bold);
                   }
                   // Use nodeId in topic, arrays are same length
-                  msg.topic=multipleItems[i];
+                  msg.topic = multipleItems[i];
                   node.send(msg);
                 } catch (e) {
                   if (dataValue) {
@@ -735,12 +731,12 @@ module.exports = function (RED) {
           nodeId: nodeid.toString(),
           attributeId: opcua.AttributeIds.Value,
           indexRange: null,
-          value: new opcua.DataValue({value: opcuaDataValue})
+          value: new opcua.DataValue({ value: opcuaDataValue })
         };
         if (msg.timestamp) {
           nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();
         }
-    
+
         node.session.write(nodeToWrite, function (err) {
           if (err) {
             set_node_status_to("error");
@@ -795,7 +791,7 @@ module.exports = function (RED) {
             nodeId: msgToWrite.nodeId || (nodeid && nodeid.toString()),
             attributeId: opcua.AttributeIds.Value,
             indexRange: null,
-            value: new opcua.DataValue({value: opcuaDataValue})
+            value: new opcua.DataValue({ value: opcuaDataValue })
           };
           if (msgToWrite.timestamp || msg.timestamp) {
             nodeToWrite.value.sourceTimestamp = new Date(msgToWrite.timestamp || msg.timestamp).getTime();
@@ -810,7 +806,7 @@ module.exports = function (RED) {
           } else {
             set_node_status_to("active writing");
             verbose_log("Value written!");
-            node.send({payload:statusCode});
+            node.send({ payload: statusCode });
           }
         });
       } else {
@@ -904,7 +900,6 @@ module.exports = function (RED) {
       if (!monitoredItem) {
         verbose_log("Msg " + JSON.stringify(msg));
         var interval = 100; // Set as default if no payload
-        console.log(msg.payload);
         if (msg.payload && Number(msg.payload > 100)) {
           interval = convertAndCheckInterval(msg.payload);
         }
@@ -923,7 +918,8 @@ module.exports = function (RED) {
           return;
         }
 
-        monitoredItem = subscription.monitor({
+        try {
+          monitoredItem = opcua.ClientMonitoredItem.create(subscription, {
             nodeId: nodeStr,
             attributeId: opcua.AttributeIds.Value
           }, {
@@ -931,18 +927,13 @@ module.exports = function (RED) {
             queueSize: 10,
             discardOldest: true
           },
-          TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
-          function (err) {
-            if (err) {
-              node_error("Check topic format for nodeId:" + msg.topic)
-              node_error('subscription.monitorItem:' + err);
-              // reset_opcua_client(connect_opcua_client); // not actually needed
-            } else {
-              console.log(monitoredItem.monitoredItemId);
-              monitoredItems.set(nodeStr, monitoredItem.monitoredItemId);
-            }
-          }
-        );
+            TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
+          );
+          monitoredItems.set(nodeStr, monitoredItem.monitoredItemId);
+        } catch (err) {
+          node_error("Check topic format for nodeId:" + msg.topic)
+          node_error('subscription.monitorItem:' + err);
+        }
 
         monitoredItem.on("initialized", function () {
           verbose_log("initialized monitoredItem on " + nodeStr);
@@ -1052,7 +1043,8 @@ module.exports = function (RED) {
         monitoredItem = subscription.createMonitoredItem(addressSpace, TimestampsToReturn.Both, monitoredItemCreateRequest1);
         */
 
-        monitoredItem = subscription.monitor({
+        try {
+          monitoredItem = opcua.ClientMonitoredItem.create(subscription, {
             nodeId: nodeStr,
             attributeId: opcua.AttributeIds.Value
           }, {
@@ -1061,18 +1053,14 @@ module.exports = function (RED) {
             discardOldest: true,
             filter: dataChangeFilter
           },
-          TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
-          function (err) {
-            if (err) {
-              node_error("Check topic format for nodeId:" + msg.topic)
-              node_error('subscription.monitorItem:' + err);
-              // reset_opcua_client(connect_opcua_client); // not actually needed
-            } else {
-              console.log(monitoredItem.monitoredItemId);
-              monitoredItems.set(nodeStr, monitoredItem.monitoredItemId);
-            }
-          }
-        );
+            TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
+          );
+          monitoredItems.set(nodeStr, monitoredItem.monitoredItemId);
+        } catch (err) {
+          node_error("Check topic format for nodeId:" + msg.topic)
+          node_error('subscription.monitorItem:' + err);
+          // reset_opcua_client(connect_opcua_client); // not actually needed
+        }
 
         monitoredItem.on("initialized", function () {
           verbose_log("initialized monitoredItem on " + nodeStr);
@@ -1220,7 +1208,8 @@ module.exports = function (RED) {
         verbose_log(msg.topic + " samplingInterval " + interval);
         verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
         // TODO read nodeId to validate it before subscription
-        monitoredItem = subscription.monitor({
+        try {
+          monitoredItem = opcua.ClientMonitoredItem.create({
             nodeId: msg.topic, // serverObjectId
             attributeId: AttributeIds.EventNotifier
           }, {
@@ -1229,14 +1218,12 @@ module.exports = function (RED) {
             filter: msg.eventFilter,
             discardOldest: true
           },
-          3,
-          function (err) {
-            if (err) {
-              node_error('subscription.monitorEvent:' + err);
-              reset_opcua_client(connect_opcua_client);
-            }
-          }
-        );
+            3
+          );
+        } catch (err) {
+          node_error('subscription.monitorEvent:' + err);
+          reset_opcua_client(connect_opcua_client);
+        }
         console.log(monitoredItem.monitoredItemId);
         monitoredItems.set(msg.topic, monitoredItem.monitoredItemId);
         monitoredItem.on("initialized", function () {
@@ -1245,7 +1232,7 @@ module.exports = function (RED) {
         });
 
         monitoredItem.on("changed", function (eventFields) {
-          dumpEvent(node, node.session, msg.eventFields, eventFields, function () {});
+          dumpEvent(node, node.session, msg.eventFields, eventFields, function () { });
           set_node_status_to("changed");
         });
 
@@ -1305,7 +1292,7 @@ module.exports = function (RED) {
         verbose_log("Using endpoint:" + JSON.stringify(opcuaEndpoint));
       }
       // First close subscriptions etc.
-      if (subscription && subscription.isActive()) {
+      if (subscription && subscription.isActive) {
         subscription.terminate();
       }
 
@@ -1319,7 +1306,7 @@ module.exports = function (RED) {
     }
 
     node.on("close", function () {
-      if (subscription && subscription.isActive()) {
+      if (subscription && subscription.isActive) {
         subscription.terminate();
         // subscription becomes null by its terminated event
       }
@@ -1342,7 +1329,7 @@ module.exports = function (RED) {
     });
 
     node.on("error", function () {
-      if (subscription && subscription.isActive()) {
+      if (subscription && subscription.isActive) {
         subscription.terminate();
         // subscription becomes null by its terminated event
       }

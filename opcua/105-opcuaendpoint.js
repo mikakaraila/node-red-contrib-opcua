@@ -23,14 +23,25 @@ module.exports = function (RED) {
 
         RED.nodes.createNode(this, n);
 
+		// Used to translate node-opcua old (v0.x.x) secmode strings to new (v2.x.x) secmode strings
+		const security_mode_map_compat = {
+			"NONE": "None",
+			"None": "None",
+			"SIGN": "Sign",
+			"Sign": "Sign",
+			"SIGNANDENCRYPT": "SignAndEncrypt",
+			"SignAndEncrypt": "SignAndEncrypt"
+		};		
+
         this.endpoint = n.endpoint;
         this.securityPolicy = n.secpol;
-        this.securityMode = n.secmode;
+        this.securityMode = security_mode_map_compat[n.secmode];
         this.login = n.login;
 
         if (this.credentials) {
-            this.user = this.credentials.user;
-            this.password = this.credentials.password;
+			// from node-opcua version 2.0.0 and onwards empty strings are not allowed anymore, so use null instead
+            this.user = this.credentials.user && this.credentials.user.length > 0 ? this.credentials.user : null;
+            this.password = this.credentials.password && this.credentials.password.length > 0 ? this.credentials.password : null;
         }
     }
 

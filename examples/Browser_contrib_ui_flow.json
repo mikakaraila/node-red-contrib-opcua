@@ -77,7 +77,7 @@
         "z": "",
         "endpoint": "opc.tcp://TREL16087112.vstage.co:53530/OPCUA/SimulationServer",
         "secpol": "None",
-        "secmode": "NONE",
+        "secmode": "None",
         "login": false
     },
     {
