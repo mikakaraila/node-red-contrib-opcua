@@ -39,6 +39,8 @@ module.exports = function (RED) {
         var opcuaEndpoint = RED.nodes.getNode(config.endpoint);
 
         var connectionOption = {};
+        var userIdentity = {};
+     
         connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
         connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
         // These are not used, wrong options to get connection to server
@@ -46,6 +48,12 @@ module.exports = function (RED) {
         // connectionOption.certificateFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
         // connectionOption.privateKeyFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
         connectionOption.endpoint_must_exist = false;
+     
+        if (opcuaEndpoint.login) {
+          userIdentity.userName = opcuaEndpoint.credentials.user;
+          userIdentity.password = opcuaEndpoint.credentials.password;
+        }
+     
         node.status({
             fill: "gray",
             shape: "dot",
@@ -80,7 +88,7 @@ module.exports = function (RED) {
                     node.log("start browse client on " + opcuaEndpoint.endpoint);
                 },
                 function (callback) {
-                    browseClient.createSession(function (err, session) {
+                    browseClient.createSession(userIdentity, function (err, session) {
                         if (!err) {
                             browseSession = session;
                             node.log("start browse session on " + opcuaEndpoint.endpoint);
