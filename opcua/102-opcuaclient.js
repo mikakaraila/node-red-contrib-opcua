@@ -596,16 +596,16 @@ module.exports = function (RED) {
                     verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
                   }
 
-                  msg.payload = dataValue.value.value;
-
                   if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
                     verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
                   } else {
                     verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16).red.bold);
                   }
                   // Use nodeId in topic, arrays are same length
-                  msg.topic = multipleItems[i];
-                  node.send(msg);
+                  node.send({
+                    topic: multipleItems[i],
+                    payload: dataValue.value.value
+                  });
                 } catch (e) {
                   if (dataValue) {
                     node_error("\tBad read: " + (dataValue.statusCode.toString(16)).red.bold);
