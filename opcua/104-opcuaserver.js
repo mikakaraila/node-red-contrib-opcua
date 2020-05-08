@@ -94,17 +94,16 @@ module.exports = function (RED) {
             var certFile = path.join(serverPkg, "/certificates/server_selfsigned_cert_2048.pem");
             var privFile = path.join(serverPkg, "/certificates/PKI/own/private/private_key.pem");
             verbose_log("Using server certificate " + certFile);
-            server = new opcua.OPCUAServer({
-                port: node.port,
-                nodeset_filename: xmlFiles,
-                resourcePath: node.endpoint ? (node.endpoint.startsWith("/") ? '' : '/') + node.endpoint : "/UA/SimpleNodeRedServer",
-                certificateFile: certFile,
-                privateKeyFile: privFile
-            });
-
-            server.buildInfo.productName = node.name.concat("OPC UA server");
-            server.buildInfo.buildNumber = "112";
-            server.buildInfo.buildDate = new Date(2016, 3, 24);
+            server_options.serverInfo = {
+                applicationName: { text: "Node-RED OPCUA" }
+            };
+            server_options.buildInfo = {
+                productName: node.name.concat(" OPC UA server for node-red"),
+                buildNumber: "0.2.54",
+                buildDate: "2020-05-09T11:00:00"
+            };
+            verbose_log("Server options:" + JSON.stringify(server_options));
+            server = new opcua.OPCUAServer(server_options);
             verbose_warn("init next...");
             server.initialize(post_initialize);
             var hostname = os.hostname();
