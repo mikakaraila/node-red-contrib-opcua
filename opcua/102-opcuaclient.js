@@ -18,8 +18,8 @@
 
 module.exports = function (RED) {
   "use strict";
-
-  var opcua = require('node-opcua')
+  var colors = require("colors");
+  var opcua = require('node-opcua');
   var opcuaBasics = require('./opcua-basics');
   var nodeId = require("node-opcua-nodeid");
   var crypto_utils = opcua.crypto_utils;
@@ -489,10 +489,10 @@ module.exports = function (RED) {
               if (dataValue) {
                 try {
                   verbose_log("\tValue : " + dataValue.value.value);
-                  verbose_log("\tDataType: " + dataValue.value.dataType + " (" + dataValue.value.dataType.toString() + ")");
+                  verbose_log("\tDataType: " + dataValue.value.dataType + " (" + DataType[dataValue.value.dataType] + ")");
                   verbose_log("\tMessage: " + msg.topic + " (" + msg.datatype + ")");
-                  if (msg.datatype != null && msg.datatype.localeCompare(dataValue.value.dataType.toString()) != 0) {
-                    node_error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + dataValue.value.dataType.toString());
+                  if (msg.datatype != null && msg.datatype.localeCompare(DataType[dataValue.value.dataType]) != 0) {
+                    node_error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + DataType[dataValue.value.dataType]);
                   }
                   if (msg.datatype == null) {
                     node.warn("msg.datatype == null, if you use inject check topic is format 'ns=2;s=MyLevel;datatype=Double'");
@@ -582,11 +582,11 @@ module.exports = function (RED) {
               if (dataValue) {
                 try {
                   verbose_log("\tValue : " + dataValue.value.value);
-                  verbose_log("\tDataType: " + dataValue.value.dataType + " (" + dataValue.value.dataType.toString() + ")");
+                  verbose_log("\tDataType: " + dataValue.value.dataType + " (" + DataType[dataValue.value.dataType] + ")");
                   // verbose_log("\tMessage: " + msg.topic + " (" + msg.datatype + ")");
                   /*
-                  if (msg.datatype != null && msg.datatype.localeCompare(dataValue.value.dataType.toString()) != 0) {
-                    node_error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + dataValue.value.dataType.toString());
+                  if (msg.datatype != null && msg.datatype.localeCompare(DataType[dataValue.value.dataType] != 0) {
+                    node_error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + DataType[dataValue.value.dataType];
                   }
                   if (msg.datatype == null) {
                     node.warn("msg.datatype == null, if you use inject check topic is format 'ns=2;s=MyLevel;datatype=Double'");
