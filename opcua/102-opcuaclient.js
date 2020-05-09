@@ -473,17 +473,19 @@ module.exports = function (RED) {
       }
 
       if (node.session) {
-        node.session.readVariableValue(items, function (err, dataValues, diagnostics) {
-          if (err) {
-            verbose_log('diagnostics:' + diagnostics);
-            node_error(err);
-            set_node_status_to("error");
-            reset_opcua_client(connect_opcua_client);
-          } else {
-            set_node_status_to("active reading");
-
-            for (var i = 0; i < dataValues.length; i++) {
-              var dataValue = dataValues[i];
+        // With Single Read using now read to get sourceTimeStamp and serverTimeStamp
+        node.session.read({
+            nodeId: items[0],
+            attributeId: 13
+          },
+          function (err, dataValue, diagnostics) {
+            if (err) {
+              verbose_log('diagnostics:' + diagnostics);
+              node_error(err);
+              set_node_status_to("error");
+              reset_opcua_client(connect_opcua_client);
+            } else {
+              set_node_status_to("active reading");
               verbose_log("\tNode : " + (msg.topic).cyan.bold);
               verbose_log(dataValue.toString());
               if (dataValue) {
@@ -519,10 +521,10 @@ module.exports = function (RED) {
                     node_error(e.message);
                   }
                 }
+
               }
             }
-          }
-        });
+          });
       } else {
         set_node_status_to("Session invalid");
         node_error("Session is not active!")
