@@ -85,6 +85,7 @@ module.exports = function (RED) {
                   path.join(__dirname, '..'),
                   path.join(__dirname, '../..'),
                   path.join(process.cwd(), './node_modules'),
+                  path.join(process.cwd(), '../node_modules'), // Linux installation needs this
                   path.join(process.cwd(), '.node-red/node_modules'),
                 ],
             })
