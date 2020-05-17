@@ -68,7 +68,7 @@ module.exports = function (RED) {
             text: "Not running"
         });
 
-        var xmlFiles = [path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml'),
+        var xmlFiles = [  path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml'),
             path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')
         ];
         verbose_warn("node set:" + xmlFiles.toString());
@@ -95,13 +95,44 @@ module.exports = function (RED) {
             var certFile = path.join(serverPkg, "/certificates/server_selfsigned_cert_2048.pem");
             var privFile = path.join(serverPkg, "/certificates/PKI/own/private/private_key.pem");
             verbose_log("Using server certificate " + certFile);
+            var server_options = {
+                certificateFile: certFile,
+                privateKeyFile: privFile,
+                port: parseInt(n.port),
+                maxAllowedSessionNumber: 1000,
+                maxConnectionsPerEndpoint: 10,
+                nodeset_filename: xmlFiles,
+                serverInfo: {
+                  // applicationUri: makeApplicationUrn("%FQDN%", "MiniNodeOPCUA-Server"), // Check certificate Uri
+                  productUri: "Node-RED NodeOPCUA-Server",
+                  // applicationName: { text: "Mini NodeOPCUA Server", locale: "en" }, // Set later
+                  gatewayServerUri: null,
+                  discoveryProfileUri: null,
+                  discoveryUrls: []
+                },
+                // buildInfo: { buildNumber: "1234" }, // Set later
+                serverCapabilities: {
+                  maxBrowseContinuationPoints: 10,
+                  maxHistoryContinuationPoints: 10,
+                  // maxInactiveLockTime
+                  operationLimits: {
+                    maxNodesPerBrowse: 10,
+                    maxNodesPerHistoryReadData: 6,
+                    maxNodesPerHistoryReadEvents: 10,
+                    maxNodesPerHistoryUpdateData: 10,
+                    maxNodesPerRead: 10,
+                    maxNodesPerWrite: 10,
+                  }
+                },
+                isAuditing: false
+            };
             server_options.serverInfo = {
                 applicationName: { text: "Node-RED OPCUA" }
             };
             server_options.buildInfo = {
                 productName: node.name.concat(" OPC UA server for node-red"),
-                buildNumber: "0.2.56",
-                buildDate: "2020-05-10T07:00:00"
+                buildNumber: "0.2.58",
+                buildDate: "2020-05-17T10:22:00"
             };
             verbose_log("Server options:" + JSON.stringify(server_options));
             server = new opcua.OPCUAServer(server_options);
