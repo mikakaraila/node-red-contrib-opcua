@@ -131,8 +131,8 @@ module.exports = function (RED) {
             };
             server_options.buildInfo = {
                 productName: node.name.concat(" OPC UA server for node-red"),
-                buildNumber: "0.2.58",
-                buildDate: "2020-05-17T10:22:00"
+                buildNumber: "0.2.59",
+                buildDate: "2020-05-24T19:30:00"
             };
             verbose_log("Server options:" + JSON.stringify(server_options));
             server = new opcua.OPCUAServer(server_options);
@@ -297,16 +297,15 @@ module.exports = function (RED) {
                 var addressSpace = server.engine.addressSpace;
                 construct_my_address_space(addressSpace);
 
-                verbose_warn("Next server start...");
+                verbose_log("Next server start...");
 
                 server.start(function () {
                     verbose_warn("Server is now listening ... ( press CTRL+C to stop)");
-                    server.endpoints[0].endpointDescriptions().forEach(function (endpoint) {
-                        verbose_warn("Server endpointUrl: " + endpoint.endpointUrl + ' securityMode: ' + endpoint.securityMode.toString() + ' securityPolicyUri: ' + endpoint.securityPolicyUri.toString());
-                    });
-
-                    var endpointUrl = server.endpoints[0].endpointDescriptions()[0].endpointUrl;
-                    verbose_log(" the primary server endpoint url is " + endpointUrl);
+                    for (const e of server.endpoints) {
+                        for (const ed of e.endpointDescriptions()) {
+                            verbose_log("Server endpointUrl(s): " + ed.endpointUrl + " securityMode: " + ed.securityMode.toString() + " securityPolicyUri: " + ed.securityPolicyUri.toString());
+                        }
+                    }
                 });
                 node.status({
                     fill: "green",
@@ -314,7 +313,7 @@ module.exports = function (RED) {
                     text: "running"
                 });
                 initialized = true;
-                verbose_warn("server initialized");
+                verbose_log("server initialized");
             } else {
                 node.status({
                     fill: "gray",
