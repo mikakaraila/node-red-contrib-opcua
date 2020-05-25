@@ -38,7 +38,8 @@ module.exports = function (RED) {
   var read_service = require("node-opcua-service-read");
   var TimestampsToReturn = read_service.TimestampsToReturn;
   var subscription_service = require("node-opcua-service-subscription");
-
+  var installedPath = require('get-installed-path');
+  
   function OpcUaClientNode(n) {
     RED.nodes.createNode(this, n);
     this.name = n.name;
@@ -52,7 +53,6 @@ module.exports = function (RED) {
     // this.upload = n.upload; // Upload
     // this.certificate_filename = n.certificate_filename;
     // this.certificate_data = n.certificate_data;
-
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
     var userIdentity = {};
@@ -73,6 +73,22 @@ module.exports = function (RED) {
     if (node.certificate === "n" || node.certificate === "") {
       node.log("\tNo certificate used.");
     }
+      
+    var clientPkg = installedPath.getInstalledPathSync('node-opcua-client', {
+      paths: [
+        path.join(__dirname, '..'),
+        path.join(__dirname, '../..'),
+        path.join(process.cwd(), './node_modules'),
+        path.join(process.cwd(), '../node_modules'), // Linux installation needs this
+        path.join(process.cwd(), '.node-red/node_modules'),
+      ],
+    });
+    if (!clientPkg)
+      verbose_warn("Cannot find node-opcua-client package with client certificate");
+    // Client certificate from node-opcua-client\certificates, created by node-opcua installation
+    connectionOption.certificateFile = path.join(clientPkg, "/certificates/client_selfSigned_cert_2048.pem"),
+    connectionOption.privateKeyFile =  path.join(clientPkg, "/certificates/PKI/own/private/private_key.pem")
+    verbose_log("Using client certificate " + connectionOption.certificateFile);
 
     connectionOption.endpoint_must_exist = false;
     connectionOption.defaultSecureTokenLifetime = 40000;
@@ -184,7 +200,12 @@ module.exports = function (RED) {
       node.client = null;
       verbose_warn("create Client ...");
       verbose_log(connectionOption);
-      node.client = opcua.OPCUAClient.create(connectionOption);
+      try {
+        node.client = opcua.OPCUAClient.create(connectionOption);
+      }
+      catch(err) {
+        node_error("Cannot create client, check connection options: " + JSON.stringify(connectionOption));
+      }
       items = [];
       node.items = items;
       set_node_status_to("create client");
@@ -246,7 +267,7 @@ module.exports = function (RED) {
         },
         function (callback) {
           // This will succeed first time only if security policy and mode are None
-          // Later user can use path and local fileto access server certificate file
+          // Later user can use path and local file to access server certificate file
           node.client.getEndpoints(function (err, endpoints) {
             if (!err) {
               endpoints.forEach(function (endpoint, i) {
@@ -260,7 +281,7 @@ module.exports = function (RED) {
                 }
                 verbose_log("Security Mode " + endpoint.securityMode.toString());
                 verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
-                verbose_log("Type " + endpoint.server.applicationType.key);
+                verbose_log("Type " + endpoint.server.applicationType);
                 verbose_log("certificate " + "..." + " /*endpoint.serverCertificate*/");
                 endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
                 verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
@@ -289,8 +310,11 @@ module.exports = function (RED) {
         function (callback) {
           verbose_log("async series - create session ...");
           try {
-            node.client.createSession(userIdentity, function (err, session) {
+            // TODO Add other security parameters to create session to server
+            node.client.createSession({userIdentity, "clientName": "Node-red OPC UA Client node " + node.name}, function (err, session) {
               if (!err) {
+                // verbose_warn("Session name " + "Node-red OPC UA Client node " + node.name.toString().green.bold);
+                session.sessionName = "Node-red OPC UA Client node " + node.name;
                 node.session = session;
                 node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
                 //node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
@@ -1324,6 +1348,14 @@ module.exports = function (RED) {
       subscription = null;
       // monitoredItems = new Map();
       monitoredItems.clear();
+      node.session.close(function(err) {
+        if (err) {
+          node_error("Session close error: " + err);
+        }
+        else {
+          verbose_warn("Session closed!");
+        }
+      });
       //reset_opcua_client(connect_opcua_client);
       set_node_status_to("reconnectiong...");
       create_opcua_client(connect_opcua_client);
