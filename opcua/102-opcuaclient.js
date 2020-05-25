@@ -377,9 +377,15 @@ module.exports = function (RED) {
         return;
       }
       if (msg.action) {
-        verbose_log("Action on msg:" + msg.action);
+        verbose_log("Override node action by msg.action:" + msg.action);
         node.action = msg.action;
       }
+      // With new node-red easier to set action into payload
+      if (msg.payload.action) {
+        verbose_log("Override node action by msg.payload.action:" + msg.payload.action);
+        node.action = msg.payload.action;
+      }
+
       if (!node.action) {
         verbose_warn("can't work without action (read, write, browse ...)");
         //node.send(msg); // do not send in case of error
@@ -433,6 +439,9 @@ module.exports = function (RED) {
         case "unsubscribe":
           unsubscribe_action_input(msg);
           break;
+        case "deletesubscribtion":
+          delete_subscribtion_action_input(msg);
+          break;
         case "browse":
           browse_action_input(msg);
           break;
@@ -446,6 +455,7 @@ module.exports = function (RED) {
           writemultiple_action_input(msg)
           break;
         default:
+          verbose_warn("Unknown action: " + node.action + " with msg " + JSON.stringify(msg));
           break;
       }
       //node.send(msg); // msg.payload is here actual inject caused wrong values
@@ -823,6 +833,8 @@ module.exports = function (RED) {
         // first build and start subscription and subscribe on its started event by callback
         var timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
         subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
+        var message = { "topic": "subscriptionId", "payload": subscription.subscriptionId };
+        node.send(message); // Make it possible to store
       } else {
         // otherwise check if its terminated start to renew the subscription
         if (subscription.subscriptionId != "terminated") {
@@ -931,7 +943,8 @@ module.exports = function (RED) {
           },
             TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
           );
-          monitoredItems.set(nodeStr, monitoredItem.monitoredItemId);
+          verbose_log("Storing monitoredItem: " + nodeStr + " ItemId: " + monitoredItem.toString()); 
+          monitoredItems.set(nodeStr, monitoredItem);
         } catch (err) {
           node_error("Check topic format for nodeId:" + msg.topic)
           node_error('subscription.monitorItem:' + err);
@@ -1057,7 +1070,8 @@ module.exports = function (RED) {
           },
             TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
           );
-          monitoredItems.set(nodeStr, monitoredItem.monitoredItemId);
+          verbose_log("Storing monitoredItem: " + nodeStr + " ItemId: " + monitoredItem.toString()); 
+          monitoredItems.set(nodeStr, monitoredItem);
         } catch (err) {
           node_error("Check topic format for nodeId:" + msg.topic)
           node_error('subscription.monitorItem:' + err);
@@ -1113,43 +1127,51 @@ module.exports = function (RED) {
 
       return monitoredItem;
     }
+    function get_monitored_items(subscription, msg) {
+      node.session.getMonitoredItems(subscription.subscriptionId, function (err, monitoredItems) {
+        verbose_log("Node has subscribed items: " + JSON.stringify(monitoredItems));
+        return monitoredItems;
+      });
+    }
 
     function unsubscribe_monitoredItem(subscription, msg) {
       verbose_log("Session subscriptionId: " + subscription.subscriptionId);
-      var nodeStr = msg.topic;
+      var nodeStr = msg.topic; // nodeId needed as topic
       var dTypeIndex = nodeStr.indexOf(";datatype=");
       if (dTypeIndex > 0) {
         nodeStr = nodeStr.substring(0, dTypeIndex);
       }
-      var monitoredItemId = monitoredItems.get(msg.topic);
-      console.log("Got:" + monitoredItemId);
-      if (monitoredItemId) {
-        // Validate nodeId
-        try {
-          var nodeId = coerceNodeId(nodeStr);
-          if (nodeId && nodeId.isEmpty()) {
-            node_error(" Invalid empty node in getObject");
-          }
-        } catch (err) {
-          node_error(err);
-          return;
-        }
-        // Use session to unscubscribe monitoredItem
-        node.session.deleteMonitoredItems({
-          subscriptionId: subscription.subscriptionId,
-          monitoredItemIds: [monitoredItemId]
-        }, function (error, response) {
-          if (error) {
-            node_error("Unscrubscibe error " + error);
-          } else {
-            verbose_log("Unsubscribed (terminated) monitored item: " + msg.topic);
-            monitoredItems.delete(msg.topic);
-          }
-        });
+      var items = get_monitored_items(subscription, msg); // TEST
+      var monitoredItem = monitoredItems.get(msg.topic);
+      if (monitoredItem) {
+        verbose_log("Got ITEM: " + monitoredItem);
+        verbose_log("Unsubscribing monitored item: " + msg.topic + " item:" + monitoredItem.toString());
+        monitoredItem.terminate();
+      }
+      else {
+        node_error("NodeId " + nodeStr + " is not subscribed!");
+      }
+      return;
+    }
 
-        return;
+    function delete_subscribtion_action_input(msg) {
+      verbose_log("delete subscribtion= " + subscription.toString() + " msg= " + JSON.stringify(msg));
+      if (!subscription) {
+        verbose_warn("Cannot delete, no subscription existing!");
       } else {
-        node_error("Item not monitored:" + msg.topic)
+        // otherwise check if its terminated start to renew the subscription
+        if (subscription.isActive) {
+          node.session.deleteSubscriptions({
+            subscriptionIds: [subscription]
+        }, function(err, response) {
+            if (err) {
+              node_error("Delete subscription error " + err);
+            }
+            else {
+              verbose_log("Subscription deleted, response:" + JSON.stringify(response));
+            }
+        });
+        }
       }
     }
 
