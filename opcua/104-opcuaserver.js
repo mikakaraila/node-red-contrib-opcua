@@ -124,15 +124,16 @@ module.exports = function (RED) {
                     maxNodesPerWrite: 10,
                   }
                 },
-                isAuditing: false
+                isAuditing: false,
+                registerServerMethod: opcua.RegisterServerMethod.LDS
             };
             server_options.serverInfo = {
                 applicationName: { text: "Node-RED OPCUA" }
             };
             server_options.buildInfo = {
                 productName: node.name.concat(" OPC UA server for node-red"),
-                buildNumber: "0.2.59",
-                buildDate: "2020-05-24T19:30:00"
+                buildNumber: "0.2.63",
+                buildDate: "2020-06-07T21:50:00"
             };
             verbose_log("Server options:" + JSON.stringify(server_options));
             server = new opcua.OPCUAServer(server_options);
@@ -140,18 +141,7 @@ module.exports = function (RED) {
             server.initialize(post_initialize);
             var hostname = os.hostname();
             var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840/UADiscovery";
-            /*
 			verbose_log("\nregistering server to :".yellow + discovery_server_endpointUrl);
-			// TODO wrong path created for certificateFile
-			server.registerServer(discovery_server_endpointUrl, function (err) {
-				if (err) {
-					// cannot register server in discovery
-					verbose_warn("     warning : cannot register server into registry server");
-				} else {
-					verbose_log("     registering server to the discovery server : done.".cyan);
-                }
-			});
-			*/
         }
 
         function construct_my_address_space(addressSpace) {
