@@ -500,6 +500,8 @@ module.exports = function (RED) {
                                 },
                                 set: function (variant) {
                                     variables[browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType, variant.value);
+                                    var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": browseName, "variableValue": variables[browseName] }};
+                                    node.send(SetMsg);
                                     return opcua.StatusCodes.Good;
                                 }
                             }
