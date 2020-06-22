@@ -75,10 +75,58 @@ module.exports = function (RED) {
             node.error(err);
         }
 
-        function setupClient(url, callback) {
+        async function setupClient(url, callback) {
 
             // new OPC UA Client and browse from Objects ns=0;s=Objects
-            var browseClient = opcua.OPCUAClient.create(connectionOption);
+            // var browseClient = opcua.OPCUAClient.create(connectionOption);
+            const client = opcua.OPCUAClient.create(connectionOption);
+
+            try 
+            {
+                // step 1 : connect to
+                await client.connect(url);
+                node.log("start browse client on " + opcuaEndpoint.endpoint);
+                
+                // step 2 : createSession
+                const session = await client.createSession(userIdentity);
+                node.log("start browse session on " + opcuaEndpoint.endpoint);
+                
+                // step 3 : browse
+                node.warn("browseTopic:" + browseTopic);
+                const browseResult = await session.browse(browseTopic);
+        
+                // step 4 : Read Value and Datatypes
+                for(const reference of browseResult.references)
+                {
+                     var ref_obj=Object.assign({}, reference);
+                     const dataValue=await session.readVariableValue(ref_obj.nodeId);
+                     ref_obj["value"]=dataValue.value.value;
+                     ref_obj["dataType"]=opcua.DataType[dataValue.value.dataType];
+                     node.add_item(ref_obj);
+                }
+        
+                node.status({
+                            fill: "green",
+                            shape: "dot",
+                            text: "Items: " + node.items.length
+                        });
+                        
+                //step 5 close session
+                node.warn("sending items " + node.items.length);
+                var msg = {
+                        payload: node.items,
+                        endpoint: opcuaEndpoint.endpoint
+                    };
+                node.send(msg);
+                node.warn("close browse session");
+                await session.close();
+                
+            }
+            catch(err)
+            {
+                callback(err);
+            }
+            /*
             var browseSession;
 
             async.series([
@@ -146,6 +194,8 @@ module.exports = function (RED) {
                     callback(err);
                 }
             });
+
+            */
         }
 
         setupClient(opcuaEndpoint.endpoint, function (err) {
