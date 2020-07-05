@@ -75,17 +75,32 @@ module.exports = function (RED) {
     }
     
     var clientPkg = null;
+    // Check first if node-opcua & it´s packages are global installed
     try {
       clientPkg = installedPath.getInstalledPathSync('node-opcua-client');
       if (clientPkg) {
-        verbose_log("Found globally installed path: " + clientPkg);
+        verbose_log("Found node-opcua globally installed path: " + clientPkg);
       }
     }
     catch (err) {
-      verbose_log("Not globally installed, checking local folders next");
+      verbose_log("Node-opcua is not globally installed, checking node-red-contrib-opcua next");
       clientPkg = null;
     }
 
+    // Check then if node-red-contrib-opcua is global installed
+    try {
+      clientPkg = installedPath.getInstalledPathSync('node-red-contrib-opcua');
+      if (clientPkg) {
+        verbose_log("Found node-red-contrib-opcua globally installed path: " + clientPkg);
+        clientPkg = path.join(clientPkg, "node_modules", "node-opcua-client");
+      }
+    }
+    catch (err) {
+      verbose_log("Node-red-contrib-opcua is not globally installed, checking local folders next");
+      clientPkg = null;
+    }
+
+    // Check finally local installation
     if (clientPkg == null) {
       clientPkg = installedPath.getInstalledPathSync('node-opcua-client', {
         paths: [
