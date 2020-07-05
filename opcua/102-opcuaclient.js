@@ -73,16 +73,31 @@ module.exports = function (RED) {
     if (node.certificate === "n" || node.certificate === "") {
       node.log("\tNo certificate used.");
     }
-      
-    var clientPkg = installedPath.getInstalledPathSync('node-opcua-client', {
-      paths: [
+    
+    var clientPkg = null;
+    try {
+      clientPkg = installedPath.getInstalledPathSync('node-opcua-client');
+      if (clientPkg) {
+        verbose_log("Found globally installed path: " + clientPkg);
+      }
+    }
+    catch (err) {
+      verbose_log("Not globally installed, checking local folders next");
+      clientPkg = null;
+    }
+
+    if (clientPkg == null) {
+      clientPkg = installedPath.getInstalledPathSync('node-opcua-client', {
+        paths: [
         path.join(__dirname, '..'),
         path.join(__dirname, '../..'),
         path.join(process.cwd(), './node_modules'),
         path.join(process.cwd(), '../node_modules'), // Linux installation needs this
         path.join(process.cwd(), '.node-red/node_modules'),
-      ],
-    });
+        ],
+      });
+      verbose_log("Found locally installed path: " + clientPkg);
+    }
     if (!clientPkg)
       verbose_warn("Cannot find node-opcua-client package with client certificate");
     // Client certificate from node-opcua-client\certificates, created by node-opcua installation
