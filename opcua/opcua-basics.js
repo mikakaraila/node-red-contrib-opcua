@@ -15,7 +15,7 @@
  */
 
 "use strict";
-
+var opcua = require('node-opcua');
 const typedArrays = {
     SByte: Int8Array,
     Byte: Uint8Array,
@@ -413,7 +413,7 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
         case "LocalizedText":
             nValue = new opcua.Variant({
                 dataType: opcua.DataType.LocalizedText,
-                value: {locale=null, text=value}
+                value: new opcua.LocalizedText({locale: "en", text: value})
             });
             break;
         case "DateTime":
@@ -458,7 +458,7 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
 module.exports.build_new_value_by_datatype = function (datatype, value) {
 
     var nValue = 0;
-
+    console.log("Datatype: " + datatype + " Value: " + value);
     switch (datatype) {
         case "Float":
             nValue = parseFloat(value);
@@ -509,7 +509,7 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
             nValue = value.toString();
             break;
         case "LocalizedText":
-            nValue = value.text;
+            nValue = new opcua.LocalizedText({locale: "en", text: value});
             break;
         case "DateTime":
             nValue = value.toString();
@@ -595,7 +595,10 @@ module.exports.build_new_dataValue = function (opcua, datatype, value) {
             };
             break;
         case "LocalizedText":
-            nValue = { locale: null, text: value };
+            nValue = {
+                dataType: opcua.DataType.LocalizedText,
+                value: new opcua.LocalizedText({locale: "en", text: value })
+            };
             break;
         case "DateTime":
             nValue = {

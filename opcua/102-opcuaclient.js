@@ -744,7 +744,7 @@ module.exports = function (RED) {
         });
         // Create new ClientSession
         node.client.keepSessionAlive = true;
-        var session = new ClientSession(node.client);
+        // var session = new ClientSession(node.client); // OLD CODE NOT USED
         var proxyManager = new UAProxyManager(node.session);
         // console.log(nodeId.toString());
         proxyManager.getObject(nodeId.toString(), function (err, data) {
@@ -815,12 +815,13 @@ module.exports = function (RED) {
       verbose_log(nodeid.toString());
 
       var opcuaDataValue = opcuaBasics.build_new_dataValue(opcua, msg.datatype, msg.payload);
+      verbose_log("DATATYPE: " + JSON.stringify(opcuaDataValue));
       if (node.session) {
         const nodeToWrite = {
           nodeId: nodeid.toString(),
           attributeId: opcua.AttributeIds.Value,
           indexRange: null,
-          value: new opcua.DataValue({ value: opcuaDataValue })
+          value: new opcua.DataValue({value: new opcua.Variant(opcuaDataValue)})
         };
         if (msg.timestamp) {
           nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();

@@ -41,8 +41,18 @@ module.exports = function (RED) {
         var connectionOption = {};
         var userIdentity = {};
      
-        connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
-        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
+        if (opcuaEndpoint.securityPolicy) {
+            connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy];
+        }
+        else {
+            connectionOption.securityPolicy = opcua.SecurityPolicy.None;
+        }
+        if (opcuaEndpoint.securityMode) {
+            connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode];
+        }
+         else {
+            connectionOption.securityPolicy = opcua.MessageSecurityMode.None;
+        }
         // These are not used, wrong options to get connection to server
         // If certificate is needed then read it through endpoint as bytes
         // connectionOption.certificateFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
