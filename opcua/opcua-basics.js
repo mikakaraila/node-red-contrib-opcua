@@ -410,6 +410,12 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
                 value: value
             });
             break;
+        case "LocalizedText":
+            nValue = new opcua.Variant({
+                dataType: opcua.DataType.LocalizedText,
+                value: {locale=null, text=value}
+            });
+            break;
         case "DateTime":
             nValue = {
                 dataType: opcua.DataType.DateTime,
