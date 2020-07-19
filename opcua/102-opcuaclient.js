@@ -341,25 +341,48 @@ module.exports = function (RED) {
           verbose_log("async series - create session ...");
           try {
             // TODO Add other security parameters to create session to server
-            node.client.createSession({userIdentity, "clientName": "Node-red OPC UA Client node " + node.name}, function (err, session) {
-              if (!err) {
-                // verbose_warn("Session name " + "Node-red OPC UA Client node " + node.name.toString().green.bold);
-                session.sessionName = "Node-red OPC UA Client node " + node.name;
-                node.session = session;
-                node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
-                //node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
-                verbose_log("session active");
-                set_node_status_to("session active");
-                for (var i in cmdQueue) {
-                  processInputMsg(cmdQueue[i]);
+            if (opcuaEndpoint.login) {
+              node.client.createSession({userIdentity, "clientName": "Node-red OPC UA Client node " + node.name}, function (err, session) {
+                if (!err) {
+                  // verbose_warn("Session name " + "Node-red OPC UA Client node " + node.name.toString().green.bold);
+                  session.sessionName = "Node-red OPC UA Client node " + node.name;
+                  node.session = session;
+                  node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
+                  //node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
+                  verbose_log("session active");
+                  set_node_status_to("session active");
+                  for (var i in cmdQueue) {
+                    processInputMsg(cmdQueue[i]);
+                  }
+                  cmdQueue = [];
+                  callback();
+                } else {
+                  set_node_status_to("session error");
+                  callback(err);
                 }
-                cmdQueue = [];
-                callback();
-              } else {
-                set_node_status_to("session error");
-                callback(err);
-              }
-            });
+              });
+            } else {
+              // ANONYMOUS no userIdentify to pass for creating session
+              node.client.createSession({"clientName": "Node-red OPC UA Client node " + node.name}, function (err, session) {
+                if (!err) {
+                  // verbose_warn("Session name " + "Node-red OPC UA Client node " + node.name.toString().green.bold);
+                  session.sessionName = "Node-red OPC UA Client node " + node.name;
+                  node.session = session;
+                  node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
+                  //node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
+                  verbose_log("session active");
+                  set_node_status_to("session active");
+                  for (var i in cmdQueue) {
+                    processInputMsg(cmdQueue[i]);
+                  }
+                  cmdQueue = [];
+                  callback();
+                } else {
+                  set_node_status_to("session error");
+                  callback(err);
+                }
+              });
+            }
           } catch (err) {
             callback(err);
           }
