@@ -32,6 +32,7 @@ Use OpcUa-Item to define variables.
 Use OpcUa-Client to read / write / subscribe / browse OPC UA server.
 
 See some flows under [Examples](examples).
+Updated server sub-flow example OPCUA-TEST-NODES.json look commands: addFolder, AddVariable, setFolder.
 
 Here you got some ready to use examples.
 You can use the Import in Node-RED in the right upper corner menu.
