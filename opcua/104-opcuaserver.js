@@ -132,8 +132,8 @@ module.exports = function (RED) {
             };
             server_options.buildInfo = {
                 productName: node.name.concat(" OPC UA server for node-red"),
-                buildNumber: "0.2.67",
-                buildDate: "2020-07-19T09:38:00"
+                buildNumber: "0.2.68",
+                buildDate: "2020-07-19T12:24:00"
             };
             verbose_log("Server options:" + JSON.stringify(server_options));
             server = new opcua.OPCUAServer(server_options);
@@ -500,13 +500,33 @@ module.exports = function (RED) {
                                 },
                                 set: function (variant) {
                                     variables[browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType, variant.value);
+                                    verbose_log("Server variable: " + variables[browseName] + " browseName: " + browseName);
                                     var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": browseName, "variableValue": variables[browseName] }};
+                                    verbose_log("msg Payload:" + JSON.stringify(SetMsg));
                                     node.send(SetMsg);
                                     return opcua.StatusCodes.Good;
                                 }
                             }
                         });
                     }
+                    break;
+
+                case "installHistorian":
+                        verbose_warn("install historian for Node ".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
+                        var datatype = "";
+                        var opcuaDataType = null;
+                        var nodeStr = msg.topic.substring(0, msg.topic.indexOf(";datatype=")); 
+                        var e = msg.topic.indexOf("datatype=");
+                        if (e<0) {
+                            node_error("no datatype=Float or other type in install historian ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
+                        }
+                        var nodeId = addressSpace.findNode(nodeStr);
+                        if (nodeId) {
+                          addressSpace.installHistoricalDataNode(nodeId); // no options, use memory as storage
+                        }
+                        else {
+                            node_error("Cannot find node: " + msg.topic + " nodeId: " + nodeStr);
+                        }
                     break;
 
                 case "deleteNode":
