@@ -508,6 +508,9 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
         case "String":
             nValue = value.toString();
             break;
+        case "LocalizedText":
+            nValue = value.text;
+            break;
         case "DateTime":
             nValue = value.toString();
             break;
@@ -590,6 +593,9 @@ module.exports.build_new_dataValue = function (opcua, datatype, value) {
                 dataType: opcua.DataType.String,
                 value: value
             };
+            break;
+        case "LocalizedText":
+            nValue = { locale: null, text: value };
             break;
         case "DateTime":
             nValue = {
