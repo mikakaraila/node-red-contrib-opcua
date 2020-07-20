@@ -116,9 +116,14 @@ module.exports = function (RED) {
     if (!clientPkg)
       verbose_warn("Cannot find node-opcua-client package with client certificate");
     // Client certificate from node-opcua-client\certificates, created by node-opcua installation
-    connectionOption.certificateFile = path.join(clientPkg, "/certificates/client_selfsigned_cert_2048.pem"),
-    connectionOption.privateKeyFile =  path.join(clientPkg, "/certificates/PKI/own/private/private_key.pem")
-    verbose_log("Using client certificate " + connectionOption.certificateFile);
+    if (connectionOption.securityPolicy !== opcua.SecurityPolicy.None) {
+      connectionOption.certificateFile = path.join(clientPkg, "/certificates/client_selfsigned_cert_2048.pem"),
+      connectionOption.privateKeyFile =  path.join(clientPkg, "/certificates/PKI/own/private/private_key.pem")
+      verbose_log("Using client certificate " + connectionOption.certificateFile);
+    }
+    else {
+      verbose_log("Client certificate not used!");
+    }
 
     connectionOption.endpoint_must_exist = false;
     connectionOption.defaultSecureTokenLifetime = 40000;
