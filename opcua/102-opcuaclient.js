@@ -116,7 +116,7 @@ module.exports = function (RED) {
     if (!clientPkg)
       verbose_warn("Cannot find node-opcua-client package with client certificate");
     // Client certificate from node-opcua-client\certificates, created by node-opcua installation
-    if (connectionOption.securityPolicy !== opcua.SecurityPolicy.None) {
+    if (opcuaEndpoint.securityPolicy !== "None") {
       connectionOption.certificateFile = path.join(clientPkg, "/certificates/client_selfsigned_cert_2048.pem"),
       connectionOption.privateKeyFile =  path.join(clientPkg, "/certificates/PKI/own/private/private_key.pem")
       verbose_log("Using client certificate " + connectionOption.certificateFile);
@@ -124,7 +124,6 @@ module.exports = function (RED) {
     else {
       verbose_log("Client certificate not used!");
     }
-
     connectionOption.endpoint_must_exist = false;
     connectionOption.defaultSecureTokenLifetime = 40000;
     connectionOption.connectionStrategy = {
@@ -133,12 +132,13 @@ module.exports = function (RED) {
       maxDelay: 30 * 1000
     };
     connectionOption.keepSessionAlive = true;
-    verbose_log(connectionOption);
-    verbose_log(opcuaEndpoint);
+    verbose_log("Connection options:" + JSON.stringify(connectionOption));
+    verbose_log("EndPoint: " + JSON.stringify(opcuaEndpoint));
 
-    if (opcuaEndpoint.login) {
+    if (opcuaEndpoint.login === true) {
       userIdentity.userName = opcuaEndpoint.credentials.user;
       userIdentity.password = opcuaEndpoint.credentials.password;
+      verbose_log("UserIdentity: " + JSON.stringify(userIdentity));
     }
 
     var items = [];
@@ -233,8 +233,7 @@ module.exports = function (RED) {
 
     function create_opcua_client(callback) {
       node.client = null;
-      verbose_warn("create Client ...");
-      verbose_log(connectionOption);
+      verbose_warn("Create Client: " + JSON.stringify(connectionOption));
       try {
         node.client = opcua.OPCUAClient.create(connectionOption);
       }
@@ -346,8 +345,10 @@ module.exports = function (RED) {
           verbose_log("async series - create session ...");
           try {
             // TODO Add other security parameters to create session to server
-            if (opcuaEndpoint.login) {
-              node.client.createSession({userIdentity, "clientName": "Node-red OPC UA Client node " + node.name}, function (err, session) {
+            if (opcuaEndpoint.login === true) {
+              verbose_log("Create session with userIdentity: " + JSON.stringify(userIdentity));
+              //  {"clientName": "Node-red OPC UA Client node " + node.name},
+              node.client.createSession(userIdentity, function (err, session) {
                 if (!err) {
                   // verbose_warn("Session name " + "Node-red OPC UA Client node " + node.name.toString().green.bold);
                   session.sessionName = "Node-red OPC UA Client node " + node.name;
@@ -368,6 +369,7 @@ module.exports = function (RED) {
               });
             } else {
               // ANONYMOUS no userIdentify to pass for creating session
+              verbose_log("Create session as ANONYMOUS");
               node.client.createSession({"clientName": "Node-red OPC UA Client node " + node.name}, function (err, session) {
                 if (!err) {
                   // verbose_warn("Session name " + "Node-red OPC UA Client node " + node.name.toString().green.bold);
