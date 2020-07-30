@@ -130,7 +130,12 @@ module.exports = function (RED) {
                 node.send(msg);
                 node.warn("close browse session");
                 await session.close();
-                
+                // Set status notification browse done
+                node.status({
+                    fill: "green",
+                    shape: "dot",
+                    text: "Done"
+                });
             }
             catch(err)
             {
