@@ -436,7 +436,7 @@ module.exports = function (RED) {
         node.action = msg.action;
       }
       // With new node-red easier to set action into payload
-      if (msg.payload.action) {
+      if (msg.payload && msg.payload.action) {
         verbose_log("Override node action by msg.payload.action:" + msg.payload.action);
         node.action = msg.payload.action;
       }
