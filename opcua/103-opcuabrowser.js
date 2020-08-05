@@ -19,6 +19,7 @@
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
+    var uaclient = require('node-opcua-client');
     var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
     var async = require("async");
     var path = require("path");
@@ -62,6 +63,7 @@ module.exports = function (RED) {
         if (opcuaEndpoint.login) {
           userIdentity.userName = opcuaEndpoint.credentials.user;
           userIdentity.password = opcuaEndpoint.credentials.password;
+          userIdentity.type = uaclient.UserTokenType.UserName; // New TypeScript API parameter
         }
      
         node.status({

@@ -20,6 +20,8 @@ module.exports = function (RED) {
   "use strict";
   var colors = require("colors");
   var opcua = require('node-opcua');
+  var uaclient = require('node-opcua-client');
+  var uacrypto = require('node-opcua-crypto');
   var opcuaBasics = require('./opcua-basics');
   var nodeId = require("node-opcua-nodeid");
   var crypto_utils = opcua.crypto_utils;
@@ -55,7 +57,7 @@ module.exports = function (RED) {
     // this.certificate_data = n.certificate_data;
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
-    var userIdentity = {};
+    var userIdentity = undefined;
     var connectionOption = {};
     var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
     var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
@@ -117,9 +119,17 @@ module.exports = function (RED) {
       verbose_warn("Cannot find node-opcua-client package with client certificate");
     // Client certificate from node-opcua-client\certificates, created by node-opcua installation
     if (opcuaEndpoint.securityPolicy !== "None") {
-      connectionOption.certificateFile = path.join(clientPkg, "/certificates/client_selfsigned_cert_2048.pem"),
-      connectionOption.privateKeyFile =  path.join(clientPkg, "/certificates/PKI/own/private/private_key.pem")
+      connectionOption.certificateFile = path.join(clientPkg, "/certificates/client_selfsigned_cert_2048.pem");
+      connectionOption.privateKeyFile =  path.join(clientPkg, "/certificates/PKI/own/private/private_key.pem");
+      var privateKey = crypto_utils.readPrivateKeyPEM(connectionOption.privateKeyFile);
+      var clientCertificate = crypto_utils.readCertificate(connectionOption.certificateFile);
       verbose_log("Using client certificate " + connectionOption.certificateFile);
+      userIdentity = {
+        certificateData: clientCertificate,
+        privateKey,
+        type: uaclient.UserTokenType.Certificate,
+     };
+     
     }
     else {
       verbose_log("Client certificate not used!");
@@ -138,6 +148,7 @@ module.exports = function (RED) {
     if (opcuaEndpoint.login === true) {
       userIdentity.userName = opcuaEndpoint.credentials.user;
       userIdentity.password = opcuaEndpoint.credentials.password;
+      userIdentity.type = uaclient.UserTokenType.UserName; // New TypeScript API parameter
       verbose_log("UserIdentity: " + JSON.stringify(userIdentity));
     }
 
@@ -280,102 +291,92 @@ module.exports = function (RED) {
       });
     }
 
-    function connect_opcua_client() {
-      //node.session = null;
-      async.series([
-          // First connect to server´s endpoint
-          function (callback) {
-            verbose_log("async series - connecting ", opcuaEndpoint.endpoint);
-            try {
-              set_node_status_to("connecting");
-              if (!node.client) {
-                verbose_log("No client to connect...");
-              }
-              node.client.connect(opcuaEndpoint.endpoint, callback);
-            } catch (err) {
-              if (err) {
-                set_node_status_to("invalid endpoint " + opcuaEndpoint.endpoint);
-              }
-              // callback(err);
-            }
-          },
-          function (callback) {
-              // This will succeed first time only if security policy and mode are NONE
-              // Later user can use path and local fileto access server certificate file
-              node.client.getEndpoints(function (err, endpoints) {
-                if (!err) {
-                  endpoints.forEach(function (endpoint, i) {
-                    verbose_log("endpoint " + endpoint.endpointUrl + "");
-                    verbose_log("Application URI " + endpoint.server.applicationUri);
-                    verbose_log("Product URI " + endpoint.server.productUri);
-                    verbose_log("Application Name " + endpoint.server.applicationName.text);
-                    var applicationName = endpoint.server.applicationName.text;
-                    if (!applicationName) {
-                      applicationName = "OPCUA_Server";
-                    }
-                    verbose_log("Security Mode " + endpoint.securityMode.toString());
-                    verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
-                    verbose_log("Type " + endpoint.server.applicationType.key);
-                    verbose_log("certificate " + "..." + " /*endpoint.serverCertificate*/");
-                    endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
-                    verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
-                    var serverCertificate = endpoint.serverCertificate;
-                    // Use applicationName instead of fixed server_certificate
-                    var certificate_filename = path.join(__dirname, "../../PKI/" + applicationName + i + ".pem");
-                    if (serverCertificate) {
-                       fs.writeFile(certificate_filename, crypto_utils.toPem(serverCertificate, "CERTIFICATE"),function(){});
-                    }
-                  });
-
-                  endpoints.forEach(function (endpoint) {
-                    verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString()," Policy=", endpoint.securityPolicyUri);
-                    endpoint.userIdentityTokens.forEach(function (token) {
-                      verbose_log("policyId " + token.policyId);
-                      verbose_log("tokenType " + token.tokenType.toString());
-                      verbose_log("issuedTokenType " + token.issuedTokenType);
-                      verbose_log("issuerEndpointUrl " + token.issuerEndpointUrl);
-                      verbose_log("securityPolicyUri " + token.securityPolicyUri);
-                    });
-                  });
-                }
-              callback(err);
-            });
-          },
-          function (callback) {
-            verbose_log("async series - create session ...");
-            try {
-              node.client.createSession(userIdentity, function (err, session) {
-                if (!err) {
-                  node.session = session;
-                  node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
-                  //node.session.startKeepAliveManager(); // General for read/write/subscriptions/events
-                  verbose_log("session active");
-                  set_node_status_to("session active");
-                  for (var i in cmdQueue) {
-                    processInputMsg(cmdQueue[i]);
-                  }
-                  cmdQueue = [];
-                  callback();
-                } else {
-                  set_node_status_to("session error");
-                  callback(err);
-                }
-              });
-            } catch (err) {
-              callback(err);
-            }
-          }
-        ],
-        function (err) {
-          if (err) {
-            node_error(node.name + " OPC UA connection error: " + err.message);
-            verbose_log(err);
-            node.session = null;
-            close_opcua_client(set_node_status_to("connection error"));
-          }
+    async function connect_opcua_client() {
+      // Refactored from old async Javascript to new Typescript with await
+      var session;
+      // STEP 1
+      // First connect to server´s endpoint
+      verbose_log("Connecting to ", opcuaEndpoint.endpoint);
+      try {
+        set_node_status_to("connecting");
+        if (!node.client) {
+          verbose_log("No client to connect...");
+        }
+        await node.client.connect(opcuaEndpoint.endpoint);
+      } catch (err) {
+        set_node_status_to("invalid endpoint " + opcuaEndpoint.endpoint);
+      }
+    
+      // STEP 2
+      // This will succeed first time only if security policy and mode are None
+      // Later user can use path and local file to access server certificate file
+      const endpoints = await node.client.getEndpoints();
+      var i = 0;
+      endpoints.forEach(function (endpoint, i) {
+        verbose_log("endpoint " + endpoint.endpointUrl + "");
+        verbose_log("Application URI " + endpoint.server.applicationUri);
+        verbose_log("Product URI " + endpoint.server.productUri);
+        verbose_log("Application Name " + endpoint.server.applicationName.text);
+        var applicationName = endpoint.server.applicationName.text;
+        if (!applicationName) {
+          applicationName = "OPCUA_Server";
+        }
+        verbose_log("Security Mode " + endpoint.securityMode.toString());
+        verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
+        verbose_log("Type " + endpoint.server.applicationType);
+        verbose_log("certificate " + "..." + " /*endpoint.serverCertificate*/");
+        endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
+        verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
+        var serverCertificate = endpoint.serverCertificate;
+        // Use applicationName instead of fixed server_certificate
+        var certificate_filename = path.join(__dirname, "../../PKI/" + applicationName + i + ".pem");
+        if (serverCertificate) {
+          fs.writeFile(certificate_filename, crypto_utils.toPem(serverCertificate, "CERTIFICATE"), function () {});
+        }
+      });
+    
+      endpoints.forEach(function (endpoint) {
+        verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString(), " Policy=", endpoint.securityPolicyUri);
+        endpoint.userIdentityTokens.forEach(function (token) {
+          verbose_log("policyId " + token.policyId);
+          verbose_log("tokenType " + token.tokenType.toString());
+          verbose_log("issuedTokenType " + token.issuedTokenType);
+          verbose_log("issuerEndpointUrl " + token.issuerEndpointUrl);
+          verbose_log("securityPolicyUri " + token.securityPolicyUri);
         });
+      });
+    
+      // STEP 3
+      verbose_log("Create session ...");
+      try {
+        // TODO Add other security parameters to create session to server
+        if (opcuaEndpoint.login === true) {
+          verbose_log("Create session with userIdentity: " + JSON.stringify(userIdentity));
+          //  {"clientName": "Node-red OPC UA Client node " + node.name},
+          session = await node.client.createSession(userIdentity);
+        } else {
+          // ANONYMOUS no userIdentify to pass for creating session
+          verbose_log("Create session as ANONYMOUS");
+          let ANO;
+          session = await node.client.createSession(ANO);
+        }
+        session.sessionName = "Node-red OPC UA Client node " + node.name;
+        node.session = session;
+        node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
+        verbose_log("session active");
+        set_node_status_to("session active");
+        for (var i in cmdQueue) {
+          processInputMsg(cmdQueue[i]);
+        }
+        cmdQueue = [];
+      } catch (err) {
+        node_error(node.name + " OPC UA connection error: " + err.message);
+        verbose_log(err);
+        node.session = null;
+        close_opcua_client(set_node_status_to("connection error"));
+      }
     }
-
+    
     function make_subscription(callback, msg, parameters) {
       var newSubscription = null;
 
