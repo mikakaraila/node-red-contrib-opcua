@@ -1220,7 +1220,7 @@ module.exports = function (RED) {
         // otherwise check if its terminated start to renew the subscription
         if (subscription.isActive) {
           node.session.deleteSubscriptions({
-            subscriptionIds: [subscription]
+            subscriptionIds: [subscription.subscriptionId]
         }, function(err, response) {
             if (err) {
               node_error("Delete subscription error " + err);
