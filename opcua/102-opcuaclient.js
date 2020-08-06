@@ -20,8 +20,6 @@ module.exports = function (RED) {
   "use strict";
   var colors = require("colors");
   var opcua = require('node-opcua');
-  var uaclient = require('node-opcua-client');
-  var uacrypto = require('node-opcua-crypto');
   var opcuaBasics = require('./opcua-basics');
   var nodeId = require("node-opcua-nodeid");
   var crypto_utils = opcua.crypto_utils;
@@ -57,7 +55,7 @@ module.exports = function (RED) {
     // this.certificate_data = n.certificate_data;
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
-    var userIdentity = undefined;
+    var userIdentity = {};
     var connectionOption = {};
     var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
     var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
@@ -121,15 +119,7 @@ module.exports = function (RED) {
     if (opcuaEndpoint.securityPolicy !== "None") {
       connectionOption.certificateFile = path.join(clientPkg, "/certificates/client_selfsigned_cert_2048.pem");
       connectionOption.privateKeyFile =  path.join(clientPkg, "/certificates/PKI/own/private/private_key.pem");
-      var privateKey = crypto_utils.readPrivateKeyPEM(connectionOption.privateKeyFile);
-      var clientCertificate = crypto_utils.readCertificate(connectionOption.certificateFile);
       verbose_log("Using client certificate " + connectionOption.certificateFile);
-      userIdentity = {
-        certificateData: clientCertificate,
-        privateKey,
-        type: uaclient.UserTokenType.Certificate,
-     };
-     
     }
     else {
       verbose_log("Client certificate not used!");
@@ -148,7 +138,7 @@ module.exports = function (RED) {
     if (opcuaEndpoint.login === true) {
       userIdentity.userName = opcuaEndpoint.credentials.user;
       userIdentity.password = opcuaEndpoint.credentials.password;
-      userIdentity.type = uaclient.UserTokenType.UserName; // New TypeScript API parameter
+      userIdentity.type = opcua.UserTokenType.UserName; // New TypeScript API parameter
       verbose_log("UserIdentity: " + JSON.stringify(userIdentity));
     }
 
@@ -1205,6 +1195,7 @@ module.exports = function (RED) {
         verbose_log("Got ITEM: " + monitoredItem);
         verbose_log("Unsubscribing monitored item: " + msg.topic + " item:" + monitoredItem.toString());
         monitoredItem.terminate();
+        monitoredItems.delete(msg.topic);
       }
       else {
         node_error("NodeId " + nodeStr + " is not subscribed!");
