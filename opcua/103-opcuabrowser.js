@@ -84,7 +84,7 @@ module.exports = function (RED) {
         };
 
         function node_error(err) {
-            node.error(err);
+            node.error("Browse node error!", err);
         }
 
         async function setupClient(url, callback) {

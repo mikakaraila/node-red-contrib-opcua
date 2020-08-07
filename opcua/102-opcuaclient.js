@@ -155,7 +155,7 @@ module.exports = function (RED) {
        }); // multiple monitored Items should be registered only once
     */
     function node_error(err) {
-      node.error(err);
+      node.error("Client node error on: " + node.name, err);
     }
 
     function verbose_warn(logMessage) {
@@ -300,42 +300,47 @@ module.exports = function (RED) {
       // STEP 2
       // This will succeed first time only if security policy and mode are None
       // Later user can use path and local file to access server certificate file
-      const endpoints = await node.client.getEndpoints();
-      var i = 0;
-      endpoints.forEach(function (endpoint, i) {
-        verbose_log("endpoint " + endpoint.endpointUrl + "");
-        verbose_log("Application URI " + endpoint.server.applicationUri);
-        verbose_log("Product URI " + endpoint.server.productUri);
-        verbose_log("Application Name " + endpoint.server.applicationName.text);
-        var applicationName = endpoint.server.applicationName.text;
-        if (!applicationName) {
-          applicationName = "OPCUA_Server";
-        }
-        verbose_log("Security Mode " + endpoint.securityMode.toString());
-        verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
-        verbose_log("Type " + endpoint.server.applicationType);
-        verbose_log("certificate " + "..." + " /*endpoint.serverCertificate*/");
-        endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
-        verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
-        var serverCertificate = endpoint.serverCertificate;
-        // Use applicationName instead of fixed server_certificate
-        var certificate_filename = path.join(__dirname, "../../PKI/" + applicationName + i + ".pem");
-        if (serverCertificate) {
-          fs.writeFile(certificate_filename, crypto_utils.toPem(serverCertificate, "CERTIFICATE"), function () {});
-        }
-      });
-    
-      endpoints.forEach(function (endpoint) {
-        verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString(), " Policy=", endpoint.securityPolicyUri);
-        endpoint.userIdentityTokens.forEach(function (token) {
-          verbose_log("policyId " + token.policyId);
-          verbose_log("tokenType " + token.tokenType.toString());
-          verbose_log("issuedTokenType " + token.issuedTokenType);
-          verbose_log("issuerEndpointUrl " + token.issuerEndpointUrl);
-          verbose_log("securityPolicyUri " + token.securityPolicyUri);
+      try {
+        const endpoints = await node.client.getEndpoints();
+        var i = 0;
+        endpoints.forEach(function (endpoint, i) {
+          verbose_log("endpoint " + endpoint.endpointUrl + "");
+          verbose_log("Application URI " + endpoint.server.applicationUri);
+          verbose_log("Product URI " + endpoint.server.productUri);
+          verbose_log("Application Name " + endpoint.server.applicationName.text);
+          var applicationName = endpoint.server.applicationName.text;
+          if (!applicationName) {
+            applicationName = "OPCUA_Server";
+          }
+          verbose_log("Security Mode " + endpoint.securityMode.toString());
+          verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
+          verbose_log("Type " + endpoint.server.applicationType);
+          verbose_log("certificate " + "..." + " /*endpoint.serverCertificate*/");
+          endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
+          verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
+          var serverCertificate = endpoint.serverCertificate;
+          // Use applicationName instead of fixed server_certificate
+          var certificate_filename = path.join(__dirname, "../../PKI/" + applicationName + i + ".pem");
+          if (serverCertificate) {
+            fs.writeFile(certificate_filename, crypto_utils.toPem(serverCertificate, "CERTIFICATE"), function () {});
+          }
         });
-      });
-    
+      
+        endpoints.forEach(function (endpoint) {
+          verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString(), " Policy=", endpoint.securityPolicyUri);
+          endpoint.userIdentityTokens.forEach(function (token) {
+            verbose_log("policyId " + token.policyId);
+            verbose_log("tokenType " + token.tokenType.toString());
+            verbose_log("issuedTokenType " + token.issuedTokenType);
+            verbose_log("issuerEndpointUrl " + token.issuerEndpointUrl);
+            verbose_log("securityPolicyUri " + token.securityPolicyUri);
+          });
+        });
+      }
+      catch (err) {
+        node_error("Cannot read endpoints: " + err.toString());
+      }
+
       // STEP 3
       verbose_log("Create session ...");
       try {

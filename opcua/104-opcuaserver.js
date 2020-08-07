@@ -47,7 +47,7 @@ module.exports = function (RED) {
         var folder = null;
 
         function node_error(err) {
-            node.error(err);
+            node.error("Server node error on: " + node.name, err);
         }
 
         function verbose_warn(logMessage) {
@@ -132,8 +132,8 @@ module.exports = function (RED) {
             };
             server_options.buildInfo = {
                 productName: node.name.concat(" OPC UA server for node-red"),
-                buildNumber: "0.2.76",
-                buildDate: "2020-08-05T20:04:00"
+                buildNumber: "0.2.77",
+                buildDate: "2020-08-07T10:50:00"
             };
             verbose_log("Server options:" + JSON.stringify(server_options));
             server = new opcua.OPCUAServer(server_options);
