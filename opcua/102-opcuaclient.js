@@ -124,12 +124,13 @@ module.exports = function (RED) {
     else {
       verbose_log("Client certificate not used!");
     }
+    connectionOption.clientName = node.name;
     connectionOption.endpoint_must_exist = false;
-    connectionOption.defaultSecureTokenLifetime = 40000;
+    connectionOption.defaultSecureTokenLifetime = 40000 * 5;
     connectionOption.connectionStrategy = {
-      maxRetry: 10512000, // 10 years should be enough. No infinite parameter for backoff.
-      initialDelay: 2000,
-      maxDelay: 30 * 1000
+      maxRetry: 10, // Limited to max 10 ~5min // 10512000, // 10 years should be enough. No infinite parameter for backoff.
+      initialDelay: 5000, // 5s
+      maxDelay: 30 * 1000 // 30s
     };
     connectionOption.keepSessionAlive = true;
     verbose_log("Connection options:" + JSON.stringify(connectionOption));
@@ -139,9 +140,11 @@ module.exports = function (RED) {
       userIdentity.userName = opcuaEndpoint.credentials.user;
       userIdentity.password = opcuaEndpoint.credentials.password;
       userIdentity.type = opcua.UserTokenType.UserName; // New TypeScript API parameter
-      verbose_log("UserIdentity: " + JSON.stringify(userIdentity));
     }
-
+    else {
+      userIdentity.type = opcua.UserTokenType.Anonymous;
+    }
+    verbose_log("UserIdentity: " + JSON.stringify(userIdentity));
     var items = [];
     var subscription; // only one subscription needed to hold multiple monitored Items
 
@@ -237,6 +240,16 @@ module.exports = function (RED) {
       verbose_warn("Create Client: " + JSON.stringify(connectionOption));
       try {
         node.client = opcua.OPCUAClient.create(connectionOption);
+        node.client.on("connection_reestablished", function () {
+          verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!!");
+        });
+        node.client.on("backoff", function (attempt, delay) {
+          verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds");
+        });
+        node.client.on("start_reconnection", function () {
+          verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  Starting Reconnection !!!!!!!!!!!!!!!!!!!");
+        });
+    
       }
       catch(err) {
         node_error("Cannot create client, check connection options: " + JSON.stringify(connectionOption));
@@ -286,7 +299,7 @@ module.exports = function (RED) {
       var session;
       // STEP 1
       // First connect to server´s endpoint
-      verbose_log("Connecting to ", opcuaEndpoint.endpoint);
+      verbose_log("Connecting to " + opcuaEndpoint.endpoint);
       try {
         set_node_status_to("connecting");
         if (!node.client) {
@@ -295,11 +308,13 @@ module.exports = function (RED) {
         await node.client.connect(opcuaEndpoint.endpoint);
       } catch (err) {
         set_node_status_to("invalid endpoint " + opcuaEndpoint.endpoint);
+        return;
       }
-    
+      verbose_log("Connected to " + opcuaEndpoint.endpoint);
       // STEP 2
       // This will succeed first time only if security policy and mode are None
       // Later user can use path and local file to access server certificate file
+/*
       try {
         const endpoints = await node.client.getEndpoints();
         var i = 0;
@@ -315,7 +330,7 @@ module.exports = function (RED) {
           verbose_log("Security Mode " + endpoint.securityMode.toString());
           verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
           verbose_log("Type " + endpoint.server.applicationType);
-          verbose_log("certificate " + "..." + " /*endpoint.serverCertificate*/");
+          // verbose_log("certificate " + "..." + " endpoint.serverCertificate");
           endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
           verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
           var serverCertificate = endpoint.serverCertificate;
@@ -325,7 +340,7 @@ module.exports = function (RED) {
             fs.writeFile(certificate_filename, crypto_utils.toPem(serverCertificate, "CERTIFICATE"), function () {});
           }
         });
-      
+        
         endpoints.forEach(function (endpoint) {
           verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString(), " Policy=", endpoint.securityPolicyUri);
           endpoint.userIdentityTokens.forEach(function (token) {
@@ -340,21 +355,13 @@ module.exports = function (RED) {
       catch (err) {
         node_error("Cannot read endpoints: " + err.toString());
       }
-
+*/
       // STEP 3
       verbose_log("Create session ...");
       try {
-        // TODO Add other security parameters to create session to server
-        if (opcuaEndpoint.login === true) {
-          verbose_log("Create session with userIdentity: " + JSON.stringify(userIdentity));
+        verbose_log("Create session with userIdentity: " + JSON.stringify(userIdentity));
           //  {"clientName": "Node-red OPC UA Client node " + node.name},
-          session = await node.client.createSession(userIdentity);
-        } else {
-          // ANONYMOUS no userIdentify to pass for creating session
-          verbose_log("Create session as ANONYMOUS");
-          let ANO;
-          session = await node.client.createSession(ANO);
-        }
+        session = await node.client.createSession(userIdentity);
         session.sessionName = "Node-red OPC UA Client node " + node.name;
         node.session = session;
         node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
@@ -565,6 +572,7 @@ module.exports = function (RED) {
                   }
 
                   msg.payload = dataValue.value.value;
+                  msg.statusCode = dataValue.statusCode;
 
                   if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
                     verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
