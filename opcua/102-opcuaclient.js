@@ -497,8 +497,9 @@ module.exports = function (RED) {
         case "unsubscribe":
           unsubscribe_action_input(msg);
           break;
-        case "deletesubscribtion":
-          delete_subscribtion_action_input(msg);
+        case "deletesubscribtion": // miss-spelled, this allows old flows to work
+        case "deletesubscription":
+          delete_subscription_action_input(msg);
           break;
         case "browse":
           browse_action_input(msg);
@@ -975,10 +976,15 @@ module.exports = function (RED) {
       if (!monitoredItem) {
         verbose_log("Msg " + JSON.stringify(msg));
         var interval = 100; // Set as default if no payload
-        if (msg.payload && Number(msg.payload > 100)) {
-          interval = convertAndCheckInterval(msg.payload);
+        var queueSize = 10;
+        if (msg.payload && msg.payload.interval && Number(msg.payload.interval > 100)) {
+          interval = convertAndCheckInterval(msg.payload.interval);
         }
-        verbose_log(msg.topic + " samplingInterval " + interval);
+        if (msg.payload && msg.payload.queueSize && Number(msg.payload.queueSize > 0)) {
+          queueSize = msg.payload.queueSize;
+        }
+
+        verbose_log(msg.topic + " samplingInterval " + interval + " queueSize " + queueSize);
         verbose_warn("Monitoring value: " + msg.topic + ' by interval of ' + interval.toString() + " ms");
 
         // Validate nodeId
@@ -999,7 +1005,7 @@ module.exports = function (RED) {
             attributeId: opcua.AttributeIds.Value
           }, {
             samplingInterval: interval,
-            queueSize: 10,
+            queueSize: queueSize,
             discardOldest: true
           },
             TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
@@ -1216,8 +1222,8 @@ module.exports = function (RED) {
       return;
     }
 
-    function delete_subscribtion_action_input(msg) {
-      verbose_log("delete subscribtion= " + subscription.toString() + " msg= " + JSON.stringify(msg));
+    function delete_subscription_action_input(msg) {
+      verbose_log("delete subscription= " + subscription.toString() + " msg= " + JSON.stringify(msg));
       if (!subscription) {
         verbose_warn("Cannot delete, no subscription existing!");
       } else {
@@ -1231,6 +1237,7 @@ module.exports = function (RED) {
             }
             else {
               verbose_log("Subscription deleted, response:" + JSON.stringify(response));
+              subscription.terminate(); // Added to allow new subscription
             }
         });
         }
@@ -1354,7 +1361,7 @@ module.exports = function (RED) {
       if (!subscription) {
         // first build and start subscription and subscribe on its started event by callback
         var timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
-        subscription = make_subscription(subscribe_monitoredEvent, msg, opcuaBasics.getEventSubscribtionParameters(timeMilliseconds));
+        subscription = make_subscription(subscribe_monitoredEvent, msg, opcuaBasics.getEventSubscriptionParameters(timeMilliseconds));
       } else {
         // otherwise check if its terminated start to renew the subscription
         if (subscription.subscriptionId != "terminated") {

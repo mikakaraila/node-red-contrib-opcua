@@ -234,7 +234,7 @@ module.exports.getBasicEventFields = function () {
  options.priority                    = options.priority || 1;
  */
 
-module.exports.getEventSubscribtionParameters = function (timeMilliseconds) {
+module.exports.getEventSubscriptionParameters = function (timeMilliseconds) {
     return {
         requestedPublishingInterval: timeMilliseconds || 100,
         requestedLifetimeCount: 120,
