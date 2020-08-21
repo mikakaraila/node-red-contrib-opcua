@@ -23,7 +23,8 @@ limitations under the License.
         defaults: {
             port: {value: "53880", required: true},
             name: {value:""},
-            endpoint: {value: ""}
+            endpoint: {value: ""},
+            autoAcceptUnknownCertificate: {value: true}
         },
         inputs:1,
         outputs:1,
@@ -50,13 +51,15 @@ limitations under the License.
         <label for="node-input-name"><i class="icon-tasks"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="">
     </div>
-        <div class="form-row">
+    <div class="form-row">
         <label for="node-input-endpoint"><i class="icon-tasks"></i> Endpoint</label>
         <input type="text" id="node-input-endpoint" placeholder="UA/SimpleNodeRedServer">
     </div>
+    <div class="form-row">
+        <label for="node-input-autoAcceptUnknownCertificate"><i class="icon-tasks"></i> Auto Accept Unknown Certificates</label>
+        <input type="checkbox" id="node-input-autoAcceptUnknownCertificate">
+    </div>
 </script>
-
-
 
 <script type="text/x-red" data-help-name="OpcUa-Server">
     <p>Creates OPC UA server with own variables, object structures and methods to endpoint: opc.tcp://hostname.local:53880/</p>
