@@ -31,6 +31,7 @@ module.exports = function (RED) {
         this.name = n.name;
         this.port = n.port;
         this.endpoint = n.endpoint;
+        this.autoAcceptUnknownCertificate = n.autoAcceptUnknownCertificate;
 
         var node = this;
         var variables = {
@@ -92,10 +93,15 @@ module.exports = function (RED) {
             if (!serverPkg)
                 verbose_warn("Cannot find node-opcua-server package with server certificate");
 
+            var rootpki = path.join(serverPkg, "/certificates/PKI");
             var certFile = path.join(serverPkg, "/certificates/server_selfsigned_cert_2048.pem");
             var privFile = path.join(serverPkg, "/certificates/PKI/own/private/private_key.pem");
             verbose_log("Using server certificate " + certFile);
             var server_options = {
+                serverCertificateManager: new opcua.OPCUACertificateManager({
+                    automaticallyAcceptUnknownCertificate: node.autoAcceptUnknownCertificate,
+                    rootFolder: rootpki,
+                }),
                 certificateFile: certFile,
                 privateKeyFile: privFile,
                 port: parseInt(n.port),
