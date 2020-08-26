@@ -977,11 +977,11 @@ module.exports = function (RED) {
         verbose_log("Msg " + JSON.stringify(msg));
         var interval = 100; // Set as default if no payload
         var queueSize = 10;
-        if (msg.payload && msg.payload.interval && Number(msg.payload.interval > 100)) {
-          interval = convertAndCheckInterval(msg.payload.interval);
+        if (msg.interval && Number(msg.interval > 100)) {
+          interval = convertAndCheckInterval(msg.interval);
         }
-        if (msg.payload && msg.payload.queueSize && Number(msg.payload.queueSize > 0)) {
-          queueSize = msg.payload.queueSize;
+        if (msg.queueSize && Number(msg.queueSize > 0)) {
+          queueSize = msg.queueSize;
         }
 
         verbose_log(msg.topic + " samplingInterval " + interval + " queueSize " + queueSize);
@@ -1079,11 +1079,11 @@ module.exports = function (RED) {
         verbose_log("Msg " + JSON.stringify(msg));
         var interval = 100; // Set as default if no payload
         var queueSize = 10;
-        if (msg.payload && msg.payload.interval && Number(msg.payload.interval > 100)) {
-          interval = convertAndCheckInterval(msg.payload.interval);
+        if (msg.interval && Number(msg.interval > 100)) {
+          interval = convertAndCheckInterval(msg.interval);
         }
-        if (msg.payload && msg.payload.queueSize && Number(msg.payload.queueSize > 0)) {
-          queueSize = msg.payload.queueSize;
+        if (msg.queueSize && Number(msg.queueSize > 0)) {
+          queueSize = msg.queueSize;
         }
         verbose_log("Monitoring " + msg.topic + " samplingInterval " + interval + "ms, queueSize " + queueSize);
         verbose_log("Deadband type (a==absolute, p==percent) " + node.deadbandtype + " deadband value " + node.deadbandvalue);
