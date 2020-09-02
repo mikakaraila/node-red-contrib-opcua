@@ -44,6 +44,32 @@ Search for OPC UA on: http://flows.nodered.org/
 
 ![node-red-opcua-flow-Prosys](images/PROSYS-OPC-UA-EXAMPLE2.png)
 
+Message parameters (draft)
+--------------------------
+
+Input message:
+message.payload 	Can be used as earlier to set interval for subscription or monitorItem
+message.interval	Subscription interval
+message.queueSize	Subscription queue size
+
+message.topic		NodeId and DataType in format ns=3;s=Counter;datatype=Int32
+					readmultiple to readmultiple items
+					writemultiple to write multiple items
+					clearitems to empty multiple items (readmultiple / writemultiple)
+message.action		subscribe | unsubscribe | deletesubscription
+					browse | info 
+					read | write | info | monitor | events
+					readmultiple | writemultiple
+
+
+Output message:
+message.payload		dataValue.value.value
+message.statusCode	OPC UA StatusCode
+message.sourceTimestamp	Source variable´s timestamp for value
+message.serverTimestamp Server´s timestamp for value
+
+
+
 # Authors
 
 * since 2015 [Mika Karaila][2]
