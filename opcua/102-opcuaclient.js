@@ -977,7 +977,11 @@ module.exports = function (RED) {
         verbose_log("Msg " + JSON.stringify(msg));
         var interval = 100; // Set as default if no payload
         var queueSize = 10;
-        if (msg.interval && Number(msg.interval > 100)) {
+        // Interval from the payload (old existing feature still supported)
+        if (msg.payload && Number(msg.payload) > 100) {
+          interval = convertAndCheckInterval(msg.payload);
+        }
+        if (msg.interval && Number(msg.interval) > 100) {
           interval = convertAndCheckInterval(msg.interval);
         }
         if (msg.queueSize && Number(msg.queueSize > 0)) {
@@ -1022,6 +1026,8 @@ module.exports = function (RED) {
         });
 
         monitoredItem.on("changed", function (dataValue) {
+          let msgToSend = {};
+
           set_node_status_to("active subscribed");
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
           verbose_log(dataValue.toString());
@@ -1031,25 +1037,28 @@ module.exports = function (RED) {
             verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16));
           }
 
+          msgToSend.statusCode = dataValue.statusCode;
+          msgToSend.topic = msg.topic;
+
           // Check if timestamps exists otherwise simulate them
           if (dataValue.serverTimestamp != null) {
-            msg.serverTimestamp = dataValue.serverTimestamp;
-            msg.serverPicoseconds = dataValue.serverPicoseconds;
+            msgToSend.serverTimestamp = dataValue.serverTimestamp;
+            msgToSend.serverPicoseconds = dataValue.serverPicoseconds;
           } else {
-            msg.serverTimestamp = new Date().getTime();;
-            msg.serverPicoseconds = 0;
+            msgToSend.serverTimestamp = new Date().getTime();;
+            msgToSend.serverPicoseconds = 0;
           }
 
           if (dataValue.sourceTimestamp != null) {
-            msg.sourceTimestamp = dataValue.sourceTimestamp;
-            msg.sourcePicoseconds = dataValue.sourcePicoseconds;
+            msgToSend.sourceTimestamp = dataValue.sourceTimestamp;
+            msgToSend.sourcePicoseconds = dataValue.sourcePicoseconds;
           } else {
-            msg.sourceTimestamp = new Date().getTime();;
-            msg.sourcePicoseconds = 0;
+            msgToSend.sourceTimestamp = new Date().getTime();;
+            msgToSend.sourcePicoseconds = 0;
           }
 
-          msg.payload = dataValue.value.value;
-          node.send(msg);
+          msgToSend.payload = dataValue.value.value;
+          node.send(msgToSend);
         });
 
         monitoredItem.on("keepalive", function () {
@@ -1079,7 +1088,11 @@ module.exports = function (RED) {
         verbose_log("Msg " + JSON.stringify(msg));
         var interval = 100; // Set as default if no payload
         var queueSize = 10;
-        if (msg.interval && Number(msg.interval > 100)) {
+        // Interval from the payload (old existing feature still supported)
+        if (msg.payload && Number(msg.payload) > 100) {
+          interval = convertAndCheckInterval(msg.payload);
+        }
+        if (msg.interval && Number(msg.interval) > 100) {
           interval = convertAndCheckInterval(msg.interval);
         }
         if (msg.queueSize && Number(msg.queueSize > 0)) {
@@ -1157,6 +1170,7 @@ module.exports = function (RED) {
         });
 
         monitoredItem.on("changed", function (dataValue) {
+          let msgToSend = {};
           set_node_status_to("active monitoring");
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
           verbose_log(dataValue.toString());
@@ -1165,26 +1179,29 @@ module.exports = function (RED) {
           } else {
             verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16));
           }
+          
+          msgToSend.statusCode = dataValue.statusCode;
+          msgToSend.topic = msg.topic;
 
           // Check if timestamps exists otherwise simulate them
           if (dataValue.serverTimestamp != null) {
-            msg.serverTimestamp = dataValue.serverTimestamp;
-            msg.serverPicoseconds = dataValue.serverPicoseconds;
+            msgToSend.serverTimestamp = dataValue.serverTimestamp;
+            msgToSend.serverPicoseconds = dataValue.serverPicoseconds;
           } else {
-            msg.serverTimestamp = new Date().getTime();
-            msg.serverPicoseconds = 0;
+            msgToSend.serverTimestamp = new Date().getTime();
+            msgToSend.serverPicoseconds = 0;
           }
 
           if (dataValue.sourceTimestamp != null) {
-            msg.sourceTimestamp = dataValue.sourceTimestamp;
-            msg.sourcePicoseconds = dataValue.sourcePicoseconds;
+            msgToSend.sourceTimestamp = dataValue.sourceTimestamp;
+            msgToSend.sourcePicoseconds = dataValue.sourcePicoseconds;
           } else {
-            msg.sourceTimestamp = new Date().getTime();
-            msg.sourcePicoseconds = 0;
+            msgToSend.sourceTimestamp = new Date().getTime();
+            msgToSend.sourcePicoseconds = 0;
           }
 
-          msg.payload = dataValue.value.value;
-          node.send(msg);
+          msgToSend.payload = dataValue.value.value;
+          node.send(msgToSend);
         });
 
         monitoredItem.on("keepalive", function () {
