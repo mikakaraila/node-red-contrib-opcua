@@ -50,22 +50,27 @@ module.exports = function (RED) {
             msg.datatype = node.datatype;
             msg.browseName = node.name;
 
-            verbose_log('node value:' + node.value);
-
-            if (msg.payload.length == 0 && node.value) {
+            // Node contains static value
+            if (node.value) {
+                verbose_log('First set value by node value:' + node.value);
                 if (node.datatype) {
                     msg.payload = opcuaBasics.build_new_value_by_datatype(node.datatype, node.value);
                 }
                 if (msg.datatype) {
                     msg.payload = opcuaBasics.build_new_value_by_datatype(msg.datatype, node.value);
                 }
-                verbose_warn("setting value by Item " + msg.payload);
-            } else {
-                if (msg.payload.length > 0) {
+            }
+            // Input msg is dynamic and will overwrite node.value
+            if (msg.payload && msg.payload.length > 0) {
+                verbose_warn("Second set value by Input " + msg.payload);
+                if (node.datatype) {
+                   msg.payload = opcuaBasics.build_new_value_by_datatype(node.datatype, msg.payload);
+                }
+                if (msg.datatype) {
                     msg.payload = opcuaBasics.build_new_value_by_datatype(msg.datatype, msg.payload);
-                    verbose_warn("setting value by Input " + msg.payload);
                 }
             }
+            verbose_warn("Setting value to " + msg.payload);
 
             node.send(msg);
         });
