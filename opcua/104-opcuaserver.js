@@ -138,8 +138,8 @@ module.exports = function (RED) {
             };
             server_options.buildInfo = {
                 productName: node.name.concat(" OPC UA server for node-red"),
-                buildNumber: "0.2.81",
-                buildDate: "2020-09-02T17:02:00"
+                buildNumber: "0.2.83",
+                buildDate: "2020-09-03T21:25:00"
             };
             verbose_log("Server options:" + JSON.stringify(server_options));
             server = new opcua.OPCUAServer(server_options);
