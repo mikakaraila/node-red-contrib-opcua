@@ -44,29 +44,47 @@ Search for OPC UA on: http://flows.nodered.org/
 
 ![node-red-opcua-flow-Prosys](images/PROSYS-OPC-UA-EXAMPLE2.png)
 
-Message parameters (draft)
---------------------------
+Message parameters
+------------------
 
-Input message:
-message.payload 	Can be used as earlier to set interval for subscription or monitorItem
-message.interval	Subscription interval
-message.queueSize	Subscription queue size
+Input message
+----
 
-message.topic		NodeId and DataType in format ns=3;s=Counter;datatype=Int32
-					readmultiple to readmultiple items
-					writemultiple to write multiple items
-					clearitems to empty multiple items (readmultiple / writemultiple)
-message.action		subscribe | unsubscribe | deletesubscription
-					browse | info 
-					read | write | info | monitor | events
-					readmultiple | writemultiple
+| __**Property**__   | __**Function/Value**__    | __**Notes**__             |
+|--------------------|---------------------------|---------------------------|
+|  payload 	         | set interval for subscription or monitorItem
+|  interval	         | Subscription interval
+|  queueSize	     | Subscription queue size
+|  topic		     | NodeId and DataType in format ns=3;s=Counter;datatype=Int32
+|  action            | subscribe                 | nodeId / variable
+|                    | unsubscribe               | nodeId / variable
+|                    | deletesubscription        | subscription
+|                    | browse                    | nodeId / folder
+|                    | info                      | nodeId
+|                    | read                      | nodeId
+|                    | write                     | nodeId & value
+|                    | monitor                   | deadbandtype abs/pro
+|                    | events                    | nodeId
+|                    | readmultiple              | [nodeId + datatype]
+|                    | writemultiple             | [nodeId + datatype + value]
+
+readmultiple to readmultiple items
+writemultiple to write multiple items
+clearitems to empty multiple items (readmultiple / writemultiple)
+
+Output message
+----
+
+| __**Property**__   | __**Function/Value**__    | __**Notes**__             |
+|--------------------|---------------------------|---------------------------|
+|  payload           | dataValue.value.value     |                           |
+|  statusCode	     | OPC UA StatusCode         |                           |
+|  sourceTimestamp	 | Source timestamp          |                           |
+|  serverTimestamp   | Server´s timestamp        |                           |
 
 
-Output message:
-message.payload		dataValue.value.value
-message.statusCode	OPC UA StatusCode
-message.sourceTimestamp	Source variable´s timestamp for value
-message.serverTimestamp Server´s timestamp for value
+# Advanced examples
+- needed from users (add links to examples folder)
 
 
 
@@ -89,7 +107,7 @@ TBD List
 |                    | Project structure         | :white_check_mark:        |
 |                    | Async calls               | :waxing_crescent_moon:    |
 |                    | UnitTesting               | :new_moon:                |
-|                    | Documentation             | :waxing_crescent_moon:    |
+|                    | Documentation             | :first_quarter_moon:    |
 |  Item              |                           | :white_check_mark:        |
 |  Browser           |                           |                           |
 |                    | Browse                    | :white_check_mark:        |
@@ -98,7 +116,12 @@ TBD List
 |                    | Read                      | :white_check_mark:        |
 |                    | Read Multiple             | :white_check_mark:        |
 |                    | Write                     | :white_check_mark:        |
+|                    | Write Multiple            | :white_check_mark:        |
 |                    | Subscribe                 | :white_check_mark:        |
+|                    | Unsubscribe               | :white_check_mark:        |
+|                    | DeleteSubscription        | :white_check_mark:        |
+|                    | Info                      | :white_check_mark:        |
+|                    | Browse                    | :white_check_mark:        |
 |                    | AE                        | :new_moon:                |
 |                    | reconnect on error        | :waxing_crescent_moon:    |
 |  Server            |                           |                           |
