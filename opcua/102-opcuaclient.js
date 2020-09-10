@@ -1120,10 +1120,10 @@ module.exports = function (RED) {
         }
         // Check if msg contains deadbandtype, use it instead of value given in client node
         if (msg.deadbandType && msg.deadbandType == "a") {
-          deadbandType = subscription_service.DeadbandType.Absolute;
+          deadbandtype = subscription_service.DeadbandType.Absolute;
         }
         if (msg.deadbandType && msg.deadbandType == "p") {
-          deadbandType = subscription_service.DeadbandType.Percent;
+          deadbandtype = subscription_service.DeadbandType.Percent;
         }
         var deadbandvalue = node.deadbandvalue;
         // Check if msg contains deadbandValue, use it instead of value given in client node
