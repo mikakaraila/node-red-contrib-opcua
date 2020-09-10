@@ -1026,7 +1026,7 @@ module.exports = function (RED) {
         });
 
         monitoredItem.on("changed", function (dataValue) {
-          let msgToSend = {};
+          let msgToSend = JSON.parse(JSON.stringify(msg)); // clone original msg if it contains other needed properties {};
 
           set_node_status_to("active subscribed");
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
@@ -1099,7 +1099,6 @@ module.exports = function (RED) {
           queueSize = msg.queueSize;
         }
         verbose_log("Monitoring " + msg.topic + " samplingInterval " + interval + "ms, queueSize " + queueSize);
-        verbose_log("Deadband type (a==absolute, p==percent) " + node.deadbandtype + " deadband value " + node.deadbandvalue);
         // Validate nodeId
         try {
           var nodeId = coerceNodeId(nodeStr);
@@ -1119,10 +1118,23 @@ module.exports = function (RED) {
         if (node.deadbandType == "p") {
           deadbandType = subscription_service.DeadbandType.Percent;
         }
+        // Check if msg contains deadbandtype, use it instead of value given in client node
+        if (msg.deadbandType && msg.deadbandType == "a") {
+          deadbandType = subscription_service.DeadbandType.Absolute;
+        }
+        if (msg.deadbandType && msg.deadbandType == "p") {
+          deadbandType = subscription_service.DeadbandType.Percent;
+        }
+        var deadbandvalue = node.deadbandvalue;
+        // Check if msg contains deadbandValue, use it instead of value given in client node
+        if (msg.deadbandValue) {
+          deadbandvalue = msg.deadbandValue;
+        }
+        verbose_log("Deadband type (a==absolute, p==percent) " + deadbandtype + " deadband value " + deadbandvalue);
         var dataChangeFilter = new subscription_service.DataChangeFilter({
           trigger: subscription_service.DataChangeTrigger.StatusValue,
           deadbandType: deadbandtype,
-          deadbandValue: node.deadbandvalue
+          deadbandValue: deadbandvalue
         });
         /*
         var  monitoredItemCreateRequest1 = new subscription_service.MonitoredItemCreateRequest({
@@ -1170,7 +1182,7 @@ module.exports = function (RED) {
         });
 
         monitoredItem.on("changed", function (dataValue) {
-          let msgToSend = {};
+          let msgToSend = JSON.parse(JSON.stringify(msg)); // clone original msg if it contains other needed properties {};
           set_node_status_to("active monitoring");
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
           verbose_log(dataValue.toString());
