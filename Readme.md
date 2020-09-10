@@ -53,8 +53,10 @@ Input message
 | __**Property**__   | __**Function/Value**__    | __**Notes**__             |
 |--------------------|---------------------------|---------------------------|
 |  payload 	         | set interval for subscription or monitorItem
-|  interval	         | Subscription interval
-|  queueSize	     | Subscription queue size
+|  interval	         | Subscription interval     |
+|  queueSize	     | Subscription queue size   |
+|  deadbandType      | "a" abs. or "p" percent   | Action monitor
+|  deadbandValue     | integer for deadband      | Action monitor
 |  topic		     | NodeId and DataType in format ns=3;s=Counter;datatype=Int32
 |  action            | subscribe                 | nodeId / variable
 |                    | unsubscribe               | nodeId / variable
