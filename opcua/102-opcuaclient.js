@@ -978,13 +978,13 @@ module.exports = function (RED) {
         var interval = 100; // Set as default if no payload
         var queueSize = 10;
         // Interval from the payload (old existing feature still supported)
-        if (msg.payload && Number(msg.payload) > 100) {
+        if (msg.payload && parseInt(msg.payload) > 100) {
           interval = convertAndCheckInterval(msg.payload);
         }
-        if (msg.interval && Number(msg.interval) > 100) {
+        if (msg.interval && parseInt(msg.interval) > 100) {
           interval = convertAndCheckInterval(msg.interval);
         }
-        if (msg.queueSize && Number(msg.queueSize > 0)) {
+        if (msg.queueSize && parseInt(msg.queueSize > 0)) {
           queueSize = msg.queueSize;
         }
 
@@ -1089,13 +1089,13 @@ module.exports = function (RED) {
         var interval = 100; // Set as default if no payload
         var queueSize = 10;
         // Interval from the payload (old existing feature still supported)
-        if (msg.payload && Number(msg.payload) > 100) {
+        if (msg.payload && parseInt(msg.payload) > 100) {
           interval = convertAndCheckInterval(msg.payload);
         }
-        if (msg.interval && Number(msg.interval) > 100) {
+        if (msg.interval && parseInt(msg.interval) > 100) {
           interval = convertAndCheckInterval(msg.interval);
         }
-        if (msg.queueSize && Number(msg.queueSize > 0)) {
+        if (msg.queueSize && parseInt(msg.queueSize > 0)) {
           queueSize = msg.queueSize;
         }
         verbose_log("Monitoring " + msg.topic + " samplingInterval " + interval + "ms, queueSize " + queueSize);
