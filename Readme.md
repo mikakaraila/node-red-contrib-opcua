@@ -44,7 +44,7 @@ Search for OPC UA on: http://flows.nodered.org/
 
 ![node-red-opcua-flow-Prosys](images/PROSYS-OPC-UA-EXAMPLE2.png)
 
-![New method node example](images/PROSYS-OPCUA-METHOD.png)
+![New method node example](images/PROSYS-OPCUA-METHOD-EXAMPLE.png)
 
 Message parameters
 ------------------
