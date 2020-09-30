@@ -29,7 +29,8 @@
       "OpcUa-Browser": "opcua/103-opcuabrowser.js",
       "OpcUa-Server": "opcua/104-opcuaserver.js",
       "OpcUa-Endpoint": "opcua/105-opcuaendpoint.js",
-      "OpcUa-Event": "opcua/106-opcuaevent.js"
+      "OpcUa-Event": "opcua/106-opcuaevent.js",
+      "OpcUa-Method": "opcua/107-opcuamethod.js"
     }
   },
   "dependencies": {
