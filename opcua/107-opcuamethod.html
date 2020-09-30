@@ -1,0 +1,192 @@
+<!--
+
+Copyright 2020 Valmet Automation Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-->
+
+<script type="text/javascript">
+  RED.nodes.registerType('OpcUa-Method', {
+    category: "opcua",
+    color:"#3FADB5",
+    defaults: {
+      endpoint: {value: "", required: true, type: "OpcUa-Endpoint"},
+      objectId: {value: ""},
+      methodId: {value: ""},
+      name: {value: ""},
+      inputArguments: {value: []},
+      arg0name: {value: ""},
+      arg0type: {value: ""},
+      arg0value: {value: ""},
+      arg1name: {value: ""},
+      arg1type: {value: ""},
+      arg1value: {value: ""},
+      arg2name: {value: ""},
+      arg2type: {value: ""},
+      arg2value: {value: ""}
+    },
+    inputs: 1,
+    outputs: 1,
+    align: "right",
+    icon: "opcuanodeLogo.png",
+    label: function () {
+      return this.name || "OPC UA Method";
+    },
+    labelStyle: function () {
+      return this.name ? "node_label_italic" : "";
+    }
+});
+</script>
+
+<script type="text/x-red" data-template-name="OpcUa-Method">
+    <div class="form-row" style="min-width:640px">
+        <label for="node-input-endpoint"><i class="icon-bookmark"></i> Endpoint</label>
+        <input type="text" id="node-input-endpoint">
+    </div>
+    <div class="form-row">
+        <label for="node-input-objectId"><i class="icon-tasks"></i>ObjectId</label>
+        <input type="text" id="node-input-objectId" placeholder="ns=5;s=MyDevice">
+    </div>
+    <div class="form-row">
+        <label for="node-input-methodId"><i class="icon-tasks"></i>MethodId</label>
+        <input type="text" id="node-input-methodId" placeholder="ns=5;s=MyMethod">
+    </div>
+    <hr>
+    <div class="form-row">
+        <span>
+        <label for="node-input-arg0name"><i class="icon-tasks"></i>Arg0 Name</label>
+        <input type="text" id="node-input-arg0name" placeholder="Name" style="width:20%;">
+        <label for="node-input-arg0type"><i class="icon-tasks"></i>Type</label>
+        <select id="node-input-arg0type" style="max-width:120px">
+            <option value="">-</option>
+            <option value="String">String</option>
+            <option value="Double">Double</option>
+            <option value="Float">Float</option>
+            <option value="Int32">Int32</option>
+            <option value="Int16">Int16</option>
+            <option value="SByte">Int8 (SByte)</option>
+            <option value="UInt32">UInt32</option>
+            <option value="UInt16">UInt16</option>
+            <option value="Byte">UInt8 (Byte)</option>
+            <option value="Boolean">Boolean</option>
+            <option value="DateTime">DateTime</option>
+        </select>
+        <label for="node-input-arg0value"><i class="icon-tasks"></i>Value</label>
+        <input type="text" id="node-input-arg0value" placeholder="" style="width:20%;">
+        </span>
+    </div>
+    <div class="form-row">
+        <span>
+        <label for="node-input-arg1name"><i class="icon-tasks"></i>Arg1 Name</label>
+        <input type="text" id="node-input-arg1name" placeholder="Name" style="width:20%;">
+        <label for="node-input-arg1type"><i class="icon-tasks"></i>Type</label>
+        <select id="node-input-arg1type" style="max-width:120px">
+            <option value="">-</option>
+            <option value="String">String</option>
+            <option value="Double">Double</option>
+            <option value="Float">Float</option>
+            <option value="Int32">Int32</option>
+            <option value="Int16">Int16</option>
+            <option value="SByte">Int8 (SByte)</option>
+            <option value="UInt32">UInt32</option>
+            <option value="UInt16">UInt16</option>
+            <option value="Byte">UInt8 (Byte)</option>
+            <option value="Boolean">Boolean</option>
+            <option value="DateTime">DateTime</option>
+        </select>
+        <label for="node-input-arg1value"><i class="icon-tasks"></i>Value</label>
+        <input type="text" id="node-input-arg1value" placeholder="" style="width:20%;">
+        </span>
+    </div>
+    <div class="form-row">
+        <span>
+        <label for="node-input-arg2name"><i class="icon-tasks"></i>Arg2 Name</label>
+        <input type="text" id="node-input-arg2name" placeholder="Name" style="width:20%;">
+        <label for="node-input-arg2type"><i class="icon-tasks"></i>Type</label>
+        <select id="node-input-arg2type" style="max-width:120px">
+            <option value="">-</option>
+            <option value="String">String</option>
+            <option value="Double">Double</option>
+            <option value="Float">Float</option>
+            <option value="Int32">Int32</option>
+            <option value="Int16">Int16</option>
+            <option value="SByte">Int8 (SByte)</option>
+            <option value="UInt32">UInt32</option>
+            <option value="UInt16">UInt16</option>
+            <option value="Byte">UInt8 (Byte)</option>
+            <option value="Boolean">Boolean</option>
+            <option value="DateTime">DateTime</option>
+        </select>
+        <label for="node-input-arg2value"><i class="icon-tasks"></i>Value</label>
+        <input type="text" id="node-input-arg2value" placeholder="" style="width:20%;">
+        </span>
+    </div>
+    <hr>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i>Name</label>
+        <input type="text" id="node-input-name" placeholder="">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="OpcUa-Method">
+    <p>Connect to an endpoint: opc.tcp://host:port/UA/Simulation</p>
+
+    <h2>OPC UA Method node</h2>
+
+    <h3>Method parameters inside node</h3>
+
+        <ul>
+            <li>objectId (nodeId of object)
+            <li>methodId (nodeId of method)
+            <li>arguments in node limited to arg 0 to 2):
+                <ul>
+                    <li>name (parameter name, not used inside method call)
+                    <li>dataType (basic DataTypes like Double, Float, Int32 etc.)
+                    <li>value (value or Variant)
+                </ul>
+        </ul>
+    </div>
+
+    <h3>Input message will override node parameters.</h3>
+
+    <div>
+        <strong>input message:</strong>
+        <ul>
+            <li>objectId (nodeId of object), example "ns=5;s=MyDevice"
+            <li>methodId (nodeId of method), example "ns=5;s=MyMethod"
+            <li>inputArguments (Array) example [{dataType: "String", value: "sin"}, {dataType: "Double", value: 1.2}]
+            <ul>
+                <li>dataType
+                <li>value
+            </ul>
+        </ul>
+    </div>
+
+    <h3>Output message (result):</h3>
+    <div>
+        <strong>Output message:</strong>
+        <ul>
+            <li>statusCode
+            <li>inputArgumentResults (Array)
+            <li>inputArgumentDiagnosticInfos (Array)
+            <li>outputArguments (Array)
+            <li>result
+            <li>payload (Variant value if one value)
+        </ul>
+    </div>
+    
+    <strong>Name</strong>
+    <p>Name in the flow of Node-RED.</p>
+
+</script>
