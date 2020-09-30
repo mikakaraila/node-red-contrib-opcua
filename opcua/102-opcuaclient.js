@@ -109,6 +109,7 @@ module.exports = function (RED) {
         path.join(process.cwd(), './node_modules'),
         path.join(process.cwd(), '../node_modules'), // Linux installation needs this
         path.join(process.cwd(), '.node-red/node_modules'),
+        "/usr/local/addons/redmatic/var/node_modules" // Red-matic package installation folder
         ],
       });
       verbose_log("Found locally installed path: " + clientPkg);
@@ -562,12 +563,14 @@ module.exports = function (RED) {
                   verbose_log("\tValue : " + dataValue.value.value);
                   verbose_log("\tDataType: " + dataValue.value.dataType + " (" + DataType[dataValue.value.dataType] + ")");
                   verbose_log("\tMessage: " + msg.topic + " (" + msg.datatype + ")");
-                  if (msg.datatype != null && msg.datatype.localeCompare(DataType[dataValue.value.dataType]) != 0) {
+                  /*
+                  if (msg.datatype != null &&  msg.datatype.localeCompare(DataType[dataValue.value.dataType]) != 0) {
                     node_error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + DataType[dataValue.value.dataType]);
                   }
                   if (msg.datatype == null) {
                     node.warn("msg.datatype == null, if you use inject check topic is format 'ns=2;s=MyLevel;datatype=Double'");
                   }
+                  */
                   if (dataValue.value.dataType === opcua.DataType.UInt16) {
                     verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
                   }
@@ -1163,7 +1166,7 @@ module.exports = function (RED) {
             attributeId: opcua.AttributeIds.Value
           }, {
             samplingInterval: interval,
-            queueSize: 10,
+            queueSize: queueSize,
             discardOldest: true,
             filter: dataChangeFilter
           },
