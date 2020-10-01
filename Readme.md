@@ -46,6 +46,8 @@ Search for OPC UA on: http://flows.nodered.org/
 
 ![New method node example](images/PROSYS-OPCUA-METHOD-EXAMPLE.png)
 
+![Events example](images/PROSYS-OPCUA-EVENTS-EXAMPLE.png)
+
 Message parameters
 ------------------
 
