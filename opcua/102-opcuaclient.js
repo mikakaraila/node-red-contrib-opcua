@@ -174,6 +174,7 @@ module.exports = function (RED) {
       }
     }
 
+  /*
     function getBrowseName(session, nodeId, callback) {
       session.read([{
         nodeId: nodeId,
@@ -188,7 +189,19 @@ module.exports = function (RED) {
         callback(err, "<??>");
       })
     }
-
+  */
+   async function getBrowseName(_session, nodeId, callback) {
+    const dataValue = await _session.read({
+      attributeId: AttributeIds.BrowseName,
+      nodeId
+    });
+      if (dataValue.statusCode === opcua.StatusCodes.Good) {
+        const browseName = dataValue.value.value;
+        return callback(null, browseName);
+      } else {
+        return "???";
+      }
+    }
     // Fields selected alarm fields
     // EventFields same order returned from server array of variants (filled or empty)
     function __dumpEvent(node, session, fields, eventFields, _callback) {
@@ -206,7 +219,7 @@ module.exports = function (RED) {
         if (variant.dataType === DataType.NodeId) {
           getBrowseName(session, variant.value, function (err, name) {
             if (!err) {
-              opcuaBasics.collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
+              opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg);
               set_node_status_to("active event");
               node.send(msg);
             }
@@ -214,7 +227,7 @@ module.exports = function (RED) {
           });
         } else {
           setImmediate(function () {
-            opcuaBasics.collectAlarmFields(fields[index], variant.dataType.key.toString(), variant.value, msg);
+            opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg);
             set_node_status_to("active event");
             callback();
           })
@@ -1333,15 +1346,15 @@ module.exports = function (RED) {
       verbose_log("Session subscriptionId: " + subscription.subscriptionId);
 
       var monitoredItem = monitoredItems.get(msg.topic);
-
-      if (!monitoredItem) {
+      if (monitoredItem === undefined) {
         verbose_log("Msg " + JSON.stringify(msg));
         var interval = convertAndCheckInterval(msg.payload);
         verbose_log(msg.topic + " samplingInterval " + interval);
         verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
         // TODO read nodeId to validate it before subscription
         try {
-          monitoredItem = opcua.ClientMonitoredItem.create({
+          monitoredItem = opcua.ClientMonitoredItem.create(subscription,
+          {
             nodeId: msg.topic, // serverObjectId
             attributeId: AttributeIds.EventNotifier
           }, {
@@ -1356,7 +1369,6 @@ module.exports = function (RED) {
           node_error('subscription.monitorEvent:' + err);
           reset_opcua_client(connect_opcua_client);
         }
-        console.log(monitoredItem.monitoredItemId);
         monitoredItems.set(msg.topic, monitoredItem.monitoredItemId);
         monitoredItem.on("initialized", function () {
           verbose_log("monitored Event initialized");
