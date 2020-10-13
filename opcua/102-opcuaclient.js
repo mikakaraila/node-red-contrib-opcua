@@ -1000,7 +1000,7 @@ module.exports = function (RED) {
         if (msg.interval && parseInt(msg.interval) > 100) {
           interval = convertAndCheckInterval(msg.interval);
         }
-        if (msg.queueSize && parseInt(msg.queueSize > 0)) {
+        if (msg.queueSize && parseInt(msg.queueSize) > 0) {
           queueSize = msg.queueSize;
         }
 
@@ -1111,7 +1111,7 @@ module.exports = function (RED) {
         if (msg.interval && parseInt(msg.interval) > 100) {
           interval = convertAndCheckInterval(msg.interval);
         }
-        if (msg.queueSize && parseInt(msg.queueSize > 0)) {
+        if (msg.queueSize && parseInt(msg.queueSize) > 0) {
           queueSize = msg.queueSize;
         }
         verbose_log("Monitoring " + msg.topic + " samplingInterval " + interval + "ms, queueSize " + queueSize);
