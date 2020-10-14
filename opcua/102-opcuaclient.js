@@ -109,7 +109,8 @@ module.exports = function (RED) {
         path.join(process.cwd(), './node_modules'),
         path.join(process.cwd(), '../node_modules'), // Linux installation needs this
         path.join(process.cwd(), '.node-red/node_modules'),
-        "/usr/local/addons/redmatic/var/node_modules" // Red-matic package installation folder
+        "/usr/local/addons/redmatic/var/node_modules", // /var -> /usr Global Red-matic package installation folder
+        "/usr/local/addons/redmatic/var/node_modules/node-red-contrib-opcua/node_modules" // This package specific sub-folder
         ],
       });
       verbose_log("Found locally installed path: " + clientPkg);
