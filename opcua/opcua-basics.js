@@ -303,6 +303,7 @@ module.exports.get_node_status = function (statusValue) {
         case "active subscribing":
         case "active subscribed":
         case "active browsing":
+        case "active monitoring":
         case "active alarm":
         case "active event":
         case "session active":
@@ -312,7 +313,7 @@ module.exports.get_node_status = function (statusValue) {
             fillValue = "green";
             shapeValue = "dot";
             break;
-
+        case "error":
         case "disconnected":
         case "terminated":
             fillValue = "red";
