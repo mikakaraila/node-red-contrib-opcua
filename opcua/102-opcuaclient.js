@@ -33,6 +33,7 @@ module.exports = function (RED) {
   // var Set = require("Set"); // Set is replaced by Map now
   var path = require("path");
   var fs = require("fs");
+  var os = require("os");
   var DataType = opcua.DataType;
   var AttributeIds = opcua.AttributeIds;
   var read_service = require("node-opcua-service-read");
@@ -49,7 +50,8 @@ module.exports = function (RED) {
     this.deadbandtype = n.deadbandtype;
     this.deadbandvalue = n.deadbandvalue;
     this.certificate = n.certificate; // n == NONE, l == Local file, e == Endpoint, u == Upload
-    this.localfile = n.localfile; // Local file
+    this.localfile = n.localfile; // Local certificate file
+    this.localkeyfile = n.localkeyfile; // Local private key file
     // this.upload = n.upload; // Upload
     // this.certificate_filename = n.certificate_filename;
     // this.certificate_data = n.certificate_data;
@@ -60,25 +62,35 @@ module.exports = function (RED) {
     var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
     var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
     var multipleItems = []; // Store & read multiple nodeIds
+    var serverCertificate;
 
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
 
     if (node.certificate === "l" && node.localfile) {
-      verbose_log("Local certificate file " + node.localfile);
-      var certpath = path.join(__dirname, node.localfile);
-      var cert = crypto_utils.readCertificate(certpath);
-      connectionOption.serverCertificate = cert; // Use server certificate, not the client own as was in earlier code
+      verbose_log("Using 'own' local certificate file " + node.localfile);
+      // User must define absolute path
+      var certfile = node.localfile; // path.join(__dirname, node.localfile);
+      var keyfile = node.localkeyfile; //  path.join(__dirname, node.localkeyfile); // Test.pem => Test_key.pem
+      // var cert = crypto_utils.readCertificate(certfile);
+      connectionOption.certificateFile = certfile;
+      connectionOption.privateKeyFile =  keyfile;
+      if (!fs.existsSync(certfile)) {
+        node_error("Local certificate file not found:" + certfile)
+      }
+      if (!fs.existsSync(keyfile)) {
+        node_error("Local private key file not found:" + keyfile)
+      }
     }
-    if (node.certificate === "n" || node.certificate === "") {
-      node.log("\tNo certificate used.");
+    if (node.certificate === "n") {
+      node.log("\tLocal 'own' certificate is NOT used.");
     }
     
     var clientPkg = null;
     // Check first if node-opcua & it´s packages are global installed
     try {
       clientPkg = installedPath.getInstalledPathSync('node-opcua-client');
-      if (clientPkg) {
+      if (node.certificate != "l" && clientPkg) {
         verbose_log("Found node-opcua globally installed path: " + clientPkg);
       }
     }
@@ -90,7 +102,7 @@ module.exports = function (RED) {
     // Check then if node-red-contrib-opcua is global installed
     try {
       clientPkg = installedPath.getInstalledPathSync('node-red-contrib-opcua');
-      if (clientPkg) {
+      if (node.certificate != "l" && clientPkg) {
         verbose_log("Found node-red-contrib-opcua globally installed path: " + clientPkg);
         clientPkg = path.join(clientPkg, "node_modules", "node-opcua-client");
       }
@@ -101,7 +113,7 @@ module.exports = function (RED) {
     }
 
     // Check finally local installation
-    if (clientPkg == null) {
+    if (node.certificate != "l" && clientPkg == null) {
       clientPkg = installedPath.getInstalledPathSync('node-opcua-client', {
         paths: [
         path.join(__dirname, '..'),
@@ -115,17 +127,15 @@ module.exports = function (RED) {
       });
       verbose_log("Found locally installed path: " + clientPkg);
     }
-    if (!clientPkg)
+    if (node.certificate != "l" && !clientPkg)
       verbose_warn("Cannot find node-opcua-client package with client certificate");
     // Client certificate from node-opcua-client\certificates, created by node-opcua installation
-    if (opcuaEndpoint.securityPolicy !== "None") {
+    if (node.certificate === "n" && opcuaEndpoint.securityPolicy !== "None" && clientPkg) {
       connectionOption.certificateFile = path.join(clientPkg, "/certificates/client_selfsigned_cert_2048.pem");
       connectionOption.privateKeyFile =  path.join(clientPkg, "/certificates/PKI/own/private/private_key.pem");
       verbose_log("Using client certificate " + connectionOption.certificateFile);
     }
-    else {
-      verbose_log("Client certificate not used!");
-    }
+
     connectionOption.clientName = node.name;
     connectionOption.endpoint_must_exist = false;
     connectionOption.defaultSecureTokenLifetime = 40000 * 5;
@@ -144,6 +154,9 @@ module.exports = function (RED) {
       userIdentity.type = opcua.UserTokenType.UserName; // New TypeScript API parameter
     }
     else {
+      // Fix for invalid endpoint
+      userIdentity.userName = "";
+      userIdentity.password = "";
       userIdentity.type = opcua.UserTokenType.Anonymous;
     }
     verbose_log("UserIdentity: " + JSON.stringify(userIdentity));
@@ -254,6 +267,7 @@ module.exports = function (RED) {
       node.client = null;
       verbose_warn("Create Client: " + JSON.stringify(connectionOption));
       try {
+        // connectionOption.serverCertificate = serverCertificate;
         node.client = opcua.OPCUAClient.create(connectionOption);
         node.client.on("connection_reestablished", function () {
           verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!!");
@@ -309,6 +323,17 @@ module.exports = function (RED) {
       });
     }
 
+    function set_node_errorstatus_to(statusValue, error) {
+      verbose_log("Client status: " + statusValue);
+      var statusParameter = opcuaBasics.get_node_status(statusValue);
+      currentStatus = statusValue;
+      node.status({
+        fill: statusParameter.fill,
+        shape: statusParameter.shape,
+        text: statusParameter.status + " " + error.toString() 
+      });
+    }
+
     async function connect_opcua_client() {
       // Refactored from old async Javascript to new Typescript with await
       var session;
@@ -320,16 +345,19 @@ module.exports = function (RED) {
         if (!node.client) {
           verbose_log("No client to connect...");
         }
+        verbose_log("Exact endpointUrl: " + opcuaEndpoint.endpoint + " hostname: " + os.hostname());
         await node.client.connect(opcuaEndpoint.endpoint);
       } catch (err) {
-        set_node_status_to("invalid endpoint " + opcuaEndpoint.endpoint);
+        verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt securityMode:" + JSON.stringify(connectionOption.securityMode) + " securityPolicy:" + JSON.stringify(connectionOption.securityPolicy));
+        verbose_warn("Case B: UserName & password does not match to server (needed by Sign): " + userIdentity.userName + " " + userIdentity.password);
+        set_node_errorstatus_to("invalid endpoint " + opcuaEndpoint.endpoint, err);
         return;
       }
       verbose_log("Connected to " + opcuaEndpoint.endpoint);
       // STEP 2
       // This will succeed first time only if security policy and mode are None
       // Later user can use path and local file to access server certificate file
-/*
+      
       try {
         const endpoints = await node.client.getEndpoints();
         var i = 0;
@@ -348,7 +376,7 @@ module.exports = function (RED) {
           // verbose_log("certificate " + "..." + " endpoint.serverCertificate");
           endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
           verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
-          var serverCertificate = endpoint.serverCertificate;
+          serverCertificate = endpoint.serverCertificate;
           // Use applicationName instead of fixed server_certificate
           var certificate_filename = path.join(__dirname, "../../PKI/" + applicationName + i + ".pem");
           if (serverCertificate) {
@@ -370,7 +398,7 @@ module.exports = function (RED) {
       catch (err) {
         node_error("Cannot read endpoints: " + err.toString());
       }
-*/
+
       // STEP 3
       verbose_log("Create session ...");
       try {
@@ -390,7 +418,7 @@ module.exports = function (RED) {
         node_error(node.name + " OPC UA connection error: " + err.message);
         verbose_log(err);
         node.session = null;
-        close_opcua_client(set_node_status_to("connection error"));
+        close_opcua_client(set_node_errorstatus_to("connection error", err));
       }
     }
     
@@ -566,7 +594,7 @@ module.exports = function (RED) {
             if (err) {
               verbose_log('diagnostics:' + diagnostics);
               node_error(err);
-              set_node_status_to("error");
+              set_node_errorstatus_to("error", err);
               reset_opcua_client(connect_opcua_client);
             } else {
               set_node_status_to("active reading");
@@ -660,7 +688,7 @@ module.exports = function (RED) {
           if (err) {
             verbose_log('diagnostics:' + diagnostics);
             node_error(err);
-            set_node_status_to("error");
+            set_node_errorstatus_to("error", err);
             reset_opcua_client(connect_opcua_client);
           } else {
             set_node_status_to("active multiple reading");
@@ -775,7 +803,7 @@ module.exports = function (RED) {
             }
           } else {
             node_error(err);
-            set_node_status_to("error");
+            set_node_errorstatus_to("error", err);
             reset_opcua_client(connect_opcua_client);
           }
         });
@@ -830,7 +858,7 @@ module.exports = function (RED) {
 
         node.session.write(nodeToWrite, function (err) {
           if (err) {
-            set_node_status_to("error");
+            set_node_errorstatus_to("error", err);
             node_error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
             reset_opcua_client(connect_opcua_client);
           } else {
@@ -891,7 +919,7 @@ module.exports = function (RED) {
         });
         node.session.write(nodesToWrite, function (err, statusCode) {
           if (err) {
-            set_node_status_to("error");
+            set_node_errorstatus_to("error", err);
             node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
             reset_opcua_client(connect_opcua_client);
           } else {
@@ -1332,7 +1360,7 @@ module.exports = function (RED) {
             });
           } else {
             node_error(err.message);
-            set_node_status_to("error browsing");
+            set_node_errorstatus_to("error browsing", err);
             reset_opcua_client(connect_opcua_client);
           }
         });
@@ -1388,7 +1416,7 @@ module.exports = function (RED) {
           }
 
           node_error("monitored Event " + msg.eventTypeId + " ERROR".red + err_message);
-          set_node_status_to("error");
+          set_node_errorstatus_to("error", err_message);
         });
 
         monitoredItem.on("keepalive", function () {
@@ -1496,7 +1524,7 @@ module.exports = function (RED) {
 
           set_node_status_to("session closed");
           node.session = null;
-          close_opcua_client(set_node_status_to("node error"));
+          close_opcua_client(set_node_errorstatus_to("node error", err));
         });
 
       } else {

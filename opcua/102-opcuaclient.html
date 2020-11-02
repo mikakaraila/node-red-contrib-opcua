@@ -30,6 +30,7 @@ limitations under the License.
             // These are fixed or can be read through endPoint
             certificate: {value: "n"}, 
             localfile: {value: ""},
+            localkeyfile: {value: ""},
             securitymode: {value: "None"},
             securitypolicy: {value: "None"},
             name: {value: ""}
@@ -121,13 +122,17 @@ limitations under the License.
     <div class="form-row" id="node-input-servercertificate">
         <label for="node-input-location"><i class="icon-time"></i> Certificate</label>
         <select id="node-input-certificate" style="width:72%;">
-            <option value="n">None, no certificate used</option>
-            <option value="l">Local file, give path with filename</option>
+            <option value="n">None, use generated self-signed certificate</option>
+            <option value="l">Local certifikate file, give path with filename (pem)</option>
         </select>
     </div>
 	<div class="form-row">
-        <label for="node-input-path"><i class="icon-tasks"></i> Local file</label>
-        <input type="text" id="node-input-localfile" placeholder="../../pki/server_certificate.pem">
+        <label for="node-input-path"><i class="icon-tasks"></i> Local certificate file with absolute path</label>
+        <input type="text" id="node-input-localfile" placeholder="selfSigned.pem">
+    </div>
+	<div class="form-row">
+        <label for="node-input-path"><i class="icon-tasks"></i> Local private key file with absolute path</label>
+        <input type="text" id="node-input-localkeyfile" placeholder="private_key.pem">
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tasks"></i> Name</label>
@@ -156,7 +161,8 @@ limitations under the License.
     <p>
         <ul>
             <li>None</li>
-            <li>Local file</li>
+            <li>Local certificate file (.pem)</li>
+            <li>Local private key file (.pem)</li>
          </ul>
     </p>
     <p>Certificate is not needed if security is None.</p>
