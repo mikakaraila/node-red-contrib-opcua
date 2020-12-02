@@ -14,6 +14,8 @@
  limitations under the License.
  */
 
+/*Proposal to add Extension Object datatype support 2020-12-2*/
+
 "use strict";
 var opcua = require('node-opcua');
 const typedArrays = {
