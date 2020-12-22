@@ -135,8 +135,10 @@ module.exports = function (RED) {
       connectionOption.privateKeyFile =  path.join(clientPkg, "/certificates/PKI/own/private/private_key.pem");
       verbose_log("Using client certificate " + connectionOption.certificateFile);
     }
-
-    connectionOption.clientName = node.name;
+    // Moved needed options to client create
+    connectionOption.requestedSessionTimeout = opcuaBasics.calc_milliseconds_by_time_and_unit(300, "s");
+    connectionOption.applicationName = node.name; // Application name
+    connectionOption.clientName = node.name; // This is used for the session names
     connectionOption.endpoint_must_exist = false;
     connectionOption.defaultSecureTokenLifetime = 40000 * 5;
     connectionOption.connectionStrategy = {
@@ -173,7 +175,7 @@ module.exports = function (RED) {
        }); // multiple monitored Items should be registered only once
     */
     function node_error(err) {
-      node.error("Client node error on: " + node.name, err);
+      node.error("Client node error on: " + node.name + " error: " + JSON.stringify(err));
     }
 
     function verbose_warn(logMessage) {
@@ -302,13 +304,18 @@ module.exports = function (RED) {
 
     function close_opcua_client(callback) {
       if (node.client) {
-        node.client.disconnect(function () {
-          node.client = null;
-          verbose_log("Client disconnected!");
-          if (callback) {
-            callback();
-          }
-        });
+        try {
+          node.client.disconnect(function () {
+            node.client = null;
+            verbose_log("Client disconnected!");
+            if (callback) {
+              callback();
+            }
+          });
+        }
+        catch (err) {
+          node_error("Error on disconnect: " + JSON.stringify(err));
+        }
       }
     }
 
@@ -403,11 +410,21 @@ module.exports = function (RED) {
       verbose_log("Create session ...");
       try {
         verbose_log("Create session with userIdentity: " + JSON.stringify(userIdentity));
-          //  {"clientName": "Node-red OPC UA Client node " + node.name},
+        //  {"clientName": "Node-red OPC UA Client node " + node.name},
+        // sessionName = "Node-red OPC UA Client node " + node.name;
+        if (!node.client) {
+          node_error("Client not yet created, cannot create session");
+          close_opcua_client(set_node_errorstatus_to("connection error", "no client"));
+          return;
+        }
         session = await node.client.createSession(userIdentity);
-        session.sessionName = "Node-red OPC UA Client node " + node.name;
+        if (!session) {
+          node_error("Create session failed!");
+          close_opcua_client(set_node_errorstatus_to("connection error", "no session"));
+          return;
+        }
         node.session = session;
-        node.session.timeout = opcuaBasics.calc_milliseconds_by_time_and_unit(10, "s");
+        
         verbose_log("session active");
         set_node_status_to("session active");
         for (var i in cmdQueue) {
@@ -592,8 +609,10 @@ module.exports = function (RED) {
           },
           function (err, dataValue, diagnostics) {
             if (err) {
-              verbose_log('diagnostics:' + diagnostics);
-              node_error(err);
+              if (diagnostics) {
+                verbose_log('diagnostics:' + diagnostics);
+              }
+              node_error(node.name + " error at active reading: " + err.message);
               set_node_errorstatus_to("error", err);
               reset_opcua_client(connect_opcua_client);
             } else {
