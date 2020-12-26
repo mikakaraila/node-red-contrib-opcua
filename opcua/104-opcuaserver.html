@@ -24,7 +24,20 @@ limitations under the License.
             port: {value: "53880", required: true},
             name: {value:""},
             endpoint: {value: ""},
-            autoAcceptUnknownCertificate: {value: true}
+            autoAcceptUnknownCertificate: {value: true},
+            registerToDiscovery: {value: false},
+            maxNodesPerBrowse: {value: 0, required: false},
+            maxNodesPerHistoryReadData: {value: 0, required: false},
+            maxNodesPerHistoryReadEvents: {value: 0, required: false},
+            maxNodesPerHistoryUpdateData: {value: 0, required: false},
+            maxNodesPerRead: {value: 0, required: false},
+            maxNodesPerWrite: {value: 0, required: false},
+            maxNodesPerMethodCall: {value: 0, required: false},
+            maxNodesPerRegisterNodes: {value: 0, required: false},
+            maxNodesPerNodeManagement: {value: 0, required: false},
+            maxMonitoredItemsPerCall: {value: 0, required: false},
+            maxNodesPerHistoryUpdateEvents: {value: 0, required: false},
+            maxNodesPerTranslateBrowsePathsToNodeIds: {value: 0, required: false}
         },
         inputs:1,
         outputs:1,
@@ -56,8 +69,60 @@ limitations under the License.
         <input type="text" id="node-input-endpoint" placeholder="UA/SimpleNodeRedServer">
     </div>
     <div class="form-row">
-        <label for="node-input-autoAcceptUnknownCertificate"><i class="icon-tasks"></i> Auto Accept Unknown Certificates</label>
-        <input type="checkbox" id="node-input-autoAcceptUnknownCertificate">
+        <label for="node-input-autoAcceptUnknownCertificate" style="width:72%;"><i class="icon-tasks"></i> Auto Accept Unknown Certificates</label>
+        <input type="checkbox" id="node-input-autoAcceptUnknownCertificate" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-registerToDiscovery" style="width:72%;"><i class="icon-tasks"></i> Register to Local Discovery</label>
+        <input type="checkbox" id="node-input-registerToDiscovery" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxNodesPerBrowse" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerBrowse</label>
+        <input type="number" id="node-input-maxNodesPerBrowse" placeholder="number" style="max-width:120px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxNodesPerHistoryReadData" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerHistoryReadData</label>
+        <input type="number" id="node-input-maxNodesPerHistoryReadData" placeholder="number" style="max-width:120px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxNodesPerHistoryReadEvents" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerHistoryReadEvents</label>
+        <input type="number" id="node-input-maxNodesPerHistoryReadEvents" placeholder="number" style="max-width:120px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxNodesPerHistoryUpdateData" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerHistoryUpdateData</label>
+        <input type="number" id="node-input-maxNodesPerHistoryUpdateData" placeholder="number" style="max-width:120px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxNodesPerRead" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerRead</label>
+        <input type="number" id="node-input-maxNodesPerRead" placeholder="number" style="max-width:120px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxNodesPerWrite" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerWrite</label>
+        <input type="number" id="node-input-maxNodesPerWrite" placeholder="number" style="max-width:120px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxNodesPerMethodCall" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerMethodCall</label>
+        <input type="number" id="node-input-maxNodesPerMethodCall" placeholder="number" style="max-width:120px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxNodesPerRegisterNodes" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerRegisterNodes</label>
+        <input type="number" id="node-input-maxNodesPerRegisterNodes" placeholder="number" style="max-width:120px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxNodesPerNodeManagement" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerNodeManagement</label>
+        <input type="number" id="node-input-maxNodesPerNodeManagement" placeholder="number" style="max-width:120px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxMonitoredItemsPerCall" style="width:72%;"><i class="icon-tasks"></i> maxMonitoredItemsPerCall</label>
+        <input type="number" id="node-input-maxMonitoredItemsPerCall" placeholder="number" style="max-width:120px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxNodesPerHistoryUpdateEvents" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerHistoryUpdateEvents</label>
+        <input type="number" id="node-input-maxNodesPerHistoryUpdateEvents" placeholder="number" style="max-width:120px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxNodesPerTranslateBrowsePathsToNodeIds" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerTranslateBrowsePathsToNodeIds</label>
+        <input type="number" id="node-input-maxNodesPerTranslateBrowsePathsToNodeIds" placeholder="number" style="max-width:120px">
     </div>
 </script>
 
@@ -74,27 +139,23 @@ limitations under the License.
 
         Examples JSON Injects: <br />
         <pre>
-        { "opcuaCommand":
-          "restartOPCUAServer" }
-
-        { "opcuaCommand": "addEquipment",
-          "nodeName": "Machine" }
-
-        { "opcuaCommand": "addPhysicalAsset",
-          "nodeName": "PhysicalAsset" }
-
-        { "opcuaCommand": "deleteNode",
-          "nodeId": "ns=4;s=PhysicalAsset2" }
+        { "opcuaCommand": "restartOPCUAServer" }
+        { "opcuaCommand": "addEquipment",  "nodeName": "Machine" }
+        { "opcuaCommand": "addPhysicalAsset",  "nodeName": "PhysicalAsset" }
+        { "opcuaCommand": "deleteNode",  "nodeId": "ns=4;s=PhysicalAsset2" }
         </pre>
     </p>
-
     <p>
         OPC UA message type to set variable Counter by JSON Inject
-
         <pre>
-        { payload : { "messageType" : "Variable",
-          "variableName": "Counter",
-          "variableValue": msg.payload }};
+        { payload : { "messageType" : "Variable",  "variableName": "Counter",  "variableValue": msg.payload }};
         </pre>
+    </p>
+    <p>
+        Server will send message as client will connect or disconnect.<br>
+        Topic: Client-connected or Client-disconnected, payload: session name (depends on client implementation)
+    </p>
+    <p>
+        Server operation limits can be set by node UI dialog.
     </p>
 </script>

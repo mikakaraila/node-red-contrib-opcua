@@ -21,9 +21,11 @@ module.exports = function (RED) {
     var opcua = require('node-opcua');
     var path = require('path');
     var os = require("os");
+    var chalk = require("chalk");
+    var async = require("async");
     var opcuaBasics = require('./opcua-basics');
     var installedPath = require('get-installed-path');
-
+    
     function OpcUaServerNode(n) {
 
         RED.nodes.createNode(this, n);
@@ -32,7 +34,20 @@ module.exports = function (RED) {
         this.port = n.port;
         this.endpoint = n.endpoint;
         this.autoAcceptUnknownCertificate = n.autoAcceptUnknownCertificate;
-
+        // Operating limits:
+        this.maxNodesPerBrowse = n.maxNodesPerBrowse;
+        this.maxNodesPerHistoryReadData = n.maxNodesPerHistoryReadData;
+        this.maxNodesPerHistoryReadEvents = n.maxNodesPerHistoryReadEvents;
+        this.maxNodesPerHistoryUpdateData = n.maxNodesPerHistoryUpdateData;
+        this.maxNodesPerRead = n.maxNodesPerRead;
+        this.maxNodesPerWrite = n.maxNodesPerWrite;
+        this.maxNodesPerMethodCall = n.maxNodesPerMethodCall;
+        this.maxNodesPerRegisterNodes = n.maxNodesPerRegisterNodes;
+        this.maxNodesPerNodeManagement = n.maxNodesPerNodeManagement;
+        this.maxMonitoredItemsPerCall = n.maxMonitoredItemsPerCall;
+        this.maxNodesPerHistoryUpdateEvents = n.maxNodesPerHistoryUpdateEvents;
+        this.maxNodesPerTranslateBrowsePathsToNodeIds = n.maxNodesPerTranslateBrowsePathsToNodeIds;
+        this.registerToDiscovery = n.registerToDiscovery;
         var node = this;
         var variables = {
             Counter: 0,
@@ -44,21 +59,24 @@ module.exports = function (RED) {
         var vendorName;
         var equipmentNotFound = true;
         var initialized = false;
-        var server = null;
+        // var server = null;
         var folder = null;
 
         function node_error(err) {
-            node.error("Server node error on: " + node.name, err);
+            console.error(chalk.red("[Error] Server node error on: " + node.name + " error: " + JSON.stringify(err)));
+            node.error("Server node error on: " + node.name + " error: " + JSON.stringify(err));
         }
 
         function verbose_warn(logMessage) {
             if (RED.settings.verbose) {
+                console.warn(chalk.yellow("[Warning] "+ (node.name) ? node.name + ': ' + logMessage : 'OpcUaServerNode: ' + logMessage));
                 node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaServerNode: ' + logMessage);
             }
         }
 
         function verbose_log(logMessage) {
             if (RED.settings.verbose) {
+                console.log(chalk.cyan(logMessage));
                 node.log(logMessage);
             }
         }
@@ -70,15 +88,11 @@ module.exports = function (RED) {
         });
 
         var xmlFiles = [  path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml'),
-            path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')
+            // path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')
         ];
         verbose_warn("node set:" + xmlFiles.toString());
 
-        function initNewServer() {
-
-            console.log("JS folder:", path.join(__dirname, './node_modules'));
-            console.log("CWD: ", path.join(process.cwd(), '.node-red'));
-
+        async function initNewServer() {
             initialized = false;
             verbose_warn("create Server from XML ...");
             var serverPkg = installedPath.getInstalledPathSync('node-opcua-server', {
@@ -89,24 +103,43 @@ module.exports = function (RED) {
                   path.join(process.cwd(), '../node_modules'), // Linux installation needs this
                   path.join(process.cwd(), '.node-red/node_modules'),
                 ],
-            })
+            });
             if (!serverPkg)
                 verbose_warn("Cannot find node-opcua-server package with server certificate");
 
             var rootpki = path.join(serverPkg, "/certificates/PKI");
             var certFile = path.join(serverPkg, "/certificates/server_selfsigned_cert_2048.pem");
             var privFile = path.join(serverPkg, "/certificates/PKI/own/private/private_key.pem");
+
+            const pkiFolder = rootpki; // path.join(configFolder, "pki");
+            const userPkiFolder = path.join(serverPkg, "/certificates/userPki");
+            const userCertificateManager = new opcua.OPCUACertificateManager({
+              automaticallyAcceptUnknownCertificate: true,
+              name: "userPki",
+              rootFolder: userPkiFolder,
+            });
+            await userCertificateManager.initialize();
+          
+            const serverCertificateManager = new opcua.OPCUACertificateManager({
+              automaticallyAcceptUnknownCertificate: true,
+              name: "pki",
+              rootFolder: pkiFolder,
+            });    
+            await serverCertificateManager.initialize();
+          
             verbose_log("Using server certificate " + certFile);
-            var server_options = {
-                serverCertificateManager: new opcua.OPCUACertificateManager({
-                    automaticallyAcceptUnknownCertificate: node.autoAcceptUnknownCertificate,
-                    rootFolder: rootpki,
-                }),
+            var registerMethod = null;
+            if (node.registerToDiscovery === true) {
+                registerMethod = opcua.RegisterServerMethod.LDS;
+            }
+            node.server_options = {
+                serverCertificateManager,
+                userCertificateManager,
                 certificateFile: certFile,
                 privateKeyFile: privFile,
                 port: parseInt(n.port),
                 maxAllowedSessionNumber: 1000,
-                maxConnectionsPerEndpoint: 10,
+                maxConnectionsPerEndpoint: 20,
                 nodeset_filename: xmlFiles,
                 serverInfo: {
                   // applicationUri: makeApplicationUrn("%FQDN%", "MiniNodeOPCUA-Server"), // Check certificate Uri
@@ -116,50 +149,54 @@ module.exports = function (RED) {
                   discoveryProfileUri: null,
                   discoveryUrls: []
                 },
-                // buildInfo: { buildNumber: "1234" }, // Set later
+                buildInfo: {
+                    buildNumber: "0.2.91",
+                    buildDate: "2020-12-25T22:00:00"
+                },
                 serverCapabilities: {
                   maxBrowseContinuationPoints: 10,
                   maxHistoryContinuationPoints: 10,
-                  // maxInactiveLockTime
+                  // maxInactiveLockTime,
+                  // Get these from the node parameters
                   operationLimits: {
-                    maxNodesPerBrowse: 10,
-                    maxNodesPerHistoryReadData: 6,
-                    maxNodesPerHistoryReadEvents: 10,
-                    maxNodesPerHistoryUpdateData: 10,
-                    maxNodesPerRead: 10,
-                    maxNodesPerWrite: 10,
+                    maxNodesPerBrowse: node.maxNodesPerBrowse,
+                    maxNodesPerHistoryReadData: node.maxNodesPerHistoryReadData,
+                    maxNodesPerHistoryReadEvents: node.maxNodesPerHistoryReadEvents,
+                    maxNodesPerHistoryUpdateData: node.maxNodesPerHistoryUpdateData,
+                    maxNodesPerRead: node.maxNodesPerRead,
+                    maxNodesPerWrite: node.maxNodesPerWrite,
+                    maxNodesPerMethodCall: node.maxNodesPerMethodCall,
+                    maxNodesPerRegisterNodes: node.maxNodesPerRegisterNodes,
+                    maxNodesPerNodeManagement: node.maxNodesPerNodeManagement,
+                    maxMonitoredItemsPerCall: node.maxMonitoredItemsPerCall,
+                    maxNodesPerHistoryUpdateEvents: node.maxNodesPerHistoryUpdateEvents,
+                    maxNodesPerTranslateBrowsePathsToNodeIds: node.maxNodesPerTranslateBrowsePathsToNodeIds
                   }
                 },
                 isAuditing: false,
-                registerServerMethod: opcua.RegisterServerMethod.LDS
+                registerServerMethod: registerMethod
             };
-            server_options.serverInfo = {
+            node.server_options.serverInfo = {
                 applicationName: { text: "Node-RED OPCUA" }
             };
-            server_options.buildInfo = {
-                productName: node.name.concat(" OPC UA server for node-red"),
-                buildNumber: "0.2.90",
-                buildDate: "2020-12-22T22:42:00"
+            node.server_options.buildInfo = {
+                buildNumber: "0.2.91",
+                buildDate: "2020-12-25T22:00:00"
             };
-            verbose_log("Server options:" + JSON.stringify(server_options));
-            server = new opcua.OPCUAServer(server_options);
-            verbose_warn("init next...");
-            server.initialize(post_initialize);
             var hostname = os.hostname();
             var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840/UADiscovery";
-			verbose_log("\nregistering server to :".yellow + discovery_server_endpointUrl);
+            if (node.registerToDiscovery === true) {
+                verbose_log("Registering server to :" + discovery_server_endpointUrl);
+            }
         }
 
         function construct_my_address_space(addressSpace) {
-
-            verbose_warn('Server add VendorName ...');
-
+            verbose_warn("Server add VendorName ...");
             vendorName = addressSpace.getOwnNamespace().addObject({
                 organizedBy: addressSpace.rootFolder.objects,
                 nodeId: "ns=1;s=VendorName",
                 browseName: "VendorName"
             });
-
             equipment = addressSpace.getOwnNamespace().addObject({
                 organizedBy: vendorName,
                 nodeId: "ns=1;s=Equipment",
@@ -197,7 +234,6 @@ module.exports = function (RED) {
             });
 
             verbose_warn('Server add FreeMemory ...');
-
             addressSpace.getOwnNamespace().addVariable({
                 componentOf: vendorName,
                 nodeId: "ns=1;s=FreeMemory",
@@ -215,8 +251,7 @@ module.exports = function (RED) {
             });
 
             verbose_warn('Server add Counter ...');
-
-            addressSpace.getOwnNamespace().addVariable({
+            node.vendorName = addressSpace.getOwnNamespace().addVariable({
                 componentOf: vendorName,
                 nodeId: "ns=1;s=Counter",
                 browseName: "Counter",
@@ -287,29 +322,29 @@ module.exports = function (RED) {
         }
 
         function post_initialize() {
-
-            if (server) {
-
-                var addressSpace = server.engine.addressSpace;
+            if (node.server) {
+                var addressSpace = node.server.engine.addressSpace;
                 construct_my_address_space(addressSpace);
-
+                /*
                 verbose_log("Next server start...");
 
-                server.start(function () {
+                await node.server.start(function () {
                     verbose_warn("Server is now listening ... ( press CTRL+C to stop)");
-                    for (const e of server.endpoints) {
+                    for (const e of node.server.endpoints) {
                         for (const ed of e.endpointDescriptions()) {
                             verbose_log("Server endpointUrl(s): " + ed.endpointUrl + " securityMode: " + ed.securityMode.toString() + " securityPolicyUri: " + ed.securityPolicyUri.toString());
                         }
                     }
                 });
+                */
                 node.status({
                     fill: "green",
                     shape: "dot",
                     text: "running"
                 });
                 initialized = true;
-                verbose_log("server initialized");
+                verbose_log("server initialized");    
+
             } else {
                 node.status({
                     fill: "gray",
@@ -324,17 +359,58 @@ module.exports = function (RED) {
             return os.freemem() / os.totalmem() * 100.0;
         }
 
-        initNewServer();
+        (async () => {
+            try {
+                await initNewServer(); // Read & set parameters
+                node.server = new opcua.OPCUAServer(node.server_options);
+                node.server.on("post_initialize", () => {
+                    construct_my_address_space(node.server.engine.addressSpace);
+                });
+                                
+                await node.server.start();
+                // Client connects with userName
+                node.server.on("session_activated", (session) => {
+                   if (session.userIdentityToken && session.userIdentityToken.userName) {
+                       var msg = {};
+                       msg.topic="Username";
+                       msg.payload = session.sessionName.toString(); // session.clientDescription.applicationName.toString();
+                       node.send(msg);
+                   }
+                });
+                // Client connected
+                node.server.on("create_session", function(session) {
+                   var msg = {};
+                   msg.topic="Client-connected";
+                   msg.payload = session.sessionName.toString(); // session.clientDescription.applicationName.toString();
+                   node.send(msg);
+                });
+                // Client disconnected
+                node.server.on("session_closed", function(session, reason) {
+                    console.log("Reason: " + reason);
+                   var msg = {};
+                   msg.topic="Client-disconnected";
+                   msg.payload = session.sessionName.toString(); // session.clientDescription.applicationName.toString() + " " + session.sessionName ? session.sessionName.toString() : "<null>";
+                   node.send(msg);
+                 });
+                 node.status({
+                    fill: "green",
+                    shape: "dot",
+                    text: "running"
+                });
+                initialized = true;
+               }
+            catch (err) {
+                console.log("Error: " + err);
+            }
+        })();
 
         //######################################################################################
         node.on("input", function (msg) {
             verbose_log(JSON.stringify(msg));
-            if (server == undefined || !initialized) {
+            if (node.server === undefined || !initialized) {
                 node_error("Server is not running");
                 return false;
             }
-
-
             var payload = msg.payload;
 
             if (contains_messageType(payload)) {
@@ -344,17 +420,18 @@ module.exports = function (RED) {
                 execute_opcua_command(msg);
             }
 
-
             if (equipmentNotFound) {
-
-                var addressSpace = server.engine.addressSpace;
-
-                if (addressSpace === undefined) {
-                    node_error("addressSpace undefinded");
+                var addressSpace = node.server.engine.addressSpace; // node.addressSpace;
+                if (addressSpace === undefined || addressSpace === null) {
+                    node_error("addressSpace undefined");
                     return false;
                 }
 
                 var rootFolder = addressSpace.findNode("ns=1;s=VendorName");
+                if (!rootFolder) {
+                    node_error("VerdorName not found!");
+                    return false;
+                }
                 var references = rootFolder.findReferences("Organizes", true);
 
                 if (findReference(references, equipment.nodeId)) {
@@ -395,7 +472,7 @@ module.exports = function (RED) {
 
         function execute_opcua_command(msg) {
             var payload = msg.payload;
-            var addressSpace = server.engine.addressSpace;
+            var addressSpace = node.server.engine.addressSpace;
             var name;
 
             switch (payload.opcuaCommand) {
@@ -557,20 +634,20 @@ module.exports = function (RED) {
 
         function restart_server() {
             verbose_warn("Restart OPC UA Server");
-            if (server) {
-                server.shutdown(0, function () {
-                    server = null;
+            if (node.server) {
+                node.server.shutdown(0, function () {
+                    node.server = null;
                     vendorName = null;
                     initNewServer();
                 });
 
             } else {
-                server = null;
+                node.server = null;
                 vendorName = null;
                 initNewServer();
             }
 
-            if (server) {
+            if (node.server) {
                 verbose_warn("Restart OPC UA Server done");
             } else {
                 node_error("can not restart OPC UA Server");
@@ -583,14 +660,14 @@ module.exports = function (RED) {
         });
 
         function close_server() {
-            if (server) {
-                server.shutdown(0, function () {
-                    server = null;
+            if (node.server) {
+                node.server.shutdown(0, function () {
+                    node.server = null;
                     vendorName = null;
                 });
 
             } else {
-                server = null;
+                node.server = null;
                 vendorName = null;
             }
 
