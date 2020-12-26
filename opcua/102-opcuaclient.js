@@ -18,7 +18,7 @@
 
 module.exports = function (RED) {
   "use strict";
-  var colors = require("colors");
+  var chalk = require("chalk");
   var opcua = require('node-opcua');
   var opcuaBasics = require('./opcua-basics');
   var nodeId = require("node-opcua-nodeid");
@@ -175,17 +175,20 @@ module.exports = function (RED) {
        }); // multiple monitored Items should be registered only once
     */
     function node_error(err) {
+      console.error(chalk.red("Client node error on: " + node.name + " error: " + JSON.stringify(err)));
       node.error("Client node error on: " + node.name + " error: " + JSON.stringify(err));
     }
 
     function verbose_warn(logMessage) {
       if (RED.settings.verbose) {
+        console.warn(chalk.yellow((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage));
         node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage);
       }
     }
 
     function verbose_log(logMessage) {
       if (RED.settings.verbose) {
+        console.log(chalk.cyan(logMessage));
         node.log(logMessage);
       }
     }
@@ -366,6 +369,10 @@ module.exports = function (RED) {
       // Later user can use path and local file to access server certificate file
       
       try {
+        if (!node.client) {
+          node_error("Client not yet created & connected, cannot getEndpoints!");
+          return;
+        }
         const endpoints = await node.client.getEndpoints();
         var i = 0;
         endpoints.forEach(function (endpoint, i) {
@@ -617,7 +624,7 @@ module.exports = function (RED) {
               reset_opcua_client(connect_opcua_client);
             } else {
               set_node_status_to("active reading");
-              verbose_log("\tNode : " + (msg.topic).cyan.bold);
+              verbose_log("\tNode : " + msg.topic);
               verbose_log(dataValue.toString());
               if (dataValue) {
                 try {
@@ -640,15 +647,15 @@ module.exports = function (RED) {
                   msg.statusCode = dataValue.statusCode;
 
                   if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
-                    verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
+                    verbose_log("Status-Code:" + (dataValue.statusCode.toString(16)));
                   } else {
-                    verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16).red.bold);
+                    verbose_warn("Status-Code:" + dataValue.statusCode.toString(16));
                   }
 
                   node.send(msg);
                 } catch (e) {
                   if (dataValue) {
-                    node_error("\tBad read: " + (dataValue.statusCode.toString(16)).red.bold);
+                    node_error("\tBad read: " + (dataValue.statusCode.toString(16)));
                     node_error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
                     node_error("\tData:" + JSON.stringify(dataValue));
                   } else {
@@ -714,7 +721,7 @@ module.exports = function (RED) {
 
             for (var i = 0; i < dataValues.length; i++) {
               var dataValue = dataValues[i];
-              verbose_log("\tNode : " + (msg.topic).cyan.bold);
+              verbose_log("\tNode : " + msg.topic);
               verbose_log(dataValue.toString());
               if (dataValue) {
                 try {
@@ -734,9 +741,9 @@ module.exports = function (RED) {
                   }
 
                   if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
-                    verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
+                    verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)));
                   } else {
-                    verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16).red.bold);
+                    verbose_warn("\tStatus-Code:" + dataValue.statusCode.toString(16));
                   }
                   // Use nodeId in topic, arrays are same length
                   node.send({
@@ -745,7 +752,7 @@ module.exports = function (RED) {
                   });
                 } catch (e) {
                   if (dataValue) {
-                    node_error("\tBad read: " + (dataValue.statusCode.toString(16)).red.bold);
+                    node_error("\tBad read: " + (dataValue.statusCode.toString(16)));
                     // node_error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
                     node_error("\tData:" + JSON.stringify(dataValue));
                   } else {
@@ -1039,10 +1046,11 @@ module.exports = function (RED) {
 
       if (!monitoredItem) {
         verbose_log("Msg " + JSON.stringify(msg));
-        var interval = 100; // Set as default if no payload
+        // var interval = 100; // Set as default if no payload
         var queueSize = 10;
-        // Interval from the payload (old existing feature still supported)
-        if (msg.payload && parseInt(msg.payload) > 100) {
+        var interval = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit); // Use value given at client node
+        // Interval from the payload (old existing feature still supported), but do not accept timestamp, it is too big
+        if (msg.payload && parseInt(msg.payload) > 100 && parseInt(msg.payload) < 1608935031227) {
           interval = convertAndCheckInterval(msg.payload);
         }
         if (msg.interval && parseInt(msg.interval) > 100) {
@@ -1096,14 +1104,14 @@ module.exports = function (RED) {
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
           verbose_log(dataValue.toString());
           if (dataValue.statusCode === opcua.StatusCodes.Good) {
-            verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
+            verbose_log("Status-Code:" + dataValue.statusCode.toString(16));
           } else {
-            verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16));
+            node__warn("Status-Code:" + dataValue.statusCode.toString(16));
           }
-
+          
           msgToSend.statusCode = dataValue.statusCode;
           msgToSend.topic = msg.topic;
-
+          
           // Check if timestamps exists otherwise simulate them
           if (dataValue.serverTimestamp != null) {
             msgToSend.serverTimestamp = dataValue.serverTimestamp;
@@ -1120,7 +1128,7 @@ module.exports = function (RED) {
             msgToSend.sourceTimestamp = new Date().getTime();;
             msgToSend.sourcePicoseconds = 0;
           }
-
+          
           msgToSend.payload = dataValue.value.value;
           node.send(msgToSend);
         });
@@ -1251,9 +1259,9 @@ module.exports = function (RED) {
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
           verbose_log(dataValue.toString());
           if (dataValue.statusCode === opcua.StatusCodes.Good) {
-            verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)).green.bold);
+            verbose_log("Status-Code:" + dataValue.statusCode.toString(16));
           } else {
-            verbose_log("\tStatus-Code:" + dataValue.statusCode.toString(16));
+            verbose_warn("Status-Code:" + dataValue.statusCode.toString(16));
           }
           
           msgToSend.statusCode = dataValue.statusCode;
@@ -1434,7 +1442,7 @@ module.exports = function (RED) {
             monitoredItems.delete(msg.topic);
           }
 
-          node_error("monitored Event " + msg.eventTypeId + " ERROR".red + err_message);
+          node_error("monitored Event " + msg.eventTypeId + " ERROR" + err_message);
           set_node_errorstatus_to("error", err_message);
         });
 
