@@ -131,13 +131,20 @@ limitations under the License.
     <p>
         OPC UA server commands:
         <ul>
-            <li>restartOPCUAServer</li>
-            <li>addEquipment</li>
-            <li>addPhysicalAsset</li>
-            <li>deleteNode</li>
+            <li><b>restartOPCUAServer</b></li>
+            <li><b>addEquipment</b></li>
+            <li><b>addPhysicalAsset</b></li>
+            <li><b>setFolder</b>   msg.topic = "folderName"  // Example topic format ns=1;s=FolderName (note: uses this as parentFolder)</li>
+            <li><b>addFolder</b>          msg.topic = "ns=1;s=NewFolder"  // Note parent folder is objects if not set by setFolder</li>
+            <li><b>addVariable</b>        msg.topic = "ns=1;s=VariableName;datatype=Double" // parent folder is set above</li>
+            <li><b>installHistorian</b>   msg.topic = "ns=1;s=VariableName;datatype=Double</li>
+            <li><b>deleteNode</b>         msg.payload  = "ns=1;s=VariableName</li>
         </ul>
 
         Examples JSON Injects: <br />
+        <pre>
+        msg.payload = { "opcuaCommand": "addEquipment",  "nodeName": "Machine" }
+        </pre>
         <pre>
         { "opcuaCommand": "restartOPCUAServer" }
         { "opcuaCommand": "addEquipment",  "nodeName": "Machine" }

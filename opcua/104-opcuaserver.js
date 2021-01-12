@@ -180,8 +180,8 @@ module.exports = function (RED) {
                 applicationName: { text: "Node-RED OPCUA" }
             };
             node.server_options.buildInfo = {
-                buildNumber: "0.2.91",
-                buildDate: "2020-12-25T22:00:00"
+                buildNumber: "0.2.92",
+                buildDate: "2021-01-12T20:00:00"
             };
             var hostname = os.hostname();
             var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840/UADiscovery";
@@ -407,7 +407,7 @@ module.exports = function (RED) {
         //######################################################################################
         node.on("input", function (msg) {
             verbose_log(JSON.stringify(msg));
-            if (node.server === undefined || !initialized) {
+            if (!node.server || !initialized) {
                 node_error("Server is not running");
                 return false;
             }
@@ -595,13 +595,13 @@ module.exports = function (RED) {
                     break;
 
                 case "installHistorian":
-                        verbose_warn("install historian for Node ".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
+                        verbose_warn("install historian for Node ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
                         var datatype = "";
                         var opcuaDataType = null;
                         var nodeStr = msg.topic.substring(0, msg.topic.indexOf(";datatype=")); 
                         var e = msg.topic.indexOf("datatype=");
                         if (e<0) {
-                            node_error("no datatype=Float or other type in install historian ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
+                            node_error("no datatype=Float or other type in install historian ".concat(msg.topic)); // Example topic format ns=1;s=variable
                         }
                         var nodeId = addressSpace.findNode(nodeStr);
                         if (nodeId) {
@@ -614,13 +614,13 @@ module.exports = function (RED) {
 
                 case "deleteNode":
                     if (addressSpace === undefined) {
-                        node_error("addressSpace undefinded");
+                        node_error("addressSpace undefined");
                         return false;
                     }
 
                     var searchedNode = addressSpace.findNode(payload.nodeId);
                     if (searchedNode === undefined) {
-                        verbose_warn("can not find Node in addressSpace")
+                        verbose_warn("Cannot find Node: " + payload.nodeId + " from addressSpace")
                     } else {
                         addressSpace.deleteNode(searchedNode);
                     }
@@ -632,25 +632,61 @@ module.exports = function (RED) {
 
         }
 
-        function restart_server() {
+        async function restart_server() {
             verbose_warn("Restart OPC UA Server");
             if (node.server) {
-                node.server.shutdown(0, function () {
+                node.server.engine.setShutdownReason("Shutdown command received");
+                // Wait 10s before shutdown
+                await node.server.shutdown(10000).then(() => {
+                    verbose_warn("Server has shutdown");
+                    node.server.dispose();
                     node.server = null;
                     vendorName = null;
-                    initNewServer();
+                    folder = null;
                 });
-
-            } else {
-                node.server = null;
-                vendorName = null;
-                initNewServer();
-            }
+                // Start server again
+                await initNewServer();
+                node.server = new opcua.OPCUAServer(node.server_options);
+                node.server.on("post_initialize", () => {
+                    construct_my_address_space(node.server.engine.addressSpace);
+                });                                   
+                await node.server.start();
+                // Client connects with userName
+                node.server.on("session_activated", (session) => {
+                    if (session.userIdentityToken && session.userIdentityToken.userName) {
+                        var msg = {};
+                        msg.topic="Username";
+                        msg.payload = session.sessionName.toString(); // session.clientDescription.applicationName.toString();
+                        node.send(msg);
+                    }
+                });
+                // Client connected
+                node.server.on("create_session", function(session) {
+                    var msg = {};
+                    msg.topic="Client-connected";
+                    msg.payload = session.sessionName.toString(); // session.clientDescription.applicationName.toString();
+                    node.send(msg);
+                });
+                // Client disconnected
+                node.server.on("session_closed", function(session, reason) {
+                    console.log("Reason: " + reason);
+                    var msg = {};
+                    msg.topic="Client-disconnected";
+                    msg.payload = session.sessionName.toString(); // session.clientDescription.applicationName.toString() + " " + session.sessionName ? session.sessionName.toString() : "<null>";
+                    node.send(msg);
+                });
+                node.status({
+                    fill: "green",
+                    shape: "dot",
+                    text: "running"
+                });
+                initialized = true;
+            } 
 
             if (node.server) {
                 verbose_warn("Restart OPC UA Server done");
             } else {
-                node_error("can not restart OPC UA Server");
+                node_error("Cannot restart OPC UA Server");
             }
         }
 
