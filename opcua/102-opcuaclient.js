@@ -354,6 +354,7 @@ module.exports = function (RED) {
         set_node_status_to("connecting");
         if (!node.client) {
           verbose_log("No client to connect...");
+          return;
         }
         verbose_log("Exact endpointUrl: " + opcuaEndpoint.endpoint + " hostname: " + os.hostname());
         await node.client.connect(opcuaEndpoint.endpoint);
@@ -712,11 +713,14 @@ module.exports = function (RED) {
         //  node.session.read({timestampsToReturn: TimestampsToReturn.Both, nodesToRead: multipleItems}, function (err, dataValues, diagnostics) {
         node.session.readVariableValue(multipleItems, function (err, dataValues, diagnostics) {
           if (err) {
-            verbose_log('diagnostics:' + diagnostics);
-            node_error(err);
+            if (diagnostics) {
+              verbose_log('diagnostics:' + diagnostics);
+            }
+            node_error(node.name + " error at active reading: " + err.message);
             set_node_errorstatus_to("error", err);
             reset_opcua_client(connect_opcua_client);
-          } else {
+          } 
+          else {
             set_node_status_to("active multiple reading");
 
             for (var i = 0; i < dataValues.length; i++) {
@@ -840,7 +844,7 @@ module.exports = function (RED) {
     }
 
     function write_action_input(msg) {
-      verbose_log("writing");
+      verbose_log("writing multiple");
       // Topic value: ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT
       var ns = msg.topic.substring(3, 4); // Parse namespace, ns=2
       var dIndex = msg.topic.indexOf("datatype=");
@@ -881,7 +885,7 @@ module.exports = function (RED) {
         if (msg.timestamp) {
           nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();
         }
-
+        
         node.session.write(nodeToWrite, function (err) {
           if (err) {
             set_node_errorstatus_to("error", err);
@@ -926,8 +930,10 @@ module.exports = function (RED) {
       verbose_log("msg=" + JSON.stringify(msg));
       verbose_log("namespace=" + ns);
       verbose_log("string=" + s);
-      verbose_log("type=" + msg.datatype);
-      verbose_log("value=" + msg.payload);
+      if (msg.datatype) {
+        verbose_log("type=" + msg.datatype);
+      }
+      verbose_log("payload value=" + JSON.stringify(msg.payload));
 
       if (node.session) {
         const nodesToWrite = msg.payload.map(function (msgToWrite) {
@@ -943,6 +949,7 @@ module.exports = function (RED) {
           }
           return nodeToWrite;
         });
+        verbose_log("Writing nodes with values:" + JSON.stringify(nodesToWrite));
         node.session.write(nodesToWrite, function (err, statusCode) {
           if (err) {
             set_node_errorstatus_to("error", err);
@@ -950,7 +957,7 @@ module.exports = function (RED) {
             reset_opcua_client(connect_opcua_client);
           } else {
             set_node_status_to("active writing");
-            verbose_log("Value written!");
+            verbose_log("Values written!");
             node.send({ payload: statusCode });
           }
         });
