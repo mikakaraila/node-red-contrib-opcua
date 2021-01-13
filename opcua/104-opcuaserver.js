@@ -150,7 +150,7 @@ module.exports = function (RED) {
                   discoveryUrls: []
                 },
                 buildInfo: {
-                    buildNumber: "0.2.91",
+                    buildNumber: "0.2.93",
                     buildDate: "2020-12-25T22:00:00"
                 },
                 serverCapabilities: {
@@ -180,8 +180,8 @@ module.exports = function (RED) {
                 applicationName: { text: "Node-RED OPCUA" }
             };
             node.server_options.buildInfo = {
-                buildNumber: "0.2.92",
-                buildDate: "2021-01-12T20:00:00"
+                buildNumber: "0.2.93",
+                buildDate: "2021-01-13T21:10:00"
             };
             var hostname = os.hostname();
             var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840/UADiscovery";
