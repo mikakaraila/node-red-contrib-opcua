@@ -16,16 +16,31 @@
 
  **/
 
+const envPaths = require("env-paths");
+const config = envPaths("node-red-opcua").config;
+
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
     var path = require('path');
     var os = require("os");
     var chalk = require("chalk");
-    var async = require("async");
     var opcuaBasics = require('./opcua-basics');
-    var installedPath = require('get-installed-path');
     
+    function createCertificateManager() {
+        return new opcua.OPCUACertificateManager({
+            name: "PKI",
+            rootFolder: path.join(config, "PKI"),
+            automaticallyAcceptUnknownCertificate: true
+        });
+    }
+    function createUserCertificateManager() {
+        return new opcua.OPCUACertificateManager({
+            name: "UserPKI",
+            rootFolder: path.join(config, "UserPKI"),
+            automaticallyAcceptUnknownCertificate: true
+        });
+    }
     function OpcUaServerNode(n) {
 
         RED.nodes.createNode(this, n);
@@ -95,39 +110,12 @@ module.exports = function (RED) {
         async function initNewServer() {
             initialized = false;
             verbose_warn("create Server from XML ...");
-            var serverPkg = installedPath.getInstalledPathSync('node-opcua-server', {
-                paths: [
-                  path.join(__dirname, '..'),
-                  path.join(__dirname, '../..'),
-                  path.join(process.cwd(), './node_modules'),
-                  path.join(process.cwd(), '../node_modules'), // Linux installation needs this
-                  path.join(process.cwd(), '.node-red/node_modules'),
-                ],
-            });
-            if (!serverPkg)
-                verbose_warn("Cannot find node-opcua-server package with server certificate");
 
-            var rootpki = path.join(serverPkg, "/certificates/PKI");
-            var certFile = path.join(serverPkg, "/certificates/server_selfsigned_cert_2048.pem");
-            var privFile = path.join(serverPkg, "/certificates/PKI/own/private/private_key.pem");
+            const applicationUri =  opcua.makeApplicationUrn("%FQDN%", "node-red-contrib-opcua-server");
+            const serverCertificateManager = createCertificateManager();
+            const userCertificateManager = createUserCertificateManager();
+          
 
-            const pkiFolder = rootpki; // path.join(configFolder, "pki");
-            const userPkiFolder = path.join(serverPkg, "/certificates/userPki");
-            const userCertificateManager = new opcua.OPCUACertificateManager({
-              automaticallyAcceptUnknownCertificate: true,
-              name: "userPki",
-              rootFolder: userPkiFolder,
-            });
-            await userCertificateManager.initialize();
-          
-            const serverCertificateManager = new opcua.OPCUACertificateManager({
-              automaticallyAcceptUnknownCertificate: true,
-              name: "pki",
-              rootFolder: pkiFolder,
-            });    
-            await serverCertificateManager.initialize();
-          
-            verbose_log("Using server certificate " + certFile);
             var registerMethod = null;
             if (node.registerToDiscovery === true) {
                 registerMethod = opcua.RegisterServerMethod.LDS;
@@ -135,14 +123,13 @@ module.exports = function (RED) {
             node.server_options = {
                 serverCertificateManager,
                 userCertificateManager,
-                certificateFile: certFile,
-                privateKeyFile: privFile,
+ 
                 port: parseInt(n.port),
                 maxAllowedSessionNumber: 1000,
                 maxConnectionsPerEndpoint: 20,
                 nodeset_filename: xmlFiles,
                 serverInfo: {
-                  // applicationUri: makeApplicationUrn("%FQDN%", "MiniNodeOPCUA-Server"), // Check certificate Uri
+                  applicationUri,
                   productUri: "Node-RED NodeOPCUA-Server",
                   // applicationName: { text: "Mini NodeOPCUA Server", locale: "en" }, // Set later
                   gatewayServerUri: null,
@@ -321,40 +308,6 @@ module.exports = function (RED) {
             });
         }
 
-        function post_initialize() {
-            if (node.server) {
-                var addressSpace = node.server.engine.addressSpace;
-                construct_my_address_space(addressSpace);
-                /*
-                verbose_log("Next server start...");
-
-                await node.server.start(function () {
-                    verbose_warn("Server is now listening ... ( press CTRL+C to stop)");
-                    for (const e of node.server.endpoints) {
-                        for (const ed of e.endpointDescriptions()) {
-                            verbose_log("Server endpointUrl(s): " + ed.endpointUrl + " securityMode: " + ed.securityMode.toString() + " securityPolicyUri: " + ed.securityPolicyUri.toString());
-                        }
-                    }
-                });
-                */
-                node.status({
-                    fill: "green",
-                    shape: "dot",
-                    text: "running"
-                });
-                initialized = true;
-                verbose_log("server initialized");    
-
-            } else {
-                node.status({
-                    fill: "gray",
-                    shape: "dot",
-                    text: "not running"
-                });
-                node_error("server is not initialized")
-            }
-        }
-
         function available_memory() {
             return os.freemem() / os.totalmem() * 100.0;
         }
@@ -363,11 +316,18 @@ module.exports = function (RED) {
             try {
                 await initNewServer(); // Read & set parameters
                 node.server = new opcua.OPCUAServer(node.server_options);
-                node.server.on("post_initialize", () => {
-                    construct_my_address_space(node.server.engine.addressSpace);
-                });
+
+                await node.server.initialize();
+
+                construct_my_address_space(node.server.engine.addressSpace);
                                 
                 await node.server.start();
+
+                verbose_log("Using server certificate  " + node.server.certificateFile);
+                verbose_log("Using PKI  folder         " + node.server.serverCertificateManager.rootDir);
+                verbose_log("Using UserPKI  folder     " + node.server.userCertificateManager.rootDir);
+
+
                 // Client connects with userName
                 node.server.on("session_activated", (session) => {
                    if (session.userIdentityToken && session.userIdentityToken.userName) {
