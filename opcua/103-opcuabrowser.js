@@ -30,9 +30,9 @@ module.exports = function (RED) {
         this.datatype = config.datatype; // String;
         this.topic = config.topic; // ns=3;s=MyVariable from input
         this.items = config.items;
-
+        this.name = config.name;
         var node = this;
-
+        node.name = "OPC UA Browser";
         var browseTopic = "ns=0;i=85"; // Default root, server Objects
 
         var opcuaEndpoint = RED.nodes.getNode(config.endpoint);
@@ -52,7 +52,7 @@ module.exports = function (RED) {
          else {
             connectionOption.securityPolicy = opcua.MessageSecurityMode.None;
         }
-        connectionOption.endpointMustExist  = false;
+        connectionOption.endpointMustExist = false;
      
         if (opcuaEndpoint.login) {
           userIdentity.userName = opcuaEndpoint.credentials.user;
@@ -63,7 +63,8 @@ module.exports = function (RED) {
         node.status({
             fill: "gray",
             shape: "dot",
-            text: "no Items"
+            text: "no Items",
+            source: { id: node.id, type: node.type, name: "OPC UA Browser"}
         });
 
         node.add_item = function (item) {
@@ -104,7 +105,8 @@ module.exports = function (RED) {
                 for(const reference of browseResult.references)
                 {
                      var ref_obj=Object.assign({}, reference);
-                     const dataValue=await session.readVariableValue(ref_obj.nodeId);
+                     // const dataValue=await session.readVariableValue(ref_obj.nodeId);
+                     const dataValue=await session.read(ref_obj.nodeId);
                      ref_obj["value"]=dataValue.value.value;
                      ref_obj["dataType"]=opcua.DataType[dataValue.value.dataType];
                      node.add_item(ref_obj);
@@ -113,7 +115,8 @@ module.exports = function (RED) {
                 node.status({
                             fill: "green",
                             shape: "dot",
-                            text: "Items: " + node.items.length
+                            text: "Items: " + node.items.length,
+                            source: { id: node.id, type: node.type, name: "OPC UA Browser"}
                         });
                         
                 //step 5 close session
@@ -129,7 +132,8 @@ module.exports = function (RED) {
                 node.status({
                     fill: "green",
                     shape: "dot",
-                    text: "Done"
+                    text: "Done",
+                    source: { id: node.id, type: node.type, name: "OPC UA Browser"}
                 });
             }
             catch(err)
@@ -145,7 +149,8 @@ module.exports = function (RED) {
                 node.status({
                     fill: "red",
                     shape: "dot",
-                    text: "Error Items: " + node.items.length
+                    text: "Error Items: " + node.items.length,
+                    source: { id: node.id, type: node.type, name: "OPC UA Browser"}
                 });
             }
 
@@ -196,7 +201,8 @@ module.exports = function (RED) {
                     node.status({
                         fill: "red",
                         shape: "dot",
-                        text: "Error Items: " + node.items.length
+                        text: "Error Items: " + node.items.length,
+                        source: { id: node.id, type: node.type, name: "OPC UA Browser"}
                     });
                 }
                 node.log("Browse loading Items done ...");

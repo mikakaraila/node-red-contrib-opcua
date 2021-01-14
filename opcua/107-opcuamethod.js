@@ -26,7 +26,7 @@
 module.exports = function (RED) {
   var opcua = require('node-opcua');
   var uaclient = require('node-opcua-client');
-  
+ 
   function OPCUAMethodNode(n) {
     RED.nodes.createNode(this, n)
     this.objectId = n.objectId;
@@ -107,7 +107,7 @@ module.exports = function (RED) {
     } else {
       connectionOption.securityPolicy = opcua.MessageSecurityMode.None;
     }
-    connectionOption.endpointMustExist  = false;
+    connectionOption.endpointMustExist = false;
 
     if (opcuaEndpoint.login) {
       userIdentity.userName = opcuaEndpoint.credentials.user;

@@ -16,6 +16,8 @@
 
  **/
 
+const { coerceSByte } = require('node-opcua');
+
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
@@ -23,9 +25,23 @@ module.exports = function (RED) {
     var os = require("os");
     var chalk = require("chalk");
     var opcuaBasics = require('./opcua-basics');
-    const envPaths = require("env-paths");
-    const config = envPaths("node-red-opcua").config;
+    var envPaths = require("env-paths");
+    var config = envPaths("node-red-opcua").config;
 
+    function createCertificateManager() {
+        return new opcua.OPCUACertificateManager({
+            name: "PKI",
+            rootFolder: path.join(config, "PKI"),
+            automaticallyAcceptUnknownCertificate: true
+        });
+    }
+    function createUserCertificateManager() {
+        return new opcua.OPCUACertificateManager({
+            name: "UserPKI",
+            rootFolder: path.join(config, "UserPKI"),
+            automaticallyAcceptUnknownCertificate: true
+        });
+    }
     function OpcUaServerNode(n) {
 
         RED.nodes.createNode(this, n);
@@ -49,9 +65,7 @@ module.exports = function (RED) {
         this.maxNodesPerTranslateBrowsePathsToNodeIds = n.maxNodesPerTranslateBrowsePathsToNodeIds;
         this.registerToDiscovery = n.registerToDiscovery;
         var node = this;
-        var variables = {
-            Counter: 0,
-        }
+        var variables = { Counter: 0 };
         var equipmentCounter = 0;
         var physicalAssetCounter = 0;
         var equipment;
@@ -62,7 +76,7 @@ module.exports = function (RED) {
         var folder = null;
 
         function createCertificateManager() {
-            return new OPCUACertificateManager({
+            return new opcua.OPCUACertificateManager({
                 name: "PKI",
                 rootFolder: path.join(config, "PKI"),
                 automaticallyAcceptUnknownCertificate: true
@@ -70,7 +84,7 @@ module.exports = function (RED) {
         }
 
         function createUserCertificateManager() {
-            return new OPCUACertificateManager({
+            return new opcua.OPCUACertificateManager({
                 name: "UserPKI",
                 rootFolder: path.join(config, "UserPKI"),
                 automaticallyAcceptUnknownCertificate: true
@@ -111,11 +125,11 @@ module.exports = function (RED) {
             initialized = false;
             verbose_warn("create Server from XML ...");
           
-            const applicationUri =  makeApplicationUrn("%FQDN%", "node-red-contrib-opcua-server");
+            const applicationUri =  opcua.makeApplicationUrn("%FQDN%", "node-red-contrib-opcua-server");
             const serverCertificateManager = createCertificateManager();
             const userCertificateManager = createUserCertificateManager();
 
-            verbose_log("Using server certificate " + certFile);
+
             var registerMethod = null;
             if (node.registerToDiscovery === true) {
                 registerMethod = opcua.RegisterServerMethod.LDS;
@@ -123,8 +137,7 @@ module.exports = function (RED) {
             node.server_options = {
                 serverCertificateManager,
                 userCertificateManager,
-                certificateFile: certFile,
-                privateKeyFile: privFile,
+ 
                 port: parseInt(n.port),
                 maxAllowedSessionNumber: 1000,
                 maxConnectionsPerEndpoint: 20,
@@ -136,6 +149,10 @@ module.exports = function (RED) {
                   gatewayServerUri: null,
                   discoveryProfileUri: null,
                   discoveryUrls: []
+                },
+                buildInfo: {
+                    buildNumber: "0.2.94",
+                    buildDate: "2021-01-14T18:00:00"
                 },
                 serverCapabilities: {
                   maxBrowseContinuationPoints: 10,
@@ -163,10 +180,12 @@ module.exports = function (RED) {
             node.server_options.serverInfo = {
                 applicationName: { text: "Node-RED OPCUA" }
             };
+            
             node.server_options.buildInfo = {
                 buildNumber: "0.2.94",
                 buildDate: "2021-01-14T18:00:00"
             };
+            
             var hostname = os.hostname();
             var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840/UADiscovery";
             if (node.registerToDiscovery === true) {
@@ -238,14 +257,15 @@ module.exports = function (RED) {
             node.vendorName = addressSpace.getOwnNamespace().addVariable({
                 componentOf: vendorName,
                 nodeId: "ns=1;s=Counter",
-                browseName: "Counter",
+                browseName: "Variables Counter",
+                displayName: "Variables Counter",
                 dataType: "UInt16",
 
                 value: {
                     get: function () {
                         return new opcua.Variant({
                             dataType: opcua.DataType.UInt16,
-                            value: variables.Counter
+                            value: Object.keys(variables).length // Counter will show amount of created variables
                         });
                     }
                 }
@@ -313,11 +333,18 @@ module.exports = function (RED) {
             try {
                 await initNewServer(); // Read & set parameters
                 node.server = new opcua.OPCUAServer(node.server_options);
-                node.server.on("post_initialize", () => {
+
+                await node.server.initialize();
+
                     construct_my_address_space(node.server.engine.addressSpace);
-                });
                                 
                 await node.server.start();
+
+                verbose_log("Using server certificate  " + node.server.certificateFile);
+                verbose_log("Using PKI  folder         " + node.server.serverCertificateManager.rootDir);
+                verbose_log("Using UserPKI  folder     " + node.server.userCertificateManager.rootDir);
+
+
                 // Client connects with userName
                 node.server.on("session_activated", (session) => {
                    if (session.userIdentityToken && session.userIdentityToken.userName) {
@@ -448,7 +475,7 @@ module.exports = function (RED) {
                     physicalAssetCounter++;
                     name = payload.nodeName.concat(physicalAssetCounter);
 
-                    addressSpace.addObject({
+                    addressSpace.getOwnNamespace().addObject({
                         organizedBy: addressSpace.findNode(physicalAssets.nodeId),
                         nodeId: "ns=1;s=".concat(name),
                         browseName: name
@@ -462,15 +489,17 @@ module.exports = function (RED) {
 
                 case "addFolder":
                     verbose_warn("adding Folder ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
-                    var parentFolder = addressSpace.rootFolder.objects;
-                    if (folder != null) {
-                        parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
+                    var parentFolder = node.server.engine.addressSpace.rootFolder.objects;
+                    console.log("ParentFolder nodeId: " + parentFolder.nodeId);
+                    if (folder) {
+                        parentFolder = folder; // Use previously created folder as parentFolder or setFolder() can be used to set parentFolder
                     }
                     folder = addressSpace.getOwnNamespace().addObject({
                         organizedBy: addressSpace.findNode(parentFolder.nodeId),
                         nodeId: msg.topic,
                         browseName: msg.topic.substring(7)
                     });
+                    console.log("New Folder: " + JSON.stringify(folder));
                     break;
 
                 case "addVariable":
@@ -481,7 +510,7 @@ module.exports = function (RED) {
                     if (e<0) {
                         node_error("no datatype=Float or other type in addVariable ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
                     }
-                    var parentFolder = addressSpace.rootFolder.objects;
+                    var parentFolder = node.server.engine.addressSpace.rootFolder.objects;
                     if (folder != null) {
                         parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
                     }

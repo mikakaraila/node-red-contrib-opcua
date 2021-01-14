@@ -66,11 +66,11 @@ module.exports = function (RED) {
     if (node.certificate === "l" && node.localfile) {
       verbose_log("Using 'own' local certificate file " + node.localfile);
       // User must define absolute path
-      var certfile = node.localfile;
+      var certfile = node.localfile; 
       var keyfile = node.localkeyfile;
       connectionOption.certificateFile = certfile;
       connectionOption.privateKeyFile =  keyfile;
-
+  
       if (!fs.existsSync(certfile)) {
         node_error("Local certificate file not found:" + certfile)
       }
@@ -110,7 +110,8 @@ module.exports = function (RED) {
     var subscription; // only one subscription needed to hold multiple monitored Items
 
     var monitoredItems = new Map();
-   
+
+    
     function node_error(err) {
       console.error(chalk.red("Client node error on: " + node.name + " error: " + JSON.stringify(err)));
       node.error("Client node error on: " + node.name + " error: " + JSON.stringify(err));
@@ -129,6 +130,7 @@ module.exports = function (RED) {
         node.log(logMessage);
       }
     }
+
 
    async function getBrowseName(_session, nodeId, callback) {
     const dataValue = await _session.read({
