@@ -32,7 +32,7 @@ module.exports = function (RED) {
         this.items = config.items;
         this.name = config.name;
         var node = this;
-        node.name = "OPC UA Browser";
+        // node.name = "OPC UA Browser";
         var browseTopic = "ns=0;i=85"; // Default root, server Objects
 
         var opcuaEndpoint = RED.nodes.getNode(config.endpoint);
