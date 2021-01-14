@@ -490,7 +490,6 @@ module.exports = function (RED) {
                 case "addFolder":
                     verbose_warn("adding Folder ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
                     var parentFolder = node.server.engine.addressSpace.rootFolder.objects;
-                    console.log("ParentFolder nodeId: " + parentFolder.nodeId);
                     if (folder) {
                         parentFolder = folder; // Use previously created folder as parentFolder or setFolder() can be used to set parentFolder
                     }
@@ -499,7 +498,6 @@ module.exports = function (RED) {
                         nodeId: msg.topic,
                         browseName: msg.topic.substring(7)
                     });
-                    console.log("New Folder: " + JSON.stringify(folder));
                     break;
 
                 case "addVariable":
