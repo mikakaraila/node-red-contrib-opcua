@@ -26,11 +26,7 @@
 module.exports = function (RED) {
   var opcua = require('node-opcua');
   var uaclient = require('node-opcua-client');
-  var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
-  var async = require("async");
-  var path = require("path");
-  var opcuaBasic = require('./opcua-basics');
-
+ 
   function OPCUAMethodNode(n) {
     RED.nodes.createNode(this, n)
     this.objectId = n.objectId;
@@ -111,11 +107,7 @@ module.exports = function (RED) {
     } else {
       connectionOption.securityPolicy = opcua.MessageSecurityMode.None;
     }
-    // These are not used, wrong options to get connection to server
-    // If certificate is needed then read it through endpoint as bytes
-    // connectionOption.certificateFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
-    // connectionOption.privateKeyFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
-    connectionOption.endpoint_must_exist = false;
+    connectionOption.endpointMustExist = false;
 
     if (opcuaEndpoint.login) {
       userIdentity.userName = opcuaEndpoint.credentials.user;

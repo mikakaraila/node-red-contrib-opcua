@@ -54,11 +54,7 @@ module.exports = function (RED) {
          else {
             connectionOption.securityPolicy = opcua.MessageSecurityMode.None;
         }
-        // These are not used, wrong options to get connection to server
-        // If certificate is needed then read it through endpoint as bytes
-        // connectionOption.certificateFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
-        // connectionOption.privateKeyFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
-        connectionOption.endpoint_must_exist = false;
+        connectionOption.endpointMustExist = false;
      
         if (opcuaEndpoint.login) {
           userIdentity.userName = opcuaEndpoint.credentials.user;
@@ -90,7 +86,6 @@ module.exports = function (RED) {
         async function setupClient(url, callback) {
 
             // new OPC UA Client and browse from Objects ns=0;s=Objects
-            // var browseClient = opcua.OPCUAClient.create(connectionOption);
             const client = opcua.OPCUAClient.create(connectionOption);
 
             try 

@@ -70,11 +70,11 @@ module.exports = function (RED) {
     if (node.certificate === "l" && node.localfile) {
       verbose_log("Using 'own' local certificate file " + node.localfile);
       // User must define absolute path
-      var certfile = node.localfile; // path.join(__dirname, node.localfile);
-      var keyfile = node.localkeyfile; //  path.join(__dirname, node.localkeyfile); // Test.pem => Test_key.pem
-      // var cert = crypto_utils.readCertificate(certfile);
+      var certfile = node.localfile; 
+      var keyfile = node.localkeyfile;
       connectionOption.certificateFile = certfile;
       connectionOption.privateKeyFile =  keyfile;
+  
       if (!fs.existsSync(certfile)) {
         node_error("Local certificate file not found:" + certfile)
       }
@@ -86,60 +86,11 @@ module.exports = function (RED) {
       node.log("\tLocal 'own' certificate is NOT used.");
     }
     
-    var clientPkg = null;
-    // Check first if node-opcua & it´s packages are global installed
-    try {
-      clientPkg = installedPath.getInstalledPathSync('node-opcua-client');
-      if (node.certificate != "l" && clientPkg) {
-        verbose_log("Found node-opcua globally installed path: " + clientPkg);
-      }
-    }
-    catch (err) {
-      verbose_log("Node-opcua is not globally installed, checking node-red-contrib-opcua next");
-      clientPkg = null;
-    }
-
-    // Check then if node-red-contrib-opcua is global installed
-    try {
-      clientPkg = installedPath.getInstalledPathSync('node-red-contrib-opcua');
-      if (node.certificate != "l" && clientPkg) {
-        verbose_log("Found node-red-contrib-opcua globally installed path: " + clientPkg);
-        clientPkg = path.join(clientPkg, "node_modules", "node-opcua-client");
-      }
-    }
-    catch (err) {
-      verbose_log("Node-red-contrib-opcua is not globally installed, checking local folders next");
-      clientPkg = null;
-    }
-
-    // Check finally local installation
-    if (node.certificate != "l" && clientPkg == null) {
-      clientPkg = installedPath.getInstalledPathSync('node-opcua-client', {
-        paths: [
-        path.join(__dirname, '..'),
-        path.join(__dirname, '../..'),
-        path.join(process.cwd(), './node_modules'),
-        path.join(process.cwd(), '../node_modules'), // Linux installation needs this
-        path.join(process.cwd(), '.node-red/node_modules'),
-        "/usr/local/addons/redmatic/var/node_modules", // /var -> /usr Global Red-matic package installation folder
-        "/usr/local/addons/redmatic/var/node_modules/node-red-contrib-opcua/node_modules" // This package specific sub-folder
-        ],
-      });
-      verbose_log("Found locally installed path: " + clientPkg);
-    }
-    if (node.certificate != "l" && !clientPkg)
-      verbose_warn("Cannot find node-opcua-client package with client certificate");
-    // Client certificate from node-opcua-client\certificates, created by node-opcua installation
-    if (node.certificate === "n" && opcuaEndpoint.securityPolicy !== "None" && clientPkg) {
-      connectionOption.certificateFile = path.join(clientPkg, "/certificates/client_selfsigned_cert_2048.pem");
-      connectionOption.privateKeyFile =  path.join(clientPkg, "/certificates/PKI/own/private/private_key.pem");
-      verbose_log("Using client certificate " + connectionOption.certificateFile);
-    }
     // Moved needed options to client create
     connectionOption.requestedSessionTimeout = opcuaBasics.calc_milliseconds_by_time_and_unit(300, "s");
     connectionOption.applicationName = node.name; // Application name
     connectionOption.clientName = node.name; // This is used for the session names
-    connectionOption.endpoint_must_exist = false;
+    connectionOption.endpointMustExist = false;
     connectionOption.defaultSecureTokenLifetime = 40000 * 5;
     connectionOption.connectionStrategy = {
       maxRetry: 10, // Limited to max 10 ~5min // 10512000, // 10 years should be enough. No infinite parameter for backoff.
@@ -156,9 +107,6 @@ module.exports = function (RED) {
       userIdentity.type = opcua.UserTokenType.UserName; // New TypeScript API parameter
     }
     else {
-      // Fix for invalid endpoint
-      userIdentity.userName = "";
-      userIdentity.password = "";
       userIdentity.type = opcua.UserTokenType.Anonymous;
     }
     verbose_log("UserIdentity: " + JSON.stringify(userIdentity));
@@ -166,14 +114,8 @@ module.exports = function (RED) {
     var subscription; // only one subscription needed to hold multiple monitored Items
 
     var monitoredItems = new Map();
-    // var monitoredItems = new Set();
-    /*
-    var monitoredItems = new Set(null, function (a, b) {
-         return a.topicName === b.topicName;
-       }, function (object) {
-         return object.topicName;
-       }); // multiple monitored Items should be registered only once
-    */
+
+    
     function node_error(err) {
       console.error(chalk.red("Client node error on: " + node.name + " error: " + JSON.stringify(err)));
       node.error("Client node error on: " + node.name + " error: " + JSON.stringify(err));
@@ -193,22 +135,7 @@ module.exports = function (RED) {
       }
     }
 
-  /*
-    function getBrowseName(session, nodeId, callback) {
-      session.read([{
-        nodeId: nodeId,
-        attributeId: AttributeIds.BrowseName
-      }], function (err, org, readValue) {
-        if (!err) {
-          if (readValue[0].statusCode === opcua.StatusCodes.Good) {
-            var browseName = readValue[0].value.value.name;
-            return callback(null, browseName);
-          }
-        }
-        callback(err, "<??>");
-      })
-    }
-  */
+
    async function getBrowseName(_session, nodeId, callback) {
     const dataValue = await _session.read({
       attributeId: AttributeIds.BrowseName,
@@ -272,7 +199,6 @@ module.exports = function (RED) {
       node.client = null;
       verbose_warn("Create Client: " + JSON.stringify(connectionOption));
       try {
-        // connectionOption.serverCertificate = serverCertificate;
         node.client = opcua.OPCUAClient.create(connectionOption);
         node.client.on("connection_reestablished", function () {
           verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!!");
