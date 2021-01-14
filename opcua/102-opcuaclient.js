@@ -84,7 +84,7 @@ module.exports = function (RED) {
     
     // Moved needed options to client create
     connectionOption.requestedSessionTimeout = opcuaBasics.calc_milliseconds_by_time_and_unit(300, "s");
-    connectionOption.applicationName = node.name; // Application name
+    // DO NOT USE must be NodeOPCUA-Client !! connectionOption.applicationName = node.name; // Application name
     connectionOption.clientName = node.name; // This is used for the session names
     connectionOption.endpointMustExist = false;
     connectionOption.defaultSecureTokenLifetime = 40000 * 5;
