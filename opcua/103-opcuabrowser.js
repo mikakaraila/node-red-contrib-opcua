@@ -104,11 +104,12 @@ module.exports = function (RED) {
                 // step 4 : Read Value and Datatypes
                 for(const reference of browseResult.references)
                 {
-                     var ref_obj=Object.assign({}, reference);
-                     // const dataValue=await session.readVariableValue(ref_obj.nodeId);
-                     const dataValue=await session.read(ref_obj.nodeId);
-                     ref_obj["value"]=dataValue.value.value;
-                     ref_obj["dataType"]=opcua.DataType[dataValue.value.dataType];
+                    var ref_obj = Object.assign({}, reference);
+                    const dataValue = await session.readVariableValue(ref_obj.nodeId); // TODO old way, but luckily still working
+                    ref_obj["value"] = dataValue.value.value;
+                    ref_obj["dataType"] = opcua.DataType[dataValue.value.dataType];
+                    
+
                      node.add_item(ref_obj);
                 }
         
@@ -189,7 +190,7 @@ module.exports = function (RED) {
                 }
             }
 
-            node.items = []; // new Array(); // clear items - TODO: may it becomes usable in Edit window of the node
+            node.items = []; // clear items
 
             if (!browseTopic) {
                 browseTopic = browse_to_root();

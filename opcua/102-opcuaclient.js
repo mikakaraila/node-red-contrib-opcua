@@ -528,7 +528,7 @@ module.exports = function (RED) {
       if (item.length > 0) {
         items[0] = item;
       } else {
-        items[0] = msg.topic; // TODO support for multiple item reading
+        items[0] = msg.topic;
       }
 
       if (node.session) {
@@ -712,7 +712,7 @@ module.exports = function (RED) {
       if (item.length > 0) {
         items[0] = item;
       } else {
-        items[0] = msg.topic; // TODO support for multiple item reading
+        items[0] = msg.topic;
       }
 
       if (node.session) {
