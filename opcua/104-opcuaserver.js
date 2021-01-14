@@ -22,10 +22,10 @@ module.exports = function (RED) {
     var path = require('path');
     var os = require("os");
     var chalk = require("chalk");
-    var async = require("async");
     var opcuaBasics = require('./opcua-basics');
-    var installedPath = require('get-installed-path');
-    
+    const envPaths = require("env-paths");
+    const config = envPaths("node-red-opcua").config;
+
     function OpcUaServerNode(n) {
 
         RED.nodes.createNode(this, n);
@@ -59,8 +59,23 @@ module.exports = function (RED) {
         var vendorName;
         var equipmentNotFound = true;
         var initialized = false;
-        // var server = null;
         var folder = null;
+
+        function createCertificateManager() {
+            return new OPCUACertificateManager({
+                name: "PKI",
+                rootFolder: path.join(config, "PKI"),
+                automaticallyAcceptUnknownCertificate: true
+            });
+        }
+
+        function createUserCertificateManager() {
+            return new OPCUACertificateManager({
+                name: "UserPKI",
+                rootFolder: path.join(config, "UserPKI"),
+                automaticallyAcceptUnknownCertificate: true
+            });
+        }
 
         function node_error(err) {
             console.error(chalk.red("[Error] Server node error on: " + node.name + " error: " + JSON.stringify(err)));
@@ -95,38 +110,11 @@ module.exports = function (RED) {
         async function initNewServer() {
             initialized = false;
             verbose_warn("create Server from XML ...");
-            var serverPkg = installedPath.getInstalledPathSync('node-opcua-server', {
-                paths: [
-                  path.join(__dirname, '..'),
-                  path.join(__dirname, '../..'),
-                  path.join(process.cwd(), './node_modules'),
-                  path.join(process.cwd(), '../node_modules'), // Linux installation needs this
-                  path.join(process.cwd(), '.node-red/node_modules'),
-                ],
-            });
-            if (!serverPkg)
-                verbose_warn("Cannot find node-opcua-server package with server certificate");
-
-            var rootpki = path.join(serverPkg, "/certificates/PKI");
-            var certFile = path.join(serverPkg, "/certificates/server_selfsigned_cert_2048.pem");
-            var privFile = path.join(serverPkg, "/certificates/PKI/own/private/private_key.pem");
-
-            const pkiFolder = rootpki; // path.join(configFolder, "pki");
-            const userPkiFolder = path.join(serverPkg, "/certificates/userPki");
-            const userCertificateManager = new opcua.OPCUACertificateManager({
-              automaticallyAcceptUnknownCertificate: true,
-              name: "userPki",
-              rootFolder: userPkiFolder,
-            });
-            await userCertificateManager.initialize();
           
-            const serverCertificateManager = new opcua.OPCUACertificateManager({
-              automaticallyAcceptUnknownCertificate: true,
-              name: "pki",
-              rootFolder: pkiFolder,
-            });    
-            await serverCertificateManager.initialize();
-          
+            const applicationUri =  makeApplicationUrn("%FQDN%", "node-red-contrib-opcua-server");
+            const serverCertificateManager = createCertificateManager();
+            const userCertificateManager = createUserCertificateManager();
+
             verbose_log("Using server certificate " + certFile);
             var registerMethod = null;
             if (node.registerToDiscovery === true) {
@@ -142,16 +130,12 @@ module.exports = function (RED) {
                 maxConnectionsPerEndpoint: 20,
                 nodeset_filename: xmlFiles,
                 serverInfo: {
-                  // applicationUri: makeApplicationUrn("%FQDN%", "MiniNodeOPCUA-Server"), // Check certificate Uri
+                  applicationUri,
                   productUri: "Node-RED NodeOPCUA-Server",
                   // applicationName: { text: "Mini NodeOPCUA Server", locale: "en" }, // Set later
                   gatewayServerUri: null,
                   discoveryProfileUri: null,
                   discoveryUrls: []
-                },
-                buildInfo: {
-                    buildNumber: "0.2.93",
-                    buildDate: "2020-12-25T22:00:00"
                 },
                 serverCapabilities: {
                   maxBrowseContinuationPoints: 10,
@@ -180,8 +164,8 @@ module.exports = function (RED) {
                 applicationName: { text: "Node-RED OPCUA" }
             };
             node.server_options.buildInfo = {
-                buildNumber: "0.2.93",
-                buildDate: "2021-01-13T21:10:00"
+                buildNumber: "0.2.94",
+                buildDate: "2021-01-14T18:00:00"
             };
             var hostname = os.hostname();
             var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840/UADiscovery";
@@ -319,40 +303,6 @@ module.exports = function (RED) {
                 };
                 callback(null, callMethodResult);
             });
-        }
-
-        function post_initialize() {
-            if (node.server) {
-                var addressSpace = node.server.engine.addressSpace;
-                construct_my_address_space(addressSpace);
-                /*
-                verbose_log("Next server start...");
-
-                await node.server.start(function () {
-                    verbose_warn("Server is now listening ... ( press CTRL+C to stop)");
-                    for (const e of node.server.endpoints) {
-                        for (const ed of e.endpointDescriptions()) {
-                            verbose_log("Server endpointUrl(s): " + ed.endpointUrl + " securityMode: " + ed.securityMode.toString() + " securityPolicyUri: " + ed.securityPolicyUri.toString());
-                        }
-                    }
-                });
-                */
-                node.status({
-                    fill: "green",
-                    shape: "dot",
-                    text: "running"
-                });
-                initialized = true;
-                verbose_log("server initialized");    
-
-            } else {
-                node.status({
-                    fill: "gray",
-                    shape: "dot",
-                    text: "not running"
-                });
-                node_error("server is not initialized")
-            }
         }
 
         function available_memory() {

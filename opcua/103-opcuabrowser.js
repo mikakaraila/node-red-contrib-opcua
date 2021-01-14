@@ -20,8 +20,6 @@ module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
     var uaclient = require('node-opcua-client');
-    var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
-    var async = require("async");
     var path = require("path");
 
     function OpcUaBrowserNode(config) {
@@ -54,11 +52,7 @@ module.exports = function (RED) {
          else {
             connectionOption.securityPolicy = opcua.MessageSecurityMode.None;
         }
-        // These are not used, wrong options to get connection to server
-        // If certificate is needed then read it through endpoint as bytes
-        // connectionOption.certificateFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/client_selfsigned_cert_1024.pem");
-        // connectionOption.privateKeyFile = path.join(__dirname, "../../node_modules/node-opcua-client/certificates/PKI/own/private/private_key.pem");
-        connectionOption.endpoint_must_exist = false;
+        connectionOption.endpointMustExist  = false;
      
         if (opcuaEndpoint.login) {
           userIdentity.userName = opcuaEndpoint.credentials.user;
@@ -90,7 +84,6 @@ module.exports = function (RED) {
         async function setupClient(url, callback) {
 
             // new OPC UA Client and browse from Objects ns=0;s=Objects
-            // var browseClient = opcua.OPCUAClient.create(connectionOption);
             const client = opcua.OPCUAClient.create(connectionOption);
 
             try 
@@ -143,76 +136,7 @@ module.exports = function (RED) {
             {
                 callback(err);
             }
-            /*
-            var browseSession;
 
-            async.series([
-                // First connect to server´s endpoint
-                function (callback) {
-                    browseClient.connect(url, callback);
-                    node.log("start browse client on " + opcuaEndpoint.endpoint);
-                },
-                function (callback) {
-                    browseClient.createSession(userIdentity, function (err, session) {
-                        if (!err) {
-                            browseSession = session;
-                            node.log("start browse session on " + opcuaEndpoint.endpoint);
-                            callback();
-                        } else {
-                            callback(err);
-                        }
-                    });
-                },
-                // step 3 : browse
-                function (callback) {
-                    node.warn("browseTopic:" + browseTopic);
-                    browseSession.browse(coerceNodeId(browseTopic), function (err, browse_result) {
-                        if (!err) {
-                            var nodes = browse_result.references;
-                            if (nodes instanceof Array) {
-                                nodes.forEach(function (reference) {
-                                    // TODO Fix later 
-                                    node.add_item(reference);
-                                });
-                            }
-                        }
-
-                        node.status({
-                            fill: "green",
-                            shape: "dot",
-                            text: "Items: " + node.items.length
-                        });
-
-                        callback(err);
-                    });
-                },
-                // close session
-                function (callback) {
-
-                    node.warn("sending items " + node.items.length);
-                    var msg = {
-                        payload: node.items,
-                        endpoint: opcuaEndpoint.endpoint
-                    };
-                    node.send(msg);
-
-                    node.warn("close browse session");
-                    browseSession.close(function (err) {
-                        if (err) {
-                            node_error("session closed failed on browse");
-                        }
-                        callback(err);
-                    });
-                }
-            ], function (err) {
-                if (err) {
-                    browseSession = null;
-                    browseClient = null;
-                    callback(err);
-                }
-            });
-
-            */
         }
 
         setupClient(opcuaEndpoint.endpoint, function (err) {
