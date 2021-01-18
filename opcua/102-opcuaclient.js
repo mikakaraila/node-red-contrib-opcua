@@ -36,7 +36,8 @@ module.exports = function (RED) {
   var read_service = require("node-opcua-service-read");
   var TimestampsToReturn = read_service.TimestampsToReturn;
   var subscription_service = require("node-opcua-service-subscription");
-  
+  const {parse, stringify} = require('flatted');
+
   function OpcUaClientNode(n) {
     RED.nodes.createNode(this, n);
     this.name = n.name;
@@ -94,8 +95,8 @@ module.exports = function (RED) {
       maxDelay: 30 * 1000 // 30s
     };
     connectionOption.keepSessionAlive = true;
-    verbose_log("Connection options:" + JSON.stringify(connectionOption));
-    verbose_log("EndPoint: " + JSON.stringify(opcuaEndpoint));
+    verbose_log("Connection options:" + stringify(connectionOption));
+    verbose_log("EndPoint: " + stringify(opcuaEndpoint));
 
     if (opcuaEndpoint.login === true) {
       userIdentity.userName = opcuaEndpoint.credentials.user;
@@ -105,7 +106,7 @@ module.exports = function (RED) {
     else {
       userIdentity.type = opcua.UserTokenType.Anonymous;
     }
-    verbose_log("UserIdentity: " + JSON.stringify(userIdentity));
+    verbose_log("UserIdentity: " + stringify(userIdentity));
     var items = [];
     var subscription; // only one subscription needed to hold multiple monitored Items
 
@@ -113,8 +114,8 @@ module.exports = function (RED) {
 
     
     function node_error(err) {
-      console.error(chalk.red("Client node error on: " + node.name + " error: " + JSON.stringify(err)));
-      node.error("Client node error on: " + node.name + " error: " + JSON.stringify(err));
+      console.error(chalk.red("Client node error on: " + node.name + " error: " + stringify(err)));
+      node.error("Client node error on: " + node.name + " error: " + stringify(err));
     }
 
     function verbose_warn(logMessage) {
@@ -193,7 +194,7 @@ module.exports = function (RED) {
 
     function create_opcua_client(callback) {
       node.client = null;
-      verbose_warn("Create Client: " + JSON.stringify(connectionOption));
+      verbose_warn("Create Client: " + stringify(connectionOption));
       try {
         node.client = opcua.OPCUAClient.create(connectionOption);
         node.client.on("connection_reestablished", function () {
@@ -208,7 +209,7 @@ module.exports = function (RED) {
     
       }
       catch(err) {
-        node_error("Cannot create client, check connection options: " + JSON.stringify(connectionOption));
+        node_error("Cannot create client, check connection options: " + stringify(connectionOption));
       }
       items = [];
       node.items = items;
@@ -239,7 +240,7 @@ module.exports = function (RED) {
           });
         }
         catch (err) {
-          node_error("Error on disconnect: " + JSON.stringify(err));
+          node_error("Error on disconnect: " + stringify(err));
         }
       }
     }
@@ -281,7 +282,7 @@ module.exports = function (RED) {
         verbose_log("Exact endpointUrl: " + opcuaEndpoint.endpoint + " hostname: " + os.hostname());
         await node.client.connect(opcuaEndpoint.endpoint);
       } catch (err) {
-        verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt securityMode:" + JSON.stringify(connectionOption.securityMode) + " securityPolicy:" + JSON.stringify(connectionOption.securityPolicy));
+        verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt securityMode:" + stringify(connectionOption.securityMode) + " securityPolicy:" + stringify(connectionOption.securityPolicy));
         verbose_warn("Case B: UserName & password does not match to server (needed by Sign): " + userIdentity.userName + " " + userIdentity.password);
         set_node_errorstatus_to("invalid endpoint " + opcuaEndpoint.endpoint, err);
         return;
@@ -339,7 +340,7 @@ module.exports = function (RED) {
       // STEP 3
       verbose_log("Create session ...");
       try {
-        verbose_log("Create session with userIdentity: " + JSON.stringify(userIdentity));
+        verbose_log("Create session with userIdentity: " + stringify(userIdentity));
         //  {"clientName": "Node-red OPC UA Client node " + node.name},
         // sessionName = "Node-red OPC UA Client node " + node.name;
         if (!node.client) {
@@ -381,7 +382,7 @@ module.exports = function (RED) {
         verbose_log("Subscription without parameters");
         return newSubscription;
       }
-      verbose_log("Publishing interval " + JSON.stringify(parameters));
+      verbose_log("Publishing interval " + stringify(parameters));
       newSubscription = opcua.ClientSubscription.create(node.session, parameters);
       verbose_log("Subscription " + newSubscription.toString());
       newSubscription.on("initialized", function () {
@@ -504,7 +505,7 @@ module.exports = function (RED) {
           writemultiple_action_input(msg)
           break;
         default:
-          verbose_warn("Unknown action: " + node.action + " with msg " + JSON.stringify(msg));
+          verbose_warn("Unknown action: " + node.action + " with msg " + stringify(msg));
           break;
       }
       //node.send(msg); // msg.payload is here actual inject caused wrong values
@@ -521,7 +522,7 @@ module.exports = function (RED) {
           msg.datatype = msg.topic.substring(n + 9);
           item = msg.topic.substring(0, n - 1);
           msg.topic = item;
-          verbose_log(JSON.stringify(msg));
+          verbose_log(stringify(msg));
         }
       }
 
@@ -580,7 +581,7 @@ module.exports = function (RED) {
                   if (dataValue) {
                     node_error("\tBad read: " + (dataValue.statusCode.toString(16)));
                     node_error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
-                    node_error("\tData:" + JSON.stringify(dataValue));
+                    node_error("\tData:" + stringify(dataValue));
                   } else {
                     node_error(e.message);
                   }
@@ -606,7 +607,7 @@ module.exports = function (RED) {
           msg.datatype = msg.topic.substring(n + 9);
           item = msg.topic.substring(0, n - 1);
           msg.topic = item;
-          verbose_log(JSON.stringify(msg));
+          verbose_log(stringify(msg));
         }
       }
 
@@ -680,7 +681,7 @@ module.exports = function (RED) {
                   if (dataValue) {
                     node_error("\tBad read: " + (dataValue.statusCode.toString(16)));
                     // node_error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
-                    node_error("\tData:" + JSON.stringify(dataValue));
+                    node_error("\tData:" + stringify(dataValue));
                   } else {
                     node_error(e.message);
                   }
@@ -705,7 +706,7 @@ module.exports = function (RED) {
           msg.datatype = msg.topic.substring(n + 9);
           item = msg.topic.substring(0, n - 1);
           msg.topic = item;
-          verbose_log(JSON.stringify(msg));
+          verbose_log(stringify(msg));
         }
       }
 
@@ -733,7 +734,7 @@ module.exports = function (RED) {
             if (data.typeDefinition != "FolderType") {
               var object = {};
               try {
-                object = JSON.parse(JSON.stringify(data));
+                object = JSON.parse(stringify(data));
               } catch (err) {
                 node_error(err);
                 node.warn(data);
@@ -746,8 +747,12 @@ module.exports = function (RED) {
               } else {
                 msg.payload.description = "";
               }
-
-              msg.payload.browseName = object.browseName.name;
+              if (object.browseName && object.browseName.name) {
+                msg.payload.browseName = object.browseName.name;
+              }
+              else { 
+                msg.payload.browseName = object.browseName;
+              }
               msg.payload.userAccessLevel = object.userAccessLevel;
               msg.payload.accessLevel = object.accessLevel;
               msg.payload.type = typeStr;
@@ -788,7 +793,7 @@ module.exports = function (RED) {
         nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, parseInt(s), parseInt(ns));
       }
 
-      verbose_log("msg=" + JSON.stringify(msg));
+      verbose_log("msg=" + stringify(msg));
       verbose_log("namespace=" + ns);
       verbose_log("string=" + s);
       verbose_log("type=" + msg.datatype);
@@ -796,7 +801,7 @@ module.exports = function (RED) {
       verbose_log(nodeid.toString());
 
       var opcuaDataValue = opcuaBasics.build_new_dataValue(opcua, msg.datatype, msg.payload);
-      verbose_log("DATATYPE: " + JSON.stringify(opcuaDataValue));
+      verbose_log("DATATYPE: " + stringify(opcuaDataValue));
       if (node.session) {
         const nodeToWrite = {
           nodeId: nodeid.toString(),
@@ -849,13 +854,13 @@ module.exports = function (RED) {
         }
       }
 
-      verbose_log("msg=" + JSON.stringify(msg));
+      verbose_log("msg=" + stringify(msg));
       verbose_log("namespace=" + ns);
       verbose_log("string=" + s);
       if (msg.datatype) {
         verbose_log("type=" + msg.datatype);
       }
-      verbose_log("payload value=" + JSON.stringify(msg.payload));
+      verbose_log("payload value=" + stringify(msg.payload));
 
       if (node.session) {
         const nodesToWrite = msg.payload.map(function (msgToWrite) {
@@ -871,7 +876,7 @@ module.exports = function (RED) {
           }
           return nodeToWrite;
         });
-        verbose_log("Writing nodes with values:" + JSON.stringify(nodesToWrite));
+        verbose_log("Writing nodes with values:" + stringify(nodesToWrite));
         node.session.write(nodesToWrite, function (err, statusCode) {
           if (err) {
             set_node_errorstatus_to("error", err);
@@ -974,7 +979,7 @@ module.exports = function (RED) {
       var monitoredItem = monitoredItems.get(msg.topic);
 
       if (!monitoredItem) {
-        verbose_log("Msg " + JSON.stringify(msg));
+        verbose_log("Msg " + stringify(msg));
         // var interval = 100; // Set as default if no payload
         var queueSize = 10;
         var interval = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit); // Use value given at client node
@@ -1027,7 +1032,7 @@ module.exports = function (RED) {
         });
 
         monitoredItem.on("changed", function (dataValue) {
-          let msgToSend = JSON.parse(JSON.stringify(msg)); // clone original msg if it contains other needed properties {};
+          let msgToSend = JSON.parse(stringify(msg)); // clone original msg if it contains other needed properties {};
 
           set_node_status_to("active subscribed");
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
@@ -1086,7 +1091,7 @@ module.exports = function (RED) {
       }
       var monitoredItem = monitoredItems.get(msg.topic);
       if (!monitoredItem) {
-        verbose_log("Msg " + JSON.stringify(msg));
+        verbose_log("Msg " + stringify(msg));
         var interval = 100; // Set as default if no payload
         var queueSize = 10;
         // Interval from the payload (old existing feature still supported)
@@ -1233,7 +1238,7 @@ module.exports = function (RED) {
     }
     function get_monitored_items(subscription, msg) {
       node.session.getMonitoredItems(subscription.subscriptionId, function (err, monitoredItems) {
-        verbose_log("Node has subscribed items: " + JSON.stringify(monitoredItems));
+        verbose_log("Node has subscribed items: " + stringify(monitoredItems));
         return monitoredItems;
       });
     }
@@ -1260,7 +1265,7 @@ module.exports = function (RED) {
     }
 
     function delete_subscription_action_input(msg) {
-      verbose_log("delete subscription= " + subscription.toString() + " msg= " + JSON.stringify(msg));
+      verbose_log("delete subscription= " + subscription.toString() + " msg= " + stringify(msg));
       if (!subscription) {
         verbose_warn("Cannot delete, no subscription existing!");
       } else {
@@ -1273,7 +1278,7 @@ module.exports = function (RED) {
               node_error("Delete subscription error " + err);
             }
             else {
-              verbose_log("Subscription deleted, response:" + JSON.stringify(response));
+              verbose_log("Subscription deleted, response:" + stringify(response));
               subscription.terminate(); // Added to allow new subscription
             }
         });
@@ -1332,7 +1337,7 @@ module.exports = function (RED) {
 
       var monitoredItem = monitoredItems.get(msg.topic);
       if (monitoredItem === undefined) {
-        verbose_log("Msg " + JSON.stringify(msg));
+        verbose_log("Msg " + stringify(msg));
         var interval = convertAndCheckInterval(msg.payload);
         verbose_log(msg.topic + " samplingInterval " + interval);
         verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
@@ -1416,9 +1421,9 @@ module.exports = function (RED) {
     function reconnect(msg) {
       if (msg && msg.OpcUaEndpoint) {
         opcuaEndpoint = msg.OpcUaEndpoint; // Check all parameters!
-        verbose_log("Using new endpoint:" + JSON.stringify(opcuaEndpoint));
+        verbose_log("Using new endpoint:" + stringify(opcuaEndpoint));
       } else {
-        verbose_log("Using endpoint:" + JSON.stringify(opcuaEndpoint));
+        verbose_log("Using endpoint:" + stringify(opcuaEndpoint));
       }
       // First close subscriptions etc.
       if (subscription && subscription.isActive) {
@@ -1429,14 +1434,19 @@ module.exports = function (RED) {
       subscription = null;
       // monitoredItems = new Map();
       monitoredItems.clear();
-      node.session.close(function(err) {
-        if (err) {
-          node_error("Session close error: " + err);
-        }
-        else {
-          verbose_warn("Session closed!");
-        }
-      });
+      if (node.session) {
+        node.session.close(function(err) {
+          if (err) {
+            node_error("Session close error: " + err);
+          }
+          else {
+            verbose_warn("Session closed!");
+          }
+        });
+      }
+      else {
+        verbose_warn("No session to close!");
+      }
       //reset_opcua_client(connect_opcua_client);
       set_node_status_to("reconnectiong...");
       create_opcua_client(connect_opcua_client);
