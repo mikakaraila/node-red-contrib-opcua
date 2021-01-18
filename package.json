@@ -36,8 +36,9 @@
   "dependencies": {
     "async": "^3.2.0",
     "chalk": "4.1.0",
-    "es6-map": "^0.1.5",
     "env-paths": "2.2.0",
+    "es6-map": "^0.1.5",
+    "flatted": "^3.1.0",
     "node-opcua": "2.29.0",
     "treeify": "^1.1.0"
   },
