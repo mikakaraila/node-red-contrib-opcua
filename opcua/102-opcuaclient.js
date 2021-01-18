@@ -196,15 +196,26 @@ module.exports = function (RED) {
       node.client = null;
       verbose_warn("Create Client: " + stringify(connectionOption));
       try {
+        // Use empty 0.0.0.0 address as "no client" initial value
+        if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") == 0) {
+          items = [];
+          node.items = items;
+          set_node_status_to("no client");
+          if (callback) {
+            callback();
+          }
+          return;
+        }
+        // Normal client
         node.client = opcua.OPCUAClient.create(connectionOption);
         node.client.on("connection_reestablished", function () {
-          verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!!");
+          verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!! Node: " + node.name);
         });
         node.client.on("backoff", function (attempt, delay) {
-          verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds");
+          verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds. Node:  " + node.name);
         });
         node.client.on("start_reconnection", function () {
-          verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  Starting Reconnection !!!!!!!!!!!!!!!!!!!");
+          verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  Starting Reconnection !!!!!!!!!!!!!!!!!!! Node: " + node.name);
         });
     
       }
@@ -221,6 +232,9 @@ module.exports = function (RED) {
 
     function reset_opcua_client(callback) {
       if (node.client) {
+        node.client.removeListener("connection_reestablished");
+        node.client.removeListener("backoff");
+        node.client.removeListener("start_reconnection");
         node.client.disconnect(function () {
           verbose_log("Client disconnected!");
           create_opcua_client(callback);
