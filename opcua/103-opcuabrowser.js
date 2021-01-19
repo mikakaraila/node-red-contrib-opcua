@@ -105,12 +105,10 @@ module.exports = function (RED) {
                 for(const reference of browseResult.references)
                 {
                     var ref_obj = Object.assign({}, reference);
-                    const dataValue = await session.readVariableValue(ref_obj.nodeId); // TODO old way, but luckily still working
+                    const dataValue = await session.read({nodeId: ref_obj.nodeId, attributeId: opcua.AttributeIds.Value});
                     ref_obj["value"] = dataValue.value.value;
                     ref_obj["dataType"] = opcua.DataType[dataValue.value.dataType];
-                    
-
-                     node.add_item(ref_obj);
+                    node.add_item(ref_obj);
                 }
         
                 node.status({
