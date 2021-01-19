@@ -1052,7 +1052,7 @@ module.exports = function (RED) {
         });
 
         monitoredItem.on("changed", function (dataValue) {
-          let msgToSend = JSON.parse(stringify(msg)); // clone original msg if it contains other needed properties {};
+          let msgToSend = JSON.parse(JSON.stringify(msg)); // clone original msg if it contains other needed properties {};
 
           set_node_status_to("active subscribed");
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
