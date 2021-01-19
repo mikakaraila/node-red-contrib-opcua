@@ -487,6 +487,9 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
             var uint8 = parseInt(value);
             nValue = uint8;
             break;
+        case "ByteString":
+            var nValue = Buffer.from(value);
+            break;
         case "UInt8":
             var uint8 = new Uint8Array([value]);
             nValue = uint8[0];
