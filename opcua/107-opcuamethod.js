@@ -39,7 +39,7 @@ module.exports = function (RED) {
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
 
-    if (n.arg0type === undefined || n.arg0type === "") {
+    if (n.arg0type === undefined || n.arg0type === "" || n.arg0value === "") {
       // Do nothing
     } else if (n.arg0type === "Boolean") {
       if (n.arg0value === "True") {
@@ -58,7 +58,7 @@ module.exports = function (RED) {
       node.inputArguments.push({dataType: n.arg0type, value: parseInt(n.arg0value)});
     }
 
-    if (n.arg1type === undefined || n.arg1ype === "") {
+    if (n.arg1type === undefined || n.arg1ype === "" || n.arg1value === "") {
       // Do nothing
     } else if (n.arg1type === "Boolean") {
       if (n.arg1value === "True") {
@@ -77,7 +77,7 @@ module.exports = function (RED) {
       node.inputArguments.push({dataType: n.arg1type, value: parseInt(n.arg1value)});
     }
 
-    if (n.arg2type === undefined || n.arg2type === "") {
+    if (n.arg2type === undefined || n.arg2type === "" || n.arg2value === "") {
       // Do nothing
     } else if (n.arg2type === "Boolean") {
       if (n.arg2value === "True") {
@@ -211,14 +211,24 @@ module.exports = function (RED) {
           const result = await node.session.call(callMethodRequest);
           verbose_log("Results: " + result);
           msg.result = result;
-
-          // TODO make this better, not generic solution, but result contains everything
+          msg.payload = [];
+          if (result && result.statusCode === opcua.StatusCodes.Good) {
+            var i = 0;
+            console.log("Value:" + result.outputArguments[i].value);
+            while (result.outputArguments.length > i) {
+              msg.payload.push(result.outputArguments[i]); // Just copy results to payload[] array
+              i++;
+            }
+          }
+          // make this better, not generic solution, but result contains everything
+          /*
           if (result && result.statusCode === opcua.StatusCodes.Good && result.outputArguments[0].value) {
             msg.payload = result.outputArguments[0].value; // Works only if one output argument
           }
           else {
             msg.payload = null;
           }
+          */
           node.send(msg);
         } catch (err) {
           node.error("Method execution error:" + err);
