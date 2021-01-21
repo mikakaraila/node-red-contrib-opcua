@@ -27,6 +27,7 @@ module.exports = function (RED) {
   var chalk = require("chalk");
   var opcua = require('node-opcua');
   var uaclient = require('node-opcua-client');
+  const {stringify} = require('flatted');
 
   function OPCUAMethodNode(n) {
     RED.nodes.createNode(this, n)
