@@ -65,7 +65,7 @@ limitations under the License.
         <input type="text" id="node-input-name" placeholder="">
     </div>
     <div class="form-row">
-        <label for="node-input-endpoint"><i class="icon-tasks"></i> Endpoint</label>
+        <label for="node-input-endpoint"><i class="icon-tasks"></i> ResourcePath</label>
         <input type="text" id="node-input-endpoint" placeholder="UA/SimpleNodeRedServer">
     </div>
     <div class="form-row">
@@ -127,7 +127,8 @@ limitations under the License.
 </script>
 
 <script type="text/x-red" data-help-name="OpcUa-Server">
-    <p>Creates OPC UA server with own variables, object structures and methods to endpoint: opc.tcp://hostname.local:53880/</p>
+    <p>Creates OPC UA server with own variables, object structures and methods to endpoint: opc.tcp://localhost:PORT/ResourcePath/</p>
+    <p>Parameters PORT and ResourcePath can be given for the server.</p>
     <p>
         OPC UA server commands:
         <ul>

@@ -151,8 +151,8 @@ module.exports = function (RED) {
                   discoveryUrls: []
                 },
                 buildInfo: {
-                    buildNumber: "0.2.95",
-                    buildDate: "2021-01-19T08:50:00"
+                    buildNumber: "0.2.96",
+                    buildDate: "2021-01-20T08:58:00"
                 },
                 serverCapabilities: {
                   maxBrowseContinuationPoints: 10,
@@ -182,8 +182,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.95",
-                buildDate: "2021-01-19T08:50:00"
+                buildNumber: "0.2.96",
+                buildDate: "2021-01-21T20:50:00"
             };
             
             var hostname = os.hostname();
