@@ -67,11 +67,11 @@ module.exports = function (RED) {
     if (node.certificate === "l" && node.localfile) {
       verbose_log("Using 'own' local certificate file " + node.localfile);
       // User must define absolute path
-      var certfile = node.localfile; 
+      var certfile = node.localfile;
       var keyfile = node.localkeyfile;
       connectionOption.certificateFile = certfile;
       connectionOption.privateKeyFile =  keyfile;
-  
+
       if (!fs.existsSync(certfile)) {
         node_error("Local certificate file not found:" + certfile)
       }
@@ -82,7 +82,7 @@ module.exports = function (RED) {
     if (node.certificate === "n") {
       node.log("\tLocal 'own' certificate is NOT used.");
     }
-    
+
     // Moved needed options to client create
     connectionOption.requestedSessionTimeout = opcuaBasics.calc_milliseconds_by_time_and_unit(300, "s");
     // DO NOT USE must be NodeOPCUA-Client !! connectionOption.applicationName = node.name; // Application name
@@ -112,7 +112,7 @@ module.exports = function (RED) {
 
     var monitoredItems = new Map();
 
-    
+
     function node_error(err) {
       console.error(chalk.red("Client node error on: " + node.name + " error: " + stringify(err)));
       node.error("Client node error on: " + node.name + " error: " + stringify(err));
@@ -278,7 +278,7 @@ module.exports = function (RED) {
       node.status({
         fill: statusParameter.fill,
         shape: statusParameter.shape,
-        text: statusParameter.status + " " + error.toString() 
+        text: statusParameter.status + " " + error.toString()
       });
     }
 
@@ -311,7 +311,7 @@ module.exports = function (RED) {
       // STEP 2
       // This will succeed first time only if security policy and mode are None
       // Later user can use path and local file to access server certificate file
-      
+
       try {
         if (!node.client) {
           node_error("Client not yet created & connected, cannot getEndpoints!");
@@ -341,7 +341,7 @@ module.exports = function (RED) {
             fs.writeFile(certificate_filename, crypto_utils.toPem(serverCertificate, "CERTIFICATE"), function () {});
           }
         });
-        
+
         endpoints.forEach(function (endpoint) {
           verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString(), " Policy=", endpoint.securityPolicyUri);
           endpoint.userIdentityTokens.forEach(function (token) {
@@ -375,7 +375,7 @@ module.exports = function (RED) {
           return;
         }
         node.session = session;
-        
+
         verbose_log("session active");
         set_node_status_to("session active");
         for (var i in cmdQueue) {
@@ -389,7 +389,7 @@ module.exports = function (RED) {
         close_opcua_client(set_node_errorstatus_to("connection error", err));
       }
     }
-    
+
     function make_subscription(callback, msg, parameters) {
       var newSubscription = null;
 
@@ -620,7 +620,7 @@ module.exports = function (RED) {
 
       verbose_log("read multiple...");
       var item = "";
-      // 
+      //
       if (msg.topic) {
         var n = msg.topic.indexOf("datatype=");
         if (n > 0) {
@@ -662,7 +662,7 @@ module.exports = function (RED) {
             node_error(node.name + " error at active reading: " + err.message);
             set_node_errorstatus_to("error", err);
             reset_opcua_client(connect_opcua_client);
-          } 
+          }
           else {
             set_node_status_to("active multiple reading");
 
@@ -770,7 +770,7 @@ module.exports = function (RED) {
               if (object.browseName && object.browseName.name) {
                 msg.payload.browseName = object.browseName.name;
               }
-              else { 
+              else {
                 msg.payload.browseName = object.browseName;
               }
               msg.payload.userAccessLevel = object.userAccessLevel;
@@ -791,7 +791,7 @@ module.exports = function (RED) {
     }
 
     function write_action_input(msg) {
-      verbose_log("writing multiple");
+      verbose_log("writing");
       // Topic value: ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT
       var ns = msg.topic.substring(3, 4); // Parse namespace, ns=2
       var dIndex = msg.topic.indexOf("datatype=");
@@ -832,14 +832,15 @@ module.exports = function (RED) {
         if (msg.timestamp) {
           nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();
         }
-        
+
+        set_node_status_to("writing");
         node.session.write(nodeToWrite, function (err) {
           if (err) {
             set_node_errorstatus_to("error", err);
             node_error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
             reset_opcua_client(connect_opcua_client);
           } else {
-            set_node_status_to("active writing");
+            set_node_status_to("value written");
             verbose_log("Value written!");
           }
         });
@@ -1040,7 +1041,7 @@ module.exports = function (RED) {
           },
             TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
           );
-          verbose_log("Storing monitoredItem: " + nodeStr + " ItemId: " + monitoredItem.toString()); 
+          verbose_log("Storing monitoredItem: " + nodeStr + " ItemId: " + monitoredItem.toString());
           monitoredItems.set(nodeStr, monitoredItem);
         } catch (err) {
           node_error("Check topic format for nodeId:" + msg.topic)
@@ -1062,10 +1063,10 @@ module.exports = function (RED) {
           } else {
             node__warn("Status-Code:" + dataValue.statusCode.toString(16));
           }
-          
+
           msgToSend.statusCode = dataValue.statusCode;
           msgToSend.topic = msg.topic;
-          
+
           // Check if timestamps exists otherwise simulate them
           if (dataValue.serverTimestamp != null) {
             msgToSend.serverTimestamp = dataValue.serverTimestamp;
@@ -1082,7 +1083,7 @@ module.exports = function (RED) {
             msgToSend.sourceTimestamp = new Date().getTime();;
             msgToSend.sourcePicoseconds = 0;
           }
-          
+
           msgToSend.payload = dataValue.value.value;
           node.send(msgToSend);
         });
@@ -1195,7 +1196,7 @@ module.exports = function (RED) {
           },
             TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
           );
-          verbose_log("Storing monitoredItem: " + nodeStr + " ItemId: " + monitoredItem.toString()); 
+          verbose_log("Storing monitoredItem: " + nodeStr + " ItemId: " + monitoredItem.toString());
           monitoredItems.set(nodeStr, monitoredItem);
         } catch (err) {
           node_error("Check topic format for nodeId:" + msg.topic)
@@ -1217,7 +1218,7 @@ module.exports = function (RED) {
           } else {
             verbose_warn("Status-Code:" + dataValue.statusCode.toString(16));
           }
-          
+
           msgToSend.statusCode = dataValue.statusCode;
           msgToSend.topic = msg.topic;
 

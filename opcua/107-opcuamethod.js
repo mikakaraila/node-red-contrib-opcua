@@ -24,16 +24,18 @@
  * @param RED
  */
 module.exports = function (RED) {
+  var chalk = require("chalk");
   var opcua = require('node-opcua');
   var uaclient = require('node-opcua-client');
- 
+  const {stringify} = require('flatted');
+
   function OPCUAMethodNode(n) {
     RED.nodes.createNode(this, n)
     this.objectId = n.objectId;
     this.methodId = n.methodId;
     this.name = n.name;
     this.inputArguments = n.inputArguments;
-    
+
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
 
@@ -114,7 +116,7 @@ module.exports = function (RED) {
       userIdentity.password = opcuaEndpoint.credentials.password;
       userIdentity.type = uaclient.UserTokenType.UserName; // New TypeScript API parameter
     }
-    
+
     async function setupClient(url, callback) {
 
       const client = opcua.OPCUAClient.create(connectionOption);
@@ -131,6 +133,11 @@ module.exports = function (RED) {
         node.error("Cannot connect to " + JSON.stringify(opcuaEndpoint));
         callback(err);
       }
+    }
+
+    function node_error(err) {
+      console.error(chalk.red("Client node error on node: " + node.name + "; error: " + stringify(err)));
+      node.error("Client node error on node: " + node.name + "; error: " + stringify(err));
     }
 
     function verbose_warn(logMessage) {
@@ -204,7 +211,7 @@ module.exports = function (RED) {
           const result = await node.session.call(callMethodRequest);
           verbose_log("Results: " + result);
           msg.result = result;
-          
+
           // TODO make this better, not generic solution, but result contains everything
           if (result && result.statusCode === opcua.StatusCodes.Good && result.outputArguments[0].value) {
             msg.payload = result.outputArguments[0].value; // Works only if one output argument
