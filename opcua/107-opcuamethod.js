@@ -214,7 +214,7 @@ module.exports = function (RED) {
           msg.payload = [];
           if (result && result.statusCode === opcua.StatusCodes.Good) {
             var i = 0;
-            console.log("Value:" + result.outputArguments[i].value);
+            // console.log("Value:" + result.outputArguments[i].value);
             while (result.outputArguments.length > i) {
               msg.payload.push(result.outputArguments[i]); // Just copy results to payload[] array
               i++;
