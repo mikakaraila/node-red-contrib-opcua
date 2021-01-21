@@ -287,7 +287,13 @@ module.exports = function (RED) {
       var session;
       // STEP 1
       // First connect to server´s endpoint
-      verbose_log("Connecting to " + opcuaEndpoint.endpoint);
+      if (opcuaEndpoint && opcuaEndpoint.endpoint) {
+        verbose_log("Connecting to " + opcuaEndpoint.endpoint);
+      }
+      else {
+        node_error("No client endpoint listed! Waiting...");
+        return;
+      }
       try {
         if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") === 0) {
           set_node_status_to("no client")
