@@ -298,8 +298,10 @@ module.exports.get_node_status = function (statusValue) {
 
         case "active":
         case "active reading":
+        case "value written":
         case "active multiple reading":
         case "active writing":
+        case "writing":
         case "active subscribing":
         case "active subscribed":
         case "active browsing":
@@ -340,7 +342,7 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
 
     var nValue = new opcua.Variant({
         dataType: opcua.DataType.Float,
-        value: 0.0 
+        value: 0.0
     });
 
     switch (datatype) {
