@@ -158,7 +158,7 @@ module.exports = function (RED) {
           node.status({
               fill: "red",
               shape: "dot",
-              text: "Error Items: " + node.items.length
+              text: "Error Items: " + node.items ? node.items.length : '-'
           });
       }
       node.log("Waiting method calls...");
