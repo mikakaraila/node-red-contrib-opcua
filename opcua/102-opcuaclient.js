@@ -823,18 +823,20 @@ module.exports = function (RED) {
       verbose_log("namespace=" + ns);
       verbose_log("string=" + s);
       verbose_log("type=" + msg.datatype);
-      verbose_log("value=" + msg.payload);
+      verbose_log("value=" + stringify(msg.payload));
       verbose_log(nodeid.toString());
 
-      var opcuaDataValue = opcuaBasics.build_new_dataValue(opcua, msg.datatype, msg.payload);
+      var opcuaDataValue = opcuaBasics.build_new_dataValue(msg.datatype, msg.payload);
       verbose_log("DATATYPE: " + stringify(opcuaDataValue));
+      let nodeToWrite;
       if (node.session) {
-        const nodeToWrite = {
+        nodeToWrite = {
           nodeId: nodeid.toString(),
           attributeId: opcua.AttributeIds.Value,
           indexRange: null,
           value: new opcua.DataValue({value: new opcua.Variant(opcuaDataValue)})
         };
+        console.log("VALUE TO WRITE: " + stringify(nodeToWrite.value.value));
         if (msg.timestamp) {
           nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();
         }
@@ -891,7 +893,7 @@ module.exports = function (RED) {
 
       if (node.session) {
         const nodesToWrite = msg.payload.map(function (msgToWrite) {
-          var opcuaDataValue = opcuaBasics.build_new_dataValue(opcua, msgToWrite.datatype || msg.datatype, msgToWrite.value);
+          var opcuaDataValue = opcuaBasics.build_new_dataValue(msgToWrite.datatype || msg.datatype, msgToWrite.value);
           const nodeToWrite = {
             nodeId: msgToWrite.nodeId || (nodeid && nodeid.toString()),
             attributeId: opcua.AttributeIds.Value,
