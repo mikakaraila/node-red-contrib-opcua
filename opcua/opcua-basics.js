@@ -455,7 +455,6 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
             arrayType: opcua.VariantArrayType.Array,
             arrayDimensions: [value.length]
         });
-        console.log("NEW ARRAY VARIANT:" + nValue.toString());
     }
 
     return nValue;
@@ -511,7 +510,7 @@ function getArrayValues(datatype, items) {
     }
 
     function setValue(item, index, arr) {
-        // TODO Boolean, Float conversions
+        // Boolean, Float basic conversions TODO DateTime etc. if needed
         if (uaArray.uaType === opcua.DataType.Float || uaArray.uaType === opcua.DataType.Double) {
             uaArray.values[index] = parseFloat(item);
         }
@@ -524,11 +523,9 @@ function getArrayValues(datatype, items) {
         else {
             uaArray.values[index] = parseInt(item);
         }
-        // console.debug("ARRAY index=" + index + " value=" + uaArray.values[index]);
     }
     items.forEach(setValue);
 
-    console.log("uaArray:" + stringify(uaArray));
     return uaArray.values;
 }
 
@@ -573,7 +570,6 @@ function getArrayType(datatype) {
 module.exports.build_new_value_by_datatype = function (datatype, value) {
 
     var nValue = 0;
-    console.log("Build new value by datatype= " + datatype + " value=" + value);
     var uaType;
     
     switch (datatype) {
@@ -659,43 +655,32 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
             break;
     }
     // Checks if Array and grabs Data Type
-    var m = datatype.match(/\b(\w+) Array\b/);
-    if (m) {
+    // var m = datatype.match(/\b(\w+) Array\b/);
+    var m = datatype.indexOf("Array");
+    if (m > 0) {
         // Convert value (string) to individual array values
-        var items = value.split(",");
-        var arrayValues = getArrayValues(datatype, items);
-        uaType = getArrayType(datatype);
-
-/*        
-        if (uaType == opcua.DataType.Byte || opcua.DataType.UInt8) {
-            arrayValues = new Uint8Array(items.length);
+        var arrayValues = [];
+        if (Array.isArray(value) && value.length === 1) {
+            var payload = value[0];
+            var items = payload.split(",");
+            arrayValues = getArrayValues(datatype, items);
+            uaType = getArrayType(datatype);
         }
-        function setValue(item, index, arr) {
-            // TODO Boolean, Float conversions
-            if (uaType === opcua.DataType.Float || uaType === opcua.DataType.Double) {
-                arrayValues[index] = parseFloat(item);
+        else {
+            if (value.hasOwnProperty("dataType")) {
+                // Already processed, return value
+                return value;
             }
-            else if (uaType === opcua.DataType.Boolean) {
-                arrayValues[index] = false;
-                if (item === 1 || item === "true") {
-                    arrayValues[index] = true;
-                }
-            }
-            else {
-                arrayValues[index] = parseInt(item);
-            }
-            console.log("ARRAY index=" + index + " value=" + arrayValues[index]);
+            var items = value.split(",");
+            arrayValues = getArrayValues(datatype, items);
+            uaType = getArrayType(datatype);
         }
-        items.forEach(setValue);
-*/
-        console.log("ARRAY VALUES: " + arrayValues); //  + "(uaType=" + uaType + "/" + opcua.DataType[m[1]] + ")");
 
         nValue = {
             dataType: uaType,
             value: arrayValues,
             arrayType: opcua.VariantArrayType.Array
         };
-        console.log("NEW2 ARRAY VARIANT: " + JSON.stringify(nValue));
     }
 
     return nValue;
@@ -704,8 +689,6 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
 module.exports.build_new_dataValue = function (datatype, value) {
 
     var nValue = null;
-
-    console.log("Build new dataValue= " + datatype + " value=" + stringify(value));
 
     switch (datatype) {
         case "Float":
@@ -808,18 +791,11 @@ module.exports.build_new_dataValue = function (datatype, value) {
     }
 
     // Checks if Array and grabs Data Type
-    var m = datatype.match(/\b(\w+) Array\b/);
-    if (m) {
-        var uaType = nValue.dataType;
-        // TODO typed Array and value conversions
-        console.debug("VALUES: " + Object.values(value.value));
+    // var m = datatype.match(/\b(\w+) Array\b/);
+    var m = datatype.indexOf("Array");
+    if (m > 0) {
+        var uaType = getArrayType(datatype);
         var arrayValues = getArrayValues(datatype, Object.values(value.value));
-        uaType = getArrayType(datatype);
-        console.log("ARRAY: " + arrayValues);
-        // /var arrayValues = arr.values;
-        // var arrayValues = new Uint8Array(Object.values(value.value)); // WAS OK
-        // var arrayValues = new typedArrays[opcua.DataType[m[1]]];
-        // console.log("ARRAY VALUES: " + arrayValues + "(uaType=" + opcua.DataType[m[1]] + ")");
 
         nValue = {
             dataType: uaType, // maps SByte and Byte // opcua.DataType[m[1]],

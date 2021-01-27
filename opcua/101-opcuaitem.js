@@ -51,8 +51,8 @@ module.exports = function (RED) {
             msg.datatype = node.datatype;
             msg.browseName = node.name;
 
-            // Node contains static value
-            if (node.value) {
+            // Node contains static value, inject with empty string as payload
+            if (node.value && msg.payload.length === 0) {
                 verbose_log('First set value by node value:' + node.value);
                 if (node.datatype) {
                     msg.payload = opcuaBasics.build_new_value_by_datatype(node.datatype, node.value);

@@ -825,7 +825,6 @@ module.exports = function (RED) {
       verbose_log("type=" + msg.datatype);
       verbose_log("value=" + stringify(msg.payload));
       verbose_log(nodeid.toString());
-
       var opcuaDataValue = opcuaBasics.build_new_dataValue(msg.datatype, msg.payload);
       verbose_log("DATATYPE: " + stringify(opcuaDataValue));
       let nodeToWrite;
@@ -836,7 +835,7 @@ module.exports = function (RED) {
           indexRange: null,
           value: new opcua.DataValue({value: new opcua.Variant(opcuaDataValue)})
         };
-        console.log("VALUE TO WRITE: " + stringify(nodeToWrite.value.value));
+        verbose_log("VALUE TO WRITE: " + stringify(nodeToWrite.value.value));
         if (msg.timestamp) {
           nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();
         }
