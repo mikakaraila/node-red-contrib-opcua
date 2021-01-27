@@ -182,8 +182,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.98",
-                buildDate: "2021-01-27T00:20:00"
+                buildNumber: "0.2.99",
+                buildDate: "2021-01-27T16:24:00"
             };
             
             var hostname = os.hostname();
@@ -566,7 +566,7 @@ module.exports = function (RED) {
                                     })
                                 },
                                 set: function (variant) {
-                                    variables[browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType, variant.value);
+                                    variables[browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
                                     verbose_log("Server variable: " + variables[browseName] + " browseName: " + browseName);
                                     var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": browseName, "variableValue": variables[browseName] }};
                                     verbose_log("msg Payload:" + JSON.stringify(SetMsg));
