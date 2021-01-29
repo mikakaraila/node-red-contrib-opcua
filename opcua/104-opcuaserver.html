@@ -26,6 +26,7 @@ limitations under the License.
             endpoint: {value: ""},
             autoAcceptUnknownCertificate: {value: true},
             registerToDiscovery: {value: false},
+            constructDefaultAddressSpace: {value: true},
             maxNodesPerBrowse: {value: 0, required: false},
             maxNodesPerHistoryReadData: {value: 0, required: false},
             maxNodesPerHistoryReadEvents: {value: 0, required: false},
@@ -75,6 +76,10 @@ limitations under the License.
     <div class="form-row">
         <label for="node-input-registerToDiscovery" style="width:72%;"><i class="icon-tasks"></i> Register to Local Discovery</label>
         <input type="checkbox" id="node-input-registerToDiscovery" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-constructDefaultAddressSpace" style="width:72%;"><i class="icon-tasks"></i> Build default AddressSpace</label>
+        <input type="checkbox" id="node-input-constructDefaultAddressSpace" style="max-width:20px">
     </div>
     <div class="form-row">
         <label for="node-input-maxNodesPerBrowse" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerBrowse</label>
@@ -129,6 +134,8 @@ limitations under the License.
 <script type="text/x-red" data-help-name="OpcUa-Server">
     <p>Creates OPC UA server with own variables, object structures and methods to endpoint: opc.tcp://localhost:PORT/ResourcePath/</p>
     <p>Parameters PORT and ResourcePath can be given for the server.</p>
+    <p>Register to local Discover Server, if true => OPC UA Server will register itself to opc.tcp://localhost:4840</p>
+    <p>ConstructDefaultAddressSpace, if false then Server AddressSpace will be empty (no VendorName and sub objects)<p>
     <p>
         OPC UA server commands:
         <ul>

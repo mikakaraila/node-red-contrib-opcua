@@ -64,6 +64,7 @@ module.exports = function (RED) {
         this.maxNodesPerHistoryUpdateEvents = n.maxNodesPerHistoryUpdateEvents;
         this.maxNodesPerTranslateBrowsePathsToNodeIds = n.maxNodesPerTranslateBrowsePathsToNodeIds;
         this.registerToDiscovery = n.registerToDiscovery;
+        this.constructDefaultAddressSpace = n.constructDefaultAddressSpace;
         var node = this;
         var variables = { Counter: 0 };
         var equipmentCounter = 0;
@@ -139,6 +140,7 @@ module.exports = function (RED) {
                 userCertificateManager,
  
                 port: parseInt(n.port),
+                resourcePath: "/" + node.endpoint, // Option was missing / can be 
                 maxAllowedSessionNumber: 1000,
                 maxConnectionsPerEndpoint: 20,
                 nodeset_filename: xmlFiles,
@@ -151,8 +153,8 @@ module.exports = function (RED) {
                   discoveryUrls: []
                 },
                 buildInfo: {
-                    buildNumber: "0.2.96",
-                    buildDate: "2021-01-20T08:58:00"
+                    buildNumber: "",
+                    buildDate: ""
                 },
                 serverCapabilities: {
                   maxBrowseContinuationPoints: 10,
@@ -182,8 +184,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.99",
-                buildDate: "2021-01-27T16:24:00"
+                buildNumber: "0.2.100",
+                buildDate: "2021-01-29T09:10:00"
             };
             
             var hostname = os.hostname();
@@ -335,9 +337,9 @@ module.exports = function (RED) {
                 node.server = new opcua.OPCUAServer(node.server_options);
 
                 await node.server.initialize();
-
+                if (node.constructDefaultAddressSpace === true) {
                     construct_my_address_space(node.server.engine.addressSpace);
-                                
+                }
                 await node.server.start();
 
                 verbose_log("Using server certificate  " + node.server.certificateFile);
@@ -632,7 +634,9 @@ module.exports = function (RED) {
                 await initNewServer();
                 node.server = new opcua.OPCUAServer(node.server_options);
                 node.server.on("post_initialize", () => {
-                    construct_my_address_space(node.server.engine.addressSpace);
+                    if (node.constructDefaultAddressSpace === true) {
+                        construct_my_address_space(node.server.engine.addressSpace);
+                    }
                 });                                   
                 await node.server.start();
                 // Client connects with userName
