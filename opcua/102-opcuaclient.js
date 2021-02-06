@@ -1293,7 +1293,7 @@ module.exports = function (RED) {
     }
 
     function delete_subscription_action_input(msg) {
-      verbose_log("delete subscription= " + subscription.toString() + " msg= " + stringify(msg));
+      verbose_log("delete subscription msg= " + stringify(msg));
       if (!subscription) {
         verbose_warn("Cannot delete, no subscription existing!");
       } else {
