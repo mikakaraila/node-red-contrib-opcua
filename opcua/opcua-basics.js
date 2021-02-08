@@ -263,8 +263,9 @@ module.exports.buildBrowseMessage = function (topic) {
         "topic": topic,
         "nodeId": "",
         "browseName": "",
-        "nodeClassType": "",
+        // "nodeClassType": "",
         "typeDefinition": "",
+        "dataType": "",
         "payload": ""
     };
 };

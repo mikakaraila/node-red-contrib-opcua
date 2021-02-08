@@ -1314,20 +1314,57 @@ module.exports = function (RED) {
       }
     }
 
-    function browse_action_input(msg) {
+    async function browse_action_input(msg) {
       verbose_log("browsing");
       var NodeCrawler = opcua.NodeCrawler;
       if (node.session) {
-        var crawler = new NodeCrawler(node.session);
+        const crawler = new NodeCrawler(node.session);
+        set_node_status_to("active browsing");
+        crawler.on("browsed", function(element) {
+        });
+        // Browse from given topic
+        const nodeId = msg.topic; // "ObjectsFolder";
+        crawler.read(nodeId, function(err, obj) {
+            if (!err) {
+              let newMessage = opcuaBasics.buildBrowseMessage("");
+              let browseName = "";
+              treeify.asLines(obj, true, true, function(line) {
+                if (line.indexOf("nodeId") > 0) {
+                  var nodeId = line.substring(line.indexOf("nodeId") + 8);
+                  // Use nodeId as topic
+                  newMessage = opcuaBasics.buildBrowseMessage(nodeId.toString());
+                  newMessage.nodeId = nodeId;
+                  newMessage.browseName = browseName;
+                }
+                if (line.indexOf("browseName:") > 0) {
+                  browseName = line.substring(line.indexOf("browseName:") + 12);
+                }
+                if (line.indexOf("dataType") > 0) {
+                  newMessage.dataType = line.substring(line.indexOf("dataType") + 10);
+                }
+                // Last item on treeify object structure is typeDefinition
+                if (line.indexOf("typeDefinition") > 0) {
+                  newMessage.typeDefinition = line.substring(line.indexOf("typeDefinition") + 16);
+                  newMessage.payload = Date.now(); // TODO check if real DataValue could be used
+                  node.send(newMessage);
+                  newMessage = opcuaBasics.buildBrowseMessage(""); // Make "empty"
+                }
+                console.log(line);
+              });
+              set_node_status_to("browse done");
+            }
+            crawler.dispose();
+            // callback(err);
+        });
 
+        /*
         crawler.read(msg.topic, function (err, obj) {
+          console.log("OBJECT: " + stringify(obj));
           var newMessage = opcuaBasics.buildBrowseMessage(msg.topic);
+          
           if (!err) {
-            set_node_status_to("active browsing");
-
             treeify.asLines(obj, true, true, function (line) {
-
-              verbose_log(line);
+              // verbose_log(line);
               if (line.indexOf("browseName") > 0) {
                 newMessage.browseName = line.substring(line.indexOf("browseName") + 12);
               }
@@ -1340,19 +1377,24 @@ module.exports = function (RED) {
               }
               if (line.indexOf("typeDefinition") > 0) {
                 newMessage.typeDefinition = line.substring(line.indexOf("typeDefinition") + 16);
-                newMessage.payload = Date.now();
+                // newMessage.payload = Date.now();
                 node.send(newMessage);
               }
-
-              set_node_status_to("browse done");
-
+              if (line.indexOf("dataType") > 0) {
+                newMessage.dataType = line.substring(line.indexOf("dataType") + 10);
+              }
+              if (line.indexOf("value") > 0) {
+                newMessage.payload = line.substring(line.indexOf("value:") + 7);
+              }
             });
           } else {
             node_error(err.message);
             set_node_errorstatus_to("error browsing", err);
             reset_opcua_client(connect_opcua_client);
           }
+          
         });
+        */
       } else {
         node_error("Session is not active!");
         set_node_status_to("Session invalid");
