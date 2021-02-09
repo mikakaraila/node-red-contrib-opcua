@@ -148,6 +148,7 @@ module.exports = function (RED) {
     // Fields selected alarm fields
     // EventFields same order returned from server array of variants (filled or empty)
     function __dumpEvent(node, session, fields, eventFields, _callback) {
+      var cnt = eventFields.length;
       var msg = {};
       msg.payload = [];
 
@@ -156,22 +157,22 @@ module.exports = function (RED) {
       async.forEachOf(eventFields, function (variant, index, callback) {
 
         if (variant.dataType === DataType.Null) {
-          return callback("variants dataType is Null");
-        }
-
-        if (variant.dataType === DataType.NodeId) {
+          if (--cnt === 0) node.send(msg);
+          callback("variants dataType is Null");
+        } else if (variant.dataType === DataType.NodeId) {
           getBrowseName(session, variant.value, function (err, name) {
             if (!err) {
               opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg);
               set_node_status_to("active event");
-              node.send(msg);
             }
+            if (--cnt === 0) node.send(msg);
             callback(err);
           });
         } else {
           setImmediate(function () {
             opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg);
             set_node_status_to("active event");
+            if (--cnt === 0) node.send(msg);
             callback();
           })
         }
@@ -1357,7 +1358,7 @@ module.exports = function (RED) {
             filter: msg.eventFilter,
             discardOldest: true
           },
-            3
+            TimestampsToReturn.Neither
           );
         } catch (err) {
           node_error('subscription.monitorEvent:' + err);
