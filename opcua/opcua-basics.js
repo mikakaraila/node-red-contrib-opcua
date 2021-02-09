@@ -263,6 +263,7 @@ module.exports.buildBrowseMessage = function (topic) {
         "topic": topic,
         "nodeId": "",
         "browseName": "",
+        "description": "",
         // "nodeClassType": "",
         "typeDefinition": "",
         "dataType": "",
