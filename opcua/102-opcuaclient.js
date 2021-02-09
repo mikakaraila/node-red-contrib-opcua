@@ -1317,8 +1317,10 @@ module.exports = function (RED) {
                   node.session.read(nodesToRead, function(err, dataValues) {
                     if (!err && dataValues.length === 1) {
                       // Should return only one, localeText
-                      console.log("NODEID: " + nodeId + " DESCRIPTION: " + dataValues[0].value.value.text);
-                      msg2.description = dataValues[0].value.value.text.toString();
+                      if (dataValues[0] && dataValues[0].value && dataValues[0].value.value && dataValues[0].value.value.text) {
+                        // console.log("NODEID: " + newMessage.nodeId + " DESCRIPTION: " + dataValues[0].value.value.text);
+                        msg2.description = dataValues[0].value.value.text.toString();
+                      }
                     }
                     msg2.payload = Date.now(); // TODO check if real DataValue could be used
                     node.send(msg2);
