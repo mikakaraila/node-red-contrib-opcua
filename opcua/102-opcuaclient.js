@@ -743,53 +743,19 @@ module.exports = function (RED) {
       }
 
       if (node.session) {
-        var nodeId = coerceNodeId(items[0]);
-        var typeStr = "";
-        node.session.readVariableValue(nodeId, function (err, dataValue) {
+        // TODO this could loop through all items
+        node.session.readAllAttributes(coerceNodeId(items[0]), function(err, result) {
           if (!err) {
-            typeStr = dataValue.value.dataType.toString();
+              // console.log("INFO: " + JSON.stringify(result));
+              var newMsg = Object.assign(msg, result);
+              node.send(newMsg);
+          }
+          else {
+            set_node_status_to("error");
+            node_error("Cannot read attributes from nodeId: " + items[0])    
           }
         });
-        // Create new ClientSession
-        node.client.keepSessionAlive = true;
-        // var session = new ClientSession(node.client); // OLD CODE NOT USED
-        var proxyManager = new UAProxyManager(node.session);
-        // console.log(nodeId.toString());
-        proxyManager.getObject(nodeId.toString(), function (err, data) {
-          if (!err) {
-            if (data.typeDefinition != "FolderType") {
-              var object = {};
-              try {
-                object = JSON.parse(stringify(data));
-              } catch (err) {
-                node_error(err);
-                node.warn(data);
-                return;
-              }
-              msg.payload = {};
-
-              if (object.description != null) {
-                msg.payload.description = object.description;
-              } else {
-                msg.payload.description = "";
-              }
-              if (object.browseName && object.browseName.name) {
-                msg.payload.browseName = object.browseName.name;
-              }
-              else {
-                msg.payload.browseName = object.browseName;
-              }
-              msg.payload.userAccessLevel = object.userAccessLevel;
-              msg.payload.accessLevel = object.accessLevel;
-              msg.payload.type = typeStr;
-              node.send(msg);
-            }
-          } else {
-            node_error(err);
-            set_node_errorstatus_to("error", err);
-            reset_opcua_client(connect_opcua_client);
-          }
-        });
+      
       } else {
         set_node_status_to("Session invalid");
         node_error("Session is not active!")
@@ -1345,56 +1311,24 @@ module.exports = function (RED) {
                 // Last item on treeify object structure is typeDefinition
                 if (line.indexOf("typeDefinition") > 0) {
                   newMessage.typeDefinition = line.substring(line.indexOf("typeDefinition") + 16);
-                  newMessage.payload = Date.now(); // TODO check if real DataValue could be used
-                  node.send(newMessage);
-                  newMessage = opcuaBasics.buildBrowseMessage(""); // Make "empty"
+                  var msg2 = newMessage;
+                  const nodesToRead = [{ nodeId: newMessage.nodeId, attributeId: opcua.AttributeIds.Description }];
+                  node.session.read(nodesToRead, function(err, dataValues) {
+                    if (!err && dataValues.length === 1) {
+                      // Should return only one, localeText
+                      console.log("NODEID: " + nodeId + " DESCRIPTION: " + dataValues[0].value.value.text);
+                      msg2.description = dataValues[0].value.value.text.toString();
+                    }
+                    msg2.payload = Date.now(); // TODO check if real DataValue could be used
+                    node.send(msg2);
+                  });
                 }
                 console.log(line);
               });
               set_node_status_to("browse done");
             }
             crawler.dispose();
-            // callback(err);
         });
-
-        /*
-        crawler.read(msg.topic, function (err, obj) {
-          console.log("OBJECT: " + stringify(obj));
-          var newMessage = opcuaBasics.buildBrowseMessage(msg.topic);
-          
-          if (!err) {
-            treeify.asLines(obj, true, true, function (line) {
-              // verbose_log(line);
-              if (line.indexOf("browseName") > 0) {
-                newMessage.browseName = line.substring(line.indexOf("browseName") + 12);
-              }
-              if (line.indexOf("nodeId") > 0) {
-                newMessage.nodeId = line.substring(line.indexOf("nodeId") + 8);
-                newMessage.nodeId = newMessage.nodeId.replace("&#x2F;", "\/");
-              }
-              if (line.indexOf("nodeClass") > 0) {
-                newMessage.nodeClassType = line.substring(line.indexOf("nodeClass") + 11);
-              }
-              if (line.indexOf("typeDefinition") > 0) {
-                newMessage.typeDefinition = line.substring(line.indexOf("typeDefinition") + 16);
-                // newMessage.payload = Date.now();
-                node.send(newMessage);
-              }
-              if (line.indexOf("dataType") > 0) {
-                newMessage.dataType = line.substring(line.indexOf("dataType") + 10);
-              }
-              if (line.indexOf("value") > 0) {
-                newMessage.payload = line.substring(line.indexOf("value:") + 7);
-              }
-            });
-          } else {
-            node_error(err.message);
-            set_node_errorstatus_to("error browsing", err);
-            reset_opcua_client(connect_opcua_client);
-          }
-          
-        });
-        */
       } else {
         node_error("Session is not active!");
         set_node_status_to("Session invalid");
