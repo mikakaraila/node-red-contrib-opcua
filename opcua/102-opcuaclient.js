@@ -1424,7 +1424,7 @@ module.exports = function (RED) {
             filter: msg.eventFilter,
             discardOldest: true
           },
-            3
+            TimestampsToReturn.Neither
           );
         } catch (err) {
           node_error('subscription.monitorEvent:' + err);
