@@ -31,6 +31,49 @@ const typedArrays = {
     Double: Float64Array
 };
 
+function cloneObject(obj) {
+    let cpy;
+
+    // Handle the 3 simple types, and null or undefined
+    if (null == obj || "object" != typeof obj) return obj;
+
+    // Handle Buffer
+    if (Buffer.isBuffer(obj)) return new Buffer.from(obj);
+
+    // Handle Date
+    if (obj instanceof Date) {
+        cpy = new Date();
+        cpy.setTime(obj.getTime());
+        return cpy;
+    }
+
+    // Handle Array
+    if (Array.isArray(obj)) {
+        cpy = [];
+        for (let i = 0, len = obj.length; i < len; i++) {
+            cpy[i] = cloneObject(obj[i]);
+        }
+        return cpy;
+    }
+
+    // Handle NodeId
+    if (obj instanceof opcua.NodeId) {
+        cpy = obj.toString();
+        return cpy;
+    }
+
+    // Handle Object
+    if (obj instanceof Object) {
+        cpy = {};
+        for (let attr in obj) {
+            if (obj.hasOwnProperty(attr)) cpy[attr] = cloneObject(obj[attr]);
+        }
+        return cpy;
+    }
+
+    throw new Error("Unable to copy obj! Its type isn't supported.");
+}
+
 module.exports.get_timeUnit_name = function (unit) {
 
     var unitAbbreviation = '';
@@ -174,7 +217,7 @@ module.exports.collectAlarmFields = function (field, key, value, msg) {
             msg.Value = value;
             break;
         default:
-            msg.error = "unknown collected Alarm field " + field;
+            msg[field] = cloneObject(value);
             break;
     }
 
@@ -216,10 +259,28 @@ module.exports.getBasicEventFields = function () {
         "InputNode",
         "SuppressedState",
 
+        // Limits
         "HighLimit",
         "LowLimit",
         "HighHighLimit",
         "LowLowLimit",
+
+        // AutoIdScanEventType & AutoIdDiagnosisEventType
+        "3:DeviceName",
+
+        // AutoIdScanEventType
+        "3:ScanResult",
+
+        // AutoIdDiagnosisEventType
+        "4:DeviceName",
+
+        // AutoIdLastAccessEventType
+        "4:Client",
+        "4:Command",
+        "4:LastAccessResult",
+
+        // AutoIdPresenceEventType
+        "4:Presence",
 
         "Value"
     ];
