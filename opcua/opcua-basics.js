@@ -35,7 +35,7 @@ function cloneObject(obj) {
     let cpy;
 
     // Handle the 3 simple types, and null or undefined
-    if (null == obj || "object" != typeof obj) return obj;
+    if (null === obj || "object" != typeof obj) return obj;
 
     // Handle Buffer
     if (Buffer.isBuffer(obj)) return new Buffer.from(obj);
@@ -120,108 +120,106 @@ module.exports.calc_milliseconds_by_time_and_unit = function (time, unit) {
     return time;
 };
 
-module.exports.collectAlarmFields = function (field, key, value, msg) {
+module.exports.collectAlarmFields = function (field, key, value, payload) {
 
     switch (field) {
         // Common fields
         case "EventId":
-            msg.EventId = value;
+            payload.EventId = value;
             break;
         case "EventType":
-            msg.EventType = value;
+            payload.EventType = value;
             break;
         case "SourceNode":
-            msg.SourceNode = value;
+            payload.SourceNode = value;
             break;
         case "SourceName":
-            msg.SourceName = value;
+            payload.SourceName = value;
             break;
         case "Time":
-            msg.Time = value;
+            payload.Time = value;
             break;
         case "ReceiveTime":
-            msg.ReceiveTime = value;
+            payload.ReceiveTime = value;
             break;
         case "Message":
-            msg.Message = value.text;
+            payload.Message = value.text;
             break;
         case "Severity":
-            msg.Severity = value;
+            payload.Severity = value;
             break;
 
             // ConditionType
         case "ConditionClassId":
-            msg.ConditionClassId = value;
+            payload.ConditionClassId = value;
             break;
         case "ConditionClassName":
-            msg.ConditionClassNameName = value;
+            payload.ConditionClassNameName = value;
             break;
         case "ConditionName":
-            msg.ConditionName = value;
+            payload.ConditionName = value;
             break;
         case "BranchId":
-            msg.BranchId = value;
+            payload.BranchId = value;
             break;
         case "Retain":
-            msg.Retain = value;
+            payload.Retain = value;
             break;
         case "EnabledState":
-            msg.EnabledState = value.text;
+            payload.EnabledState = value.text;
             break;
         case "Quality":
-            msg.Quality = value;
+            payload.Quality = value;
             break;
         case "LastSeverity":
-            msg.LastSeverity = value;
+            payload.LastSeverity = value;
             break;
         case "Comment":
-            msg.Comment = value.text;
+            payload.Comment = value.text;
             break;
         case "ClientUserId":
-            msg.ClientUserId = value;
+            payload.ClientUserId = value;
             break;
 
             // AcknowledgeConditionType
         case "AckedState":
-            msg.AckedState = value.text;
+            payload.AckedState = value.text;
             break;
         case "ConfirmedState":
-            msg.ConfirmedState = value.text;
+            payload.ConfirmedState = value.text;
             break;
 
             // AlarmConditionType
         case "ActiveState":
-            msg.ActiveState = value.text;
+            payload.ActiveState = value.text;
             break;
         case "InputNode":
-            msg.InputNode = value;
+            payload.InputNode = value;
             break;
         case "SupressedState":
-            msg.SupressedState = value.text;
+            payload.SupressedState = value.text;
             break;
 
             // Limits
         case "HighHighLimit":
-            msg.HighHighLimit = value;
+            payload.HighHighLimit = value;
             break;
         case "HighLimit":
-            msg.HighLimit = value;
+            payload.HighLimit = value;
             break;
         case "LowLimit":
-            msg.LowLimit = value;
+            payload.LowLimit = value;
             break;
         case "LowLowLimit":
-            msg.LowLowLimit = value;
+            payload.LowLowLimit = value;
             break;
         case "Value":
-            msg.Value = value;
+            payload.Value = value;
             break;
         default:
-            msg[field] = cloneObject(value);
+            payload[field] = cloneObject(value);
             break;
     }
-
-    return msg;
 };
 
 
