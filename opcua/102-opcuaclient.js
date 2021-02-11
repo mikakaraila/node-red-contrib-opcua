@@ -150,7 +150,7 @@ module.exports = function (RED) {
     function __dumpEvent(node, session, fields, eventFields, _callback) {
       var cnt = eventFields.length;
       var msg = {};
-      msg.payload = [];
+      msg.payload = {};
 
       verbose_log("EventFields=" + eventFields);
 
@@ -162,7 +162,7 @@ module.exports = function (RED) {
         } else if (variant.dataType === DataType.NodeId) {
           getBrowseName(session, variant.value, function (err, name) {
             if (!err) {
-              opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg);
+              opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload);
               set_node_status_to("active event");
             }
             if (--cnt === 0) node.send(msg);
@@ -170,7 +170,7 @@ module.exports = function (RED) {
           });
         } else {
           setImmediate(function () {
-            opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg);
+            opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload);
             set_node_status_to("active event");
             if (--cnt === 0) node.send(msg);
             callback();
