@@ -180,4 +180,6 @@ limitations under the License.
     <p>Read multiple will first store all input msg nodeId values to array</p>
     <p> when input message is string readmultiple then actual read is done</p>
     <p> when input message is string clearitems then nodeId array is cleared</p>
+    <p>Browse will lookup address space from the injected msg.topic (nodeId)</p>
+    <p> if msg.collect === true then result will be collected into one msg. msg.payload will be array of items</p>
 </script>

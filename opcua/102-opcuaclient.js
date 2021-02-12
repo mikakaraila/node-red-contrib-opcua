@@ -1283,20 +1283,47 @@ module.exports = function (RED) {
 
     async function browse_action_input(msg) {
       verbose_log("browsing");
+      var allInOne = []; // if msg.collect and msg.collect === true then collect all items to one msg
       var NodeCrawler = opcua.NodeCrawler;
+
       if (node.session) {
         const crawler = new NodeCrawler(node.session);
         set_node_status_to("active browsing");
+
         crawler.on("browsed", function(element) {
+          if (msg.collect===undefined || (msg.collect && msg.collect === false)) {
+            var item = {};
+            item.topic = "item";
+            item.payload = Object.assign({}, element); // Clone element
+            node.send(item); // Send immediately as browsed
+          }
+          else {
+            var item = Object.assign({}, element); // Clone element
+            allInOne.push(item);
+          }
         });
+
         // Browse from given topic
         const nodeId = msg.topic; // "ObjectsFolder";
         crawler.read(nodeId, function(err, obj) {
             if (!err) {
+              // Crawling done
+              if (msg.collect && msg.collect === true) {
+                verbose_log("Send all in one, items: " + allInOne.length);
+                var all = {};
+                all.topic = "AllInOne";
+                all.payload = allInOne;
+                set_node_status_to("browse done");
+                node.send(all);
+                return;
+              }
+              /*
               let newMessage = opcuaBasics.buildBrowseMessage("");
               let browseName = "";
+              // This is visual, but takes too long time
               treeify.asLines(obj, true, true, function(line) {
                 if (line.indexOf("nodeId") > 0) {
+                  count2++;
                   var nodeId = line.substring(line.indexOf("nodeId") + 8);
                   // Use nodeId as topic
                   newMessage = opcuaBasics.buildBrowseMessage(nodeId.toString());
@@ -1323,15 +1350,21 @@ module.exports = function (RED) {
                       }
                     }
                     msg2.payload = Date.now(); // TODO check if real DataValue could be used
-                    node.send(msg2);
+                
+                    }
+                    else {
+                      node.send(msg2);
+                    }
                   });
                 }
-                console.log(line);
+                // console.log(line); // No console output
               });
+              */
               set_node_status_to("browse done");
             }
             crawler.dispose();
         });
+
       } else {
         node_error("Session is not active!");
         set_node_status_to("Session invalid");
