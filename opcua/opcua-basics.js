@@ -16,6 +16,7 @@
 
 "use strict";
 const { stringify } = require('flatted');
+const { ModelChangeStructureDataType } = require('node-opcua');
 var opcua = require('node-opcua');
 
 const typedArrays = {
@@ -316,6 +317,92 @@ module.exports.getSubscriptionParameters = function (timeMilliseconds) {
         priority: 10
     }
 };
+
+/*
+ALIASES for Basic types:
+<Alias Alias="Boolean">i=1</Alias>
+<Alias Alias="SByte">i=2</Alias>
+<Alias Alias="Byte">i=3</Alias>
+<Alias Alias="Int16">i=4</Alias>
+<Alias Alias="UInt16">i=5</Alias>
+<Alias Alias="Int32">i=6</Alias>
+<Alias Alias="UInt32">i=7</Alias>
+<Alias Alias="Int64">i=8</Alias>
+<Alias Alias="UInt64">i=9</Alias>
+<Alias Alias="Float">i=10</Alias>
+<Alias Alias="Double">i=11</Alias>
+<Alias Alias="DateTime">i=13</Alias>
+<Alias Alias="String">i=12</Alias>
+<Alias Alias="ByteString">i=15</Alias>
+<Alias Alias="Guid">i=14</Alias>
+<Alias Alias="XmlElement">i=16</Alias>
+<Alias Alias="NodeId">i=17</Alias>
+<Alias Alias="ExpandedNodeId">i=18</Alias>
+<Alias Alias="QualifiedName">i=20</Alias>
+<Alias Alias="LocalizedText">i=21</Alias>
+<Alias Alias="StatusCode">i=19</Alias>
+<Alias Alias="Structure">i=22</Alias>
+<Alias Alias="Number">i=26</Alias>
+<Alias Alias="Integer">i=27</Alias>
+<Alias Alias="UInteger">i=28</Alias>
+<Alias Alias="HasComponent">i=47</Alias>
+<Alias Alias="HasProperty">i=46</Alias>
+<Alias Alias="Organizes">i=35</Alias>
+<Alias Alias="HasEventSource">i=36</Alias>
+<Alias Alias="HasNotifier">i=48</Alias>
+<Alias Alias="HasSubtype">i=45</Alias>
+<Alias Alias="HasTypeDefinition">i=40</Alias>
+<Alias Alias="HasModellingRule">i=37</Alias>
+<Alias Alias="HasEncoding">i=38</Alias>
+<Alias Alias="HasDescription">i=39</Alias>
+*/
+module.exports.convertToString = function(dataTypeInNodeFormat) {
+    var datatype = "";
+
+    switch (dataTypeInNodeFormat) {
+        case "ns=0;i=1":
+            datatype = "Boolean";
+            break;
+        case "ns=0;i=2":
+            datatype = "SByte";
+            break;
+        case "ns=0;i=3":
+            datatype = "Byte";
+            break;
+        case "ns=0;i=4":
+            datatype = "Int16";
+            break;
+        case "ns=0;i=5":
+            datatype = "UInt16";
+            break;
+        case "ns=0;i=6":
+            datatype = "Int32";
+            break;
+        case "ns=0;i=7":
+            datatype = "UInt32";
+            break;
+        case "ns=0;i=10":
+            datatype = "Float";
+            break;
+        case "ns=0;i=11":
+            datatype = "Double";
+            break;
+        case "ns=0;i=12":
+            datatype = "String";
+            break;
+        case "ns=0;i=13":
+            datatype = "DateTime";
+            break;
+        case "ns=0;i=21":
+            datatype = "LocalizedText";
+            break;
+        default:
+            datatype = "";
+            break;
+    }
+
+    return datatype;
+}
 
 module.exports.buildBrowseMessage = function (topic) {
     return {

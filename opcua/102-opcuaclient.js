@@ -1293,8 +1293,15 @@ module.exports = function (RED) {
         crawler.on("browsed", function(element) {
           if (msg.collect===undefined || (msg.collect && msg.collect === false)) {
             var item = {};
-            item.topic = "item";
             item.payload = Object.assign({}, element); // Clone element
+            var dataType = "";
+            item.topic = element.nodeId.toString();
+            if (element && element.dataType) {
+              dataType = opcuaBasics.convertToString(element.dataType.toString());
+            }
+            if (dataType && dataType.length > 0) {
+              item.datatype = dataType;
+            }
             node.send(item); // Send immediately as browsed
           }
           else {
