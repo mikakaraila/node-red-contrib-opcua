@@ -91,22 +91,26 @@ Output message
 |  serverTimestamp   | Server´s timestamp        |                           |
 
 Release history (only couple of older releases):
-**v0.2.109**
-Added array range examples (examples/OPCUA-TEST-NODES.json).
-Send only if payload contains something.
-Added msg.range usage
-New feature msg.range can be used to read/write part of Array
-Fix: FQDN -> hostname in makeAplicationUri
-EventId and statustext as clear string
-EventId as hex string
-**v0.2.108 and older**
-Fixed support for server Array variables
-Browse will create topic and datatype thus output can be connected. Next node can progress output msg.
-Refactored browse action fast and simple
-Merged event payload fix, version++
-Merge pull request #265 from list3f/master
-Put OPC UA event data in msg.payload
 
+**v0.2.109**
+<p>
+Added array range examples (examples/OPCUA-TEST-NODES.json).<br/>
+Send only if payload contains something.<br/>
+Added msg.range usage<br/>
+New feature msg.range can be used to read/write part of Array<br/>
+Fix: FQDN -> hostname in makeAplicationUri<br/>
+EventId and statustext as clear string<br/>
+EventId as hex string<br/>
+</p>
+
+**v0.2.108 and older**
+<p>
+Fixed support for server Array variables<br/>
+Browse will create topic and datatype thus output can be connected. Next node can progress output msg.<br/>
+Refactored browse action fast and simple<br/>
+Merged event payload fix. Merge pull request #265 from list3f/master<br/>
+Put OPC UA event data in msg.payload<br/>
+</p>
 # Advanced examples
 - needed from users (add links to examples folder)
 
