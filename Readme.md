@@ -78,6 +78,8 @@ readmultiple to readmultiple items
 writemultiple to write multiple items
 clearitems to empty multiple items (readmultiple / writemultiple)
 
+NOTE: With datatype=xxxArray msg.range = "2:4" can used as indexRange to read/write partial array
+
 Output message
 ----
 
@@ -88,6 +90,21 @@ Output message
 |  sourceTimestamp	 | Source timestamp          |                           |
 |  serverTimestamp   | Server´s timestamp        |                           |
 
+Release history (only couple of older releases):
+**v0.2.109**
+Send only if payload contains something.
+Added msg.range usage
+New feature msg.range can be used to read/write part of Array
+Fix: FQDN -> hostname in makeAplicationUri
+EventId and statustext as clear string
+EventId as hex string
+**v0.2.108 and older**
+Fixed support for server Array variables
+Browse will create topic and datatype thus output can be connected. Next node can progress output msg.
+Refactored browse action fast and simple
+Merged event payload fix, version++
+Merge pull request #265 from list3f/master
+Put OPC UA event data in msg.payload
 
 # Advanced examples
 - needed from users (add links to examples folder)
