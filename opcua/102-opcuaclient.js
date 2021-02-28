@@ -16,6 +16,8 @@
 
  **/
 
+const { promoteToMultiStateValueDiscrete } = require("node-opcua");
+
 module.exports = function (RED) {
   "use strict";
   var chalk = require("chalk");
@@ -153,12 +155,13 @@ module.exports = function (RED) {
       msg.payload = {};
 
       verbose_log("EventFields=" + eventFields);
-
+      
       async.forEachOf(eventFields, function (variant, index, callback) {
-
+        console.log("EVENT Field: " + fields[index] + stringify(variant));
+        
         if (variant.dataType === DataType.Null) {
           if (--cnt === 0) node.send(msg);
-          callback("variants dataType is Null");
+          callback("Variants dataType is Null");
         } else if (variant.dataType === DataType.NodeId) {
           getBrowseName(session, variant.value, function (err, name) {
             if (!err) {
@@ -177,6 +180,7 @@ module.exports = function (RED) {
           })
         }
       }, _callback);
+      node.send(msg);
     }
 
     var eventQueue = new async.queue(function (task, callback) {
@@ -327,20 +331,24 @@ module.exports = function (RED) {
         const endpoints = await node.client.getEndpoints();
         var i = 0;
         endpoints.forEach(function (endpoint, i) {
+          /*
           verbose_log("endpoint " + endpoint.endpointUrl + "");
           verbose_log("Application URI " + endpoint.server.applicationUri);
           verbose_log("Product URI " + endpoint.server.productUri);
           verbose_log("Application Name " + endpoint.server.applicationName.text);
+          */
           var applicationName = endpoint.server.applicationName.text;
           if (!applicationName) {
             applicationName = "OPCUA_Server";
           }
+          /*
           verbose_log("Security Mode " + endpoint.securityMode.toString());
           verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
           verbose_log("Type " + endpoint.server.applicationType);
+          */
           // verbose_log("certificate " + "..." + " endpoint.serverCertificate");
           endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
-          verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
+          // verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
           serverCertificate = endpoint.serverCertificate;
           // Use applicationName instead of fixed server_certificate
           var certificate_filename = path.join(__dirname, "../../PKI/" + applicationName + i + ".pem");
@@ -350,13 +358,15 @@ module.exports = function (RED) {
         });
 
         endpoints.forEach(function (endpoint) {
-          verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString(), " Policy=", endpoint.securityPolicyUri);
+          // verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString(), " Policy=", endpoint.securityPolicyUri);
           endpoint.userIdentityTokens.forEach(function (token) {
+            /*
             verbose_log("policyId " + token.policyId);
             verbose_log("tokenType " + token.tokenType.toString());
             verbose_log("issuedTokenType " + token.issuedTokenType);
             verbose_log("issuerEndpointUrl " + token.issuerEndpointUrl);
             verbose_log("securityPolicyUri " + token.securityPolicyUri);
+            */
           });
         });
       }
@@ -543,6 +553,7 @@ module.exports = function (RED) {
 
       verbose_log("reading");
       var item = "";
+      var range = null;
       if (msg.topic) {
         var n = msg.topic.indexOf("datatype=");
         if (n > 0) {
@@ -559,11 +570,17 @@ module.exports = function (RED) {
         items[0] = msg.topic;
       }
 
+      // Added support for indexRange, payload can be just one number as string "5"  or "2:5"
+      if (msg.payload && msg.payload.range) {
+        range = new opcua.NumericRange(msg.payload.range);
+        // console.log("Range:" + stringify(range));
+      }
       if (node.session) {
         // With Single Read using now read to get sourceTimeStamp and serverTimeStamp
         node.session.read({
             nodeId: items[0],
-            attributeId: 13
+            attributeId: 13,
+            indexRange: range
           },
           function (err, dataValue, diagnostics) {
             if (err) {
@@ -769,6 +786,7 @@ module.exports = function (RED) {
       var ns = msg.topic.substring(3, 4); // Parse namespace, ns=2
       var dIndex = msg.topic.indexOf("datatype=");
       var s = "";
+      var range = null;
 
       if (msg.datatype == null && dIndex > 0) {
         msg.datatype = msg.topic.substring(dIndex + 9);
@@ -786,6 +804,7 @@ module.exports = function (RED) {
         nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, parseInt(s), parseInt(ns));
       }
 
+      
       verbose_log("msg=" + stringify(msg));
       verbose_log("namespace=" + ns);
       verbose_log("string=" + s);
@@ -794,12 +813,35 @@ module.exports = function (RED) {
       verbose_log(nodeid.toString());
       var opcuaDataValue = opcuaBasics.build_new_dataValue(msg.datatype, msg.payload);
       verbose_log("DATATYPE: " + stringify(opcuaDataValue));
+      // TODO Fix object array according range
+      // Added support for indexRange, payload can be just one number as string "5"  or "2:5"
+
+      // Helper for node-red server write
+      function reIndexArray(obj, newKeys) {
+        const keyValues = Object.keys(obj).map(key => {
+          const newKey = newKeys[key] || key;
+          return { [newKey]: obj[key] };
+        });
+        return Object.assign({}, ...keyValues);
+      }
+
+      if (msg.range) {
+        verbose_log(chalk.red("Range: " + msg.range));
+        range = new opcua.NumericRange(msg.range);
+        verbose_log(chalk.red("Range: " + stringify(range) + " values: " + stringify(opcuaDataValue)));
+        // TODO write to node-red server still work to do
+        // var newIndex = { "0": "2", "1": "3", "2":"4"}; // HARD CODED TEST
+        // const newValues = reIndexArray(opcuaDataValue, newIndex);
+        // verbose_log(chalk.yellow("NEW VALUES: " + stringify(newValues)));
+      }
+
       let nodeToWrite;
       if (node.session) {
+
         nodeToWrite = {
           nodeId: nodeid.toString(),
           attributeId: opcua.AttributeIds.Value,
-          indexRange: null,
+          indexRange: range,
           value: new opcua.DataValue({value: new opcua.Variant(opcuaDataValue)})
         };
         verbose_log("VALUE TO WRITE: " + stringify(nodeToWrite.value.value));
