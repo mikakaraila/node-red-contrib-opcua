@@ -27,6 +27,7 @@ module.exports = function (RED) {
     var opcuaBasics = require('./opcua-basics');
     var envPaths = require("env-paths");
     var config = envPaths("node-red-opcua").config;
+    const {parse, stringify} = require('flatted');
 
     function createCertificateManager() {
         return new opcua.OPCUACertificateManager({
@@ -117,16 +118,17 @@ module.exports = function (RED) {
             text: "Not running"
         });
 
-        var xmlFiles = [  path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml'),
-            // path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')
+        var xmlFiles = [path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml'),     // Standard & basic types
+                        path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.AutoID.NodeSet2.xml'), // Support for RFID Readers
+                        path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')   // ISA95
         ];
         verbose_warn("node set:" + xmlFiles.toString());
 
         async function initNewServer() {
             initialized = false;
             verbose_warn("create Server from XML ...");
-          
-            const applicationUri =  opcua.makeApplicationUrn("%FQDN%", "node-red-contrib-opcua-server");
+            // DO NOT USE "%FQDN%" anymore, hostname is OK
+            const applicationUri =  opcua.makeApplicationUrn(os.hostname(), "node-red-contrib-opcua-server");
             const serverCertificateManager = createCertificateManager();
             const userCertificateManager = createUserCertificateManager();
 
@@ -184,8 +186,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.108",
-                buildDate: "2021-02-18T20:56:00"
+                buildNumber: "0.2.109",
+                buildDate: "2021-02-28T09:00:00"
             };
             
             var hostname = os.hostname();
@@ -521,8 +523,8 @@ module.exports = function (RED) {
                         datatype = msg.topic.substring(e + 9);
                         var arrayType = opcua.VariantArrayType.Scalar;
                         var arr = datatype.indexOf("Array");
-                        var dim1 = undefined;
-                        var valueRank = undefined;
+                        var dim1 = 0;           // Fix for the scalars
+                        var valueRank = null;   // Fix for the scalars
                         if (arr > 0) {
                             arrayType = opcua.VariantArrayType.Array;
                             dim1 = datatype.substring(arr+6);
@@ -588,7 +590,26 @@ module.exports = function (RED) {
                                     })
                                 },
                                 set: function (variant) {
-                                    variables[browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
+                                    verbose_log("Server set new variable value : " + variables[browseName] + " browseName: " + browseName + " new:" + stringify(variant));
+                                    /*
+                                    // TODO Array partial write need some more studies
+                                    if (msg.range) {
+                                        verbose_log(chalk.red("SERVER WRITE RANGE: " + range));
+                                        var startIndex = 2; // parseInt(range);
+                                        var endIndex = 4; // parseInt(range.substring(1))
+                                        var newIndex = 0;
+                                        var oldValues = variables[browseName].split(",");
+                                        for (var i=startIndex; i<endIndex; i++) {
+                                            oldValues[i] = variant.value[newIndex.toString()];
+                                            newIndex++;
+                                        }
+                                        verbose_log(chalk.red("NEW ARRAY with range values: " + oldValues));
+                                    }
+                                    else {
+                                        */
+                                        variables[browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
+                                    // }
+                                    // variables[browseName] = Object.assign(variables[browseName], opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value));
                                     verbose_log("Server variable: " + variables[browseName] + " browseName: " + browseName);
                                     var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": browseName, "variableValue": variables[browseName] }};
                                     verbose_log("msg Payload:" + JSON.stringify(SetMsg));
