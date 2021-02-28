@@ -92,6 +92,7 @@ Output message
 
 Release history (only couple of older releases):
 **v0.2.109**
+Added array range examples (examples/OPCUA-TEST-NODES.json).
 Send only if payload contains something.
 Added msg.range usage
 New feature msg.range can be used to read/write part of Array
