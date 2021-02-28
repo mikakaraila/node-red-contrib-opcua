@@ -34,7 +34,7 @@ module.exports = function (RED) {
         node.on("input", function (msg) {
 
             // var baseEventTypeId = "i=2041";
-            // var serverObjectId = "i=2253";
+            // var serverObjectId = "ns=0;i=2253";
             // All event field, perhaps selectable in UI
 
             var basicEventFields = opcuaBasic.getBasicEventFields();
