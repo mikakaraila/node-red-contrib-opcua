@@ -122,11 +122,11 @@ module.exports.calc_milliseconds_by_time_and_unit = function (time, unit) {
 };
 
 module.exports.collectAlarmFields = function (field, key, value, payload) {
-
+    console.log("Collect field: " + field + " key: " + key + " value:" + value + " payload:" + payload);
     switch (field) {
         // Common fields
         case "EventId":
-            payload.EventId = value;
+            payload.EventId = "0x" + value.toString("hex"); // As in UaExpert
             break;
         case "EventType":
             payload.EventType = value;
@@ -171,6 +171,7 @@ module.exports.collectAlarmFields = function (field, key, value, payload) {
             break;
         case "Quality":
             payload.Quality = value;
+            payload.StatusText = value.toString(); // Clear text
             break;
         case "LastSeverity":
             payload.LastSeverity = value;
