@@ -28,6 +28,8 @@ module.exports = function (RED) {
   var opcua = require('node-opcua');
   var uaclient = require('node-opcua-client');
   const {stringify} = require('flatted');
+  // const dataTypeFactory = require("node-opcua-factory");
+  // const ScanData = getOrCreateConstructor("ScanData", dataTypeFactory);
 
   function OPCUAMethodNode(n) {
     RED.nodes.createNode(this, n)
@@ -52,7 +54,10 @@ module.exports = function (RED) {
       node.inputArguments.push({dataType: n.arg0type, value: new Date(n.arg0value)});
     } else if (n.arg0type === "String") {
       node.inputArguments.push({dataType: n.arg0type, value: n.arg0value});
-    } else if (n.arg0type === "Double" || n.arg0type === "Float" ) {
+    } else if (n.arg0type === "ScanData") {
+      node.inputArguments.push({dataType: n.arg0type, value: new ScanData(n.arg0value)});
+    }
+    else if (n.arg0type === "Double" || n.arg0type === "Float" ) {
       node.inputArguments.push({dataType: n.arg0type, value: parseFloat(n.arg0value)});
     } else {
       node.inputArguments.push({dataType: n.arg0type, value: parseInt(n.arg0value)});
@@ -116,7 +121,7 @@ module.exports = function (RED) {
       userIdentity.password = opcuaEndpoint.credentials.password;
       userIdentity.type = uaclient.UserTokenType.UserName; // New TypeScript API parameter
     }
-
+    console.log("Input arguments:" + JSON.stringify(node.inputArguments));
     async function setupClient(url, callback) {
 
       const client = opcua.OPCUAClient.create(connectionOption);

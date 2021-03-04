@@ -523,17 +523,65 @@ module.exports = function (RED) {
                         datatype = msg.topic.substring(e + 9);
                         var arrayType = opcua.VariantArrayType.Scalar;
                         var arr = datatype.indexOf("Array");
-                        var dim1 = 0;           // Fix for the scalars
-                        var valueRank = null;   // Fix for the scalars
+                        var dim1 = 0;        // Fix for the scalars
+                        var dim2 = 0;        // Matrix
+                        var dim3 = 0;        // Cube
+                        var indexStr = "";
+                        var valueRank = -1;     // Fix for the scalars
                         if (arr > 0) {
                             arrayType = opcua.VariantArrayType.Array;
                             dim1 = datatype.substring(arr+6);
+                            indexStr = dim1.substring(0, dim1.length-1);
                             dim1 = parseInt(dim1.substring(0, dim1.length-1));
                             valueRank = 1; // 1-dim Array
                             datatype = datatype.substring(0, arr);
+                            // valueRank = 2; // 2-dim Matrix FloatArray[5,5]
+                            // valueRank = 3; // 3-dim Matrix FloatArray[5,5,5]
+                            var indexes = indexStr.split(",");
+                            console.log("INDEXES[" + indexes.length + "] = " + JSON.stringify(indexes) + " from " + indexStr);
+                            if (indexes.length === 1) {
+                                dim1 = parseInt(indexes[0]);
+                                valueRank = 1;
+                            }
+                            if (indexes.length === 2) {
+                                dim1 = parseInt(indexes[0]);
+                                dim2 = parseInt(indexes[1]);
+                                valueRank = 2;
+                            }
+                            if (indexes.length === 3) {
+                                dim1 = parseInt(indexes[0]);
+                                dim2 = parseInt(indexes[1]);
+                                dim3 = parseInt(indexes[2]);
+                                valueRank = 3;
+                            }
                         }
+                        var dimensions = valueRank <= 0 ? null : [dim1]; // Fix for conformance check TODO dim2, dim3
                         var browseName = name.substring(7);
                         variables[browseName] = 0;
+                        if (valueRank == 1) {
+                            arrayType = opcua.VariantArrayType.Array;
+                            dimensions = [dim1];
+                            variables[browseName] = new Float32Array(dim1); // [];
+                            for (var i=0; i<dim1; i++) {
+                                variables[browseName][i] = 0;
+                            }
+                        }
+                        if (valueRank == 2) {
+                            arrayType = opcua.VariantArrayType.Matrix;
+                            dimensions = [dim1, dim2];
+                            variables[browseName] = new Float32Array(dim1*dim2); // [];
+                            for (var i=0; i<dim1*dim2; i++) {
+                                variables[browseName][i] = 0;
+                            }
+                        }
+                        if (valueRank == 3) {
+                            arrayType = opcua.VariantArrayType.Matrix; // Actually no Cube => Matrix with 3 dims
+                            dimensions = [dim1, dim2, dim3];
+                            variables[browseName] = new Float32Array(dim1*dim2*dim3); // [];
+                            for (var i=0; i<dim1*dim2*dim3; i++) {
+                                variables[browseName][i] = 0;
+                            }
+                        }
 
                         if (datatype == "Int32") {
                             opcuaDataType = opcua.DataType.Int32;
@@ -572,7 +620,7 @@ module.exports = function (RED) {
                             variables[browseName] = true;
                         }
                         verbose_log("Datatype: " + datatype);
-                        verbose_log("OPC UA type id: "+ opcuaDataType.toString());
+                        verbose_log("OPC UA type id: "+ opcuaDataType.toString() + " dims[" + dim1 + "," + dim2 +"," + dim3 +"] == " + dimensions);
                         
                         var newVAR = addressSpace.getOwnNamespace().addVariable({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
@@ -580,20 +628,30 @@ module.exports = function (RED) {
                             browseName: browseName, // or displayName
                             dataType: datatype, // opcuaDataType,
                             valueRank,
-                            arrayDimensions: [dim1],
+                            arrayDimensions: dimensions,
                             value: {
                                 get: function () {
-                                    return new opcua.Variant({
-                                        arrayType,
-                                        dataType: opcuaDataType,
-                                        value: variables[browseName]
-                                    })
+                                    if (valueRank>=2) {
+                                        return new opcua.Variant({
+                                            arrayType,
+                                            dimensions,
+                                            dataType: opcuaDataType,
+                                            value: variables[browseName]
+                                        });
+                                    }
+                                    else {
+                                        return new opcua.Variant({
+                                            arrayType,
+                                            dataType: opcuaDataType,
+                                            value: variables[browseName]
+                                        });
+                                    } 
                                 },
                                 set: function (variant) {
                                     verbose_log("Server set new variable value : " + variables[browseName] + " browseName: " + browseName + " new:" + stringify(variant));
                                     /*
                                     // TODO Array partial write need some more studies
-                                    if (msg.range) {
+                                    if (msg.payload.range) {
                                         verbose_log(chalk.red("SERVER WRITE RANGE: " + range));
                                         var startIndex = 2; // parseInt(range);
                                         var endIndex = 4; // parseInt(range.substring(1))
