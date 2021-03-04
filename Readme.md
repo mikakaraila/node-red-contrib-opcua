@@ -96,6 +96,11 @@ Release history (only couple of older releases):
 Added 2D and 3D array support. Examples:<br/>
 ns=1;s=Float2D;datatype=FloatArray[5,5]<br/>
 ns=1;s=Float3D;datatype=FloatArray[5,5,5]<br/>
+NOTE: Write range uses msg.range<br/>
+New feature msg.payload.range can be used to read part of Array<br/>
+New feature msg.range can be used to write part of Array<br/>
+Updated example OPCUA-TEST-NODES.json<br/>
+
 </p>
 
 **v0.2.109**
