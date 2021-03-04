@@ -825,9 +825,9 @@ module.exports = function (RED) {
         return Object.assign({}, ...keyValues);
       }
 
-      if (msg.payload.range) {
-        verbose_log(chalk.red("Range: " + msg.payload.range));
-        range = new opcua.NumericRange(msg.payload.range);
+      if (msg.range) {
+        verbose_log(chalk.red("Range: " + msg.range));
+        range = new opcua.NumericRange(msg.range);
         verbose_log(chalk.red("Range: " + stringify(range) + " values: " + stringify(opcuaDataValue)));
         // TODO write to node-red server still work to do
         // var newIndex = { "0": "2", "1": "3", "2":"4"}; // HARD CODED TEST
