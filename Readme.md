@@ -91,6 +91,12 @@ Output message
 |  serverTimestamp   | Server´s timestamp        |                           |
 
 Release history (only couple of older releases):
+
+**v0.2.111**
+<p>
+Fixed DateTime conversion (write).<br/>
+</p>
+
 **v0.2.110**
 <p>
 Added 2D and 3D array support. Examples:<br/>
