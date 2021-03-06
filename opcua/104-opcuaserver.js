@@ -186,7 +186,7 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.111",
+                buildNumber: "0.2.112",
                 buildDate: "2021-03-05T14:55:00"
             };
             
