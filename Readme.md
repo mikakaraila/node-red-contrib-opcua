@@ -92,6 +92,12 @@ Output message
 
 Release history (only couple of older releases):
 
+
+**v0.2.112**
+<p>
+Added DateTime to server.<br/>
+</p>
+
 **v0.2.111**
 <p>
 Fixed DateTime conversion (write).<br/>
