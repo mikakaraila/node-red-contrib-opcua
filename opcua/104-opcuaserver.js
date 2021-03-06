@@ -607,6 +607,10 @@ module.exports = function (RED) {
                         if (datatype == "SByte") {
                             opcuaDataType = opcua.DataType.SByte;
                         }
+                        if (datatype == "DateTime") {
+                            opcuaDataType = opcua.DataType.DateTime;
+                            variables[browseName] = new Date();
+                        }
                         if (datatype == "ByteString") {
                             opcuaDataType = opcua.DataType.ByteString;
                             variables[browseName] = Buffer.from("");
