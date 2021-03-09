@@ -146,7 +146,9 @@ limitations under the License.
             <li><b>addFolder</b>          msg.topic = "ns=1;s=NewFolder"  // Note parent folder is objects if not set by setFolder</li>
             <li><b>addVariable</b>        msg.topic = "ns=1;s=VariableName;datatype=Double" // parent folder is set above</li>
             <li><b>installHistorian</b>   msg.topic = "ns=1;s=VariableName;datatype=Double</li>
-            <li><b>deleteNode</b>         msg.payload  = "ns=1;s=VariableName</li>
+            <li><b>deleteNode</b>         msg.payload = "ns=1;s=VariableName"</li>
+            <li><b>registerNamespace</b>  msg.topic = "www.acme.com" output msg.payload = ns=index </li>
+            <li><b>getNamespaceIndex</b>  msg.topic = "www.acme.com" output msg.payload = ns=index </li>
         </ul>
 
         Examples JSON Injects: <br />

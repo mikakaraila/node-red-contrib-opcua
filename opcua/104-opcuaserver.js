@@ -186,7 +186,7 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.112",
+                buildNumber: "0.2.113",
                 buildDate: "2021-03-05T14:55:00"
             };
             
@@ -398,7 +398,7 @@ module.exports = function (RED) {
                 read_message(payload);
             }
             if (contains_opcua_command(payload)) {
-                execute_opcua_command(msg);
+                msg.payload = execute_opcua_command(msg);
             }
 
             if (equipmentNotFound) {
@@ -456,6 +456,7 @@ module.exports = function (RED) {
             var payload = msg.payload;
             var addressSpace = node.server.engine.addressSpace;
             var name;
+            var returnValue = "";
 
             switch (payload.opcuaCommand) {
 
@@ -626,7 +627,15 @@ module.exports = function (RED) {
                         verbose_log("Datatype: " + datatype);
                         verbose_log("OPC UA type id: "+ opcuaDataType.toString() + " dims[" + dim1 + "," + dim2 +"," + dim3 +"] == " + dimensions);
                         
-                        var newVAR = addressSpace.getOwnNamespace().addVariable({
+                        var namespace = addressSpace.getOwnNamespace(); // Default
+                        if (msg.topic.indexOf("ns=1;") !== 0) {
+                            var allNamespaces = addressSpace.getNamespaceArray();
+                            // console.log("ALL ns: " + stringify(allNamespaces));
+                            // Select namespace by index, works up to index = 9
+                            var index = parseInt(msg.topic.substring(3,4));
+                            namespace = allNamespaces[index];
+                        }
+                        var newVAR = namespace.addVariable({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
                             nodeId: name,
                             browseName: browseName, // or displayName
@@ -715,10 +724,21 @@ module.exports = function (RED) {
                     }
                     break;
 
-                default:
+                case "registerNamespace":
+                    var ns = addressSpace.registerNamespace(msg.topic);
+                    // verbose_log("namespace: " + stringify(ns));
+                    var index = addressSpace.getNamespaceIndex(msg.topic);
+                    returnValue = "ns=" + index.toString();
+                    break;
+                
+                case "getNamespaceIndex":
+                    returnValue = "ns=" + addressSpace.getNamespaceIndex(msg.topic);
+                    break;
+                  default:
                     node_error("unknown OPC UA Command");
             }
 
+            return returnValue;
         }
 
         async function restart_server() {
