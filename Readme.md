@@ -92,6 +92,11 @@ Output message
 
 Release history (only couple of older releases):
 
+**v0.2.113**
+<p>
+Enhancement: server commands: registerNamespace and getNamespaceIndex, user can addVariables with registered namespaces like ns=5.<br/>
+Enhancement: msg.topic = readmultiple AND msg.payload = ALL then msg.payload = values<br/>
+</p>
 
 **v0.2.112**
 <p>
