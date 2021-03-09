@@ -678,6 +678,11 @@ module.exports = function (RED) {
 
       if (node.session && msg.topic === "readmultiple") {
         //  node.session.read({timestampsToReturn: TimestampsToReturn.Both, nodesToRead: multipleItems}, function (err, dataValues, diagnostics) {
+        verbose_log("Reading items: " + stringify(multipleItems));
+        if (multipleItems.length === 0) {
+          node_error(node.name + " no items to read");
+          return;
+        }
         node.session.readVariableValue(multipleItems, function (err, dataValues, diagnostics) {
           if (err) {
             if (diagnostics) {
@@ -689,7 +694,11 @@ module.exports = function (RED) {
           }
           else {
             set_node_status_to("active multiple reading");
-
+            
+            if (msg.payload === "ALL") {
+              node.send({"topic": "ALL", "payload": dataValues, "items": multipleItems});
+              return;
+            }
             for (var i = 0; i < dataValues.length; i++) {
               var dataValue = dataValues[i];
               verbose_log("\tNode : " + msg.topic);
