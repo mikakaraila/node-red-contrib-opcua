@@ -38,6 +38,10 @@ module.exports = function (RED) {
   var read_service = require("node-opcua-service-read");
   var TimestampsToReturn = read_service.TimestampsToReturn;
   var subscription_service = require("node-opcua-service-subscription");
+
+  const { createCertificateManager } = require("./utils");
+  const { dumpCertificates } = require("./dump_certificates");
+
   const {parse, stringify} = require('flatted');
 
   function OpcUaClientNode(n) {
@@ -61,10 +65,13 @@ module.exports = function (RED) {
     var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
     var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
     var multipleItems = []; // Store & read multiple nodeIds
-    var serverCertificate;
 
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
+
+
+    connectionOption.clientCertificateManager = createCertificateManager();
+
 
     if (node.certificate === "l" && node.localfile) {
       verbose_log("Using 'own' local certificate file " + node.localfile);
@@ -202,7 +209,7 @@ module.exports = function (RED) {
       verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!! Node: " + node.name);
     };
     const backoff = function (attempt, delay) {
-      verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds. Node:  " + node.name);
+      verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds. Node:  " + node.name + " " + opcuaEndpoint.endpoint);
     };
     const reconnection = function () {
       verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  Starting Reconnection !!!!!!!!!!!!!!!!!!! Node: " + node.name);
@@ -311,8 +318,13 @@ module.exports = function (RED) {
           return;
         }
         verbose_log("Exact endpointUrl: " + opcuaEndpoint.endpoint + " hostname: " + os.hostname());
+
+        await node.client.clientCertificateManager.initialize();
         await node.client.connect(opcuaEndpoint.endpoint);
       } catch (err) {
+
+        console.log(err);
+
         verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt securityMode:" + stringify(connectionOption.securityMode) + " securityPolicy:" + stringify(connectionOption.securityPolicy));
         verbose_warn("Case B: UserName & password does not match to server (needed by Sign): " + userIdentity.userName + " " + userIdentity.password);
         set_node_errorstatus_to("invalid endpoint " + opcuaEndpoint.endpoint, err);
@@ -323,56 +335,12 @@ module.exports = function (RED) {
       // This will succeed first time only if security policy and mode are None
       // Later user can use path and local file to access server certificate file
 
-      try {
         if (!node.client) {
           node_error("Client not yet created & connected, cannot getEndpoints!");
           return;
         }
-        const endpoints = await node.client.getEndpoints();
-        var i = 0;
-        endpoints.forEach(function (endpoint, i) {
-          /*
-          verbose_log("endpoint " + endpoint.endpointUrl + "");
-          verbose_log("Application URI " + endpoint.server.applicationUri);
-          verbose_log("Product URI " + endpoint.server.productUri);
-          verbose_log("Application Name " + endpoint.server.applicationName.text);
-          */
-          var applicationName = endpoint.server.applicationName.text;
-          if (!applicationName) {
-            applicationName = "OPCUA_Server";
-          }
-          /*
-          verbose_log("Security Mode " + endpoint.securityMode.toString());
-          verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
-          verbose_log("Type " + endpoint.server.applicationType);
-          */
-          // verbose_log("certificate " + "..." + " endpoint.serverCertificate");
-          endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
-          // verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
-          serverCertificate = endpoint.serverCertificate;
-          // Use applicationName instead of fixed server_certificate
-          var certificate_filename = path.join(__dirname, "../../PKI/" + applicationName + i + ".pem");
-          if (serverCertificate) {
-            fs.writeFile(certificate_filename, crypto_utils.toPem(serverCertificate, "CERTIFICATE"), function () {});
-          }
-        });
 
-        endpoints.forEach(function (endpoint) {
-          // verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString(), " Policy=", endpoint.securityPolicyUri);
-          endpoint.userIdentityTokens.forEach(function (token) {
-            /*
-            verbose_log("policyId " + token.policyId);
-            verbose_log("tokenType " + token.tokenType.toString());
-            verbose_log("issuedTokenType " + token.issuedTokenType);
-            verbose_log("issuerEndpointUrl " + token.issuerEndpointUrl);
-            verbose_log("securityPolicyUri " + token.securityPolicyUri);
-            */
-          });
-        });
-      }
-      catch (err) {
-        node_error("Cannot read endpoints: " + err.toString());
-      }
+      // dumpCertificates(node.client); // TODO Wrong folder or something to solve
 
       // STEP 3
       verbose_log("Create session ...");

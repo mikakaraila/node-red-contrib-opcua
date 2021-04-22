@@ -16,7 +16,7 @@
 
  **/
 
-const { coerceSByte } = require('node-opcua');
+// const { coerceSByte } = require('node-opcua');
 
 module.exports = function (RED) {
     "use strict";
@@ -25,24 +25,9 @@ module.exports = function (RED) {
     var os = require("os");
     var chalk = require("chalk");
     var opcuaBasics = require('./opcua-basics');
-    var envPaths = require("env-paths");
-    var config = envPaths("node-red-opcua").config;
     const {parse, stringify} = require('flatted');
+    const { createCertificateManager, createUserCertificateManager } = require("./utils");
 
-    function createCertificateManager() {
-        return new opcua.OPCUACertificateManager({
-            name: "PKI",
-            rootFolder: path.join(config, "PKI"),
-            automaticallyAcceptUnknownCertificate: true
-        });
-    }
-    function createUserCertificateManager() {
-        return new opcua.OPCUACertificateManager({
-            name: "UserPKI",
-            rootFolder: path.join(config, "UserPKI"),
-            automaticallyAcceptUnknownCertificate: true
-        });
-    }
     function OpcUaServerNode(n) {
 
         RED.nodes.createNode(this, n);
@@ -77,21 +62,7 @@ module.exports = function (RED) {
         var initialized = false;
         var folder = null;
 
-        function createCertificateManager() {
-            return new opcua.OPCUACertificateManager({
-                name: "PKI",
-                rootFolder: path.join(config, "PKI"),
-                automaticallyAcceptUnknownCertificate: true
-            });
-        }
 
-        function createUserCertificateManager() {
-            return new opcua.OPCUACertificateManager({
-                name: "UserPKI",
-                rootFolder: path.join(config, "UserPKI"),
-                automaticallyAcceptUnknownCertificate: true
-            });
-        }
 
         function node_error(err) {
             console.error(chalk.red("[Error] Server node error on: " + node.name + " error: " + JSON.stringify(err)));
@@ -186,8 +157,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.113",
-                buildDate: "2021-03-05T14:55:00"
+                buildNumber: "0.2.114",
+                buildDate: "2021-04-22T21:23:00"
             };
             
             var hostname = os.hostname();
