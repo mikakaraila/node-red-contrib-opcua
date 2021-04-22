@@ -96,6 +96,7 @@ limitations under the License.
             <option value="deletesubscription">DELETE SUBSCRIPTION</option>
             <option value="events">EVENTS</option>
             <option value="info">INFO</option>
+            <option value="build">BUILD</option>
             <option value="monitor">MONITOR</option>
             <option value="readmultiple">READ MULTIPLE</option>
             <option value="writemultiple">WRITE MULTIPLE</option>
@@ -153,6 +154,7 @@ limitations under the License.
             <li>Deletesubscription</li>
             <li>Event</li>
             <li>Info</li>
+            <li>Build</li>
             <li>Monitor</li>
             <li>Read Multiple</li>
          </ul>
@@ -180,6 +182,8 @@ limitations under the License.
     <p>Read multiple will first store all input msg nodeId values to array</p>
     <p> when input message is string readmultiple then actual read is done. NOTE: If payload == ALL then all values are in one msg.payload</p>
     <p> when input message is string clearitems then nodeId array is cleared</p>
+    <p>Info read attributes from the given nodeId</p>
+    <p>Build will construct Extension Object message with topic, datatype and payload (value)</p>
     <p>Browse will lookup address space from the injected msg.topic (nodeId)</p>
     <p> if msg.collect === true then result will be collected into one msg. msg.payload will be array of items</p>
     <p> msg.payload.range = "2:4" and FloatArray or any Array datatype then indexes from 2 to 4 will be used to read or write depending on action</p>

@@ -513,6 +513,9 @@ module.exports = function (RED) {
         case "info":
           info_action_input(msg);
           break;
+        case "build":
+          build_extension_object_action_input(msg);
+          break;
         case "write":
           write_action_input(msg);
           break;
@@ -789,13 +792,50 @@ module.exports = function (RED) {
       }
     }
 
-    function write_action_input(msg) {
+    async function build_extension_object_action_input(msg) {
+      verbose_log("construct extension object for " + stringify(msg));
+      var item = "";
+      if (msg.topic) {
+        var n = msg.topic.indexOf("datatype=");
+
+        if (n > 0) {
+          msg.datatype = msg.topic.substring(n + 9);
+          item = msg.topic.substring(0, n - 1);
+          msg.topic = item;
+          verbose_log(stringify(msg));
+        }
+      }
+
+      if (item.length > 0) {
+        items[0] = item;
+      } else {
+        items[0] = msg.topic;
+      }
+
+      if (node.session) {
+        var ExtensionNodeId = coerceNodeId(items[0]);
+        var ExtensionData = await node.session.constructExtensionObject(ExtensionNodeId, JSON.parse(msg.payload));
+        var newmsg = {};
+        newmsg.payload = ExtensionData.toString();
+        newmsg.datatype = "ExtensionObject";
+        newmsg.topic = items[0];
+        verbose_log("Extension Object msg: " + stringify(newmsg))
+        node.send(newmsg);
+      } else {
+        set_node_status_to("Session invalid");
+        node_error("Session is not active!")
+      }
+    }
+
+
+    async function write_action_input(msg) {
       verbose_log("writing");
       // Topic value: ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT
       var ns = msg.topic.substring(3, 4); // Parse namespace, ns=2
       var dIndex = msg.topic.indexOf("datatype=");
       var s = "";
       var range = null;
+      var extensionobject = null;
 
       if (msg.datatype == null && dIndex > 0) {
         msg.datatype = msg.topic.substring(dIndex + 9);
@@ -812,8 +852,7 @@ module.exports = function (RED) {
       } else {
         nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, parseInt(s), parseInt(ns));
       }
-
-      
+  
       verbose_log("msg=" + stringify(msg));
       verbose_log("namespace=" + ns);
       verbose_log("string=" + s);
@@ -822,6 +861,13 @@ module.exports = function (RED) {
       verbose_log(nodeid.toString());
       var opcuaDataValue = opcuaBasics.build_new_dataValue(msg.datatype, msg.payload);
       verbose_log("DATATYPE: " + stringify(opcuaDataValue));
+      
+      if (msg.datatype && msg.datatype === "ExtensionObject" && node.session) {
+        var obj = JSON.parse(msg.payload);
+        extensionobject = await node.session.constructExtensionObject(nodeid, obj);
+        verbose_log("ExtensionObject=" + stringify(extensionobject));
+      }
+      
       // TODO Fix object array according range
       // Added support for indexRange, payload can be just one number as string "5"  or "2:5"
 
