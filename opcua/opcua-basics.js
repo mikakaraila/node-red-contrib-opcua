@@ -798,6 +798,10 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
             uaType = opcua.DataType.DateTime;
             nValue = new Date(value);  // value.toString();
             break;
+        case "ExtensionObject":
+            uaType = opcua.DataType.ExtensionObject;
+            nValue = JSON.parse(value);
+            break;
         default:
             // uaType = null;
             nValue = value;
