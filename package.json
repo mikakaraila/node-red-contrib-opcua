@@ -35,11 +35,11 @@
   },
   "dependencies": {
     "async": "^3.2.0",
-    "chalk": "4.1.0",
-    "env-paths": "2.2.0",
+    "chalk": "4.1.1",
+    "env-paths": "2.2.1",
     "es6-map": "^0.1.5",
-    "flatted": "^3.1.0",
-    "node-opcua": "2.33.0",
+    "flatted": "^3.1.1",
+    "node-opcua": "2.40.0",
     "treeify": "^1.1.0"
   },
   "homepage": "https://github.com/mikakaraila/node-red-contrib-opcua#readme",
@@ -47,8 +47,8 @@
     "test": "karma start opcua.conf.js --log-level debug --single-run"
   },
   "devDependencies": {
-    "jasmine-core": "^3.6.0",
-    "karma": "^6.0.0",
+    "jasmine-core": "^3.7.1",
+    "karma": "^6.3.2",
     "karma-chrome-launcher": "^3.1.0",
     "karma-jasmine": "^4.0.1"
   }

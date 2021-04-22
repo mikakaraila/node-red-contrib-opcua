@@ -25,24 +25,8 @@ module.exports = function (RED) {
     var os = require("os");
     var chalk = require("chalk");
     var opcuaBasics = require('./opcua-basics');
-    var envPaths = require("env-paths");
-    var config = envPaths("node-red-opcua").config;
     const {parse, stringify} = require('flatted');
 
-    function createCertificateManager() {
-        return new opcua.OPCUACertificateManager({
-            name: "PKI",
-            rootFolder: path.join(config, "PKI"),
-            automaticallyAcceptUnknownCertificate: true
-        });
-    }
-    function createUserCertificateManager() {
-        return new opcua.OPCUACertificateManager({
-            name: "UserPKI",
-            rootFolder: path.join(config, "UserPKI"),
-            automaticallyAcceptUnknownCertificate: true
-        });
-    }
     function OpcUaServerNode(n) {
 
         RED.nodes.createNode(this, n);
@@ -77,21 +61,7 @@ module.exports = function (RED) {
         var initialized = false;
         var folder = null;
 
-        function createCertificateManager() {
-            return new opcua.OPCUACertificateManager({
-                name: "PKI",
-                rootFolder: path.join(config, "PKI"),
-                automaticallyAcceptUnknownCertificate: true
-            });
-        }
 
-        function createUserCertificateManager() {
-            return new opcua.OPCUACertificateManager({
-                name: "UserPKI",
-                rootFolder: path.join(config, "UserPKI"),
-                automaticallyAcceptUnknownCertificate: true
-            });
-        }
 
         function node_error(err) {
             console.error(chalk.red("[Error] Server node error on: " + node.name + " error: " + JSON.stringify(err)));

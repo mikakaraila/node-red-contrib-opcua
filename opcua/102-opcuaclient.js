@@ -38,7 +38,11 @@ module.exports = function (RED) {
   var read_service = require("node-opcua-service-read");
   var TimestampsToReturn = read_service.TimestampsToReturn;
   var subscription_service = require("node-opcua-service-subscription");
-  const {parse, stringify} = require('flatted');
+
+  const { createCertificateManager } = require("./utils");
+  const { dumpCertificates } = require("./dump_certificates");
+
+  const { parse, stringify } = require('flatted');
 
   function OpcUaClientNode(n) {
     RED.nodes.createNode(this, n);
@@ -61,10 +65,13 @@ module.exports = function (RED) {
     var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
     var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
     var multipleItems = []; // Store & read multiple nodeIds
-    var serverCertificate;
 
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
+
+
+    connectionOption.clientCertificateManager = createCertificateManager();
+
 
     if (node.certificate === "l" && node.localfile) {
       verbose_log("Using 'own' local certificate file " + node.localfile);
@@ -72,7 +79,7 @@ module.exports = function (RED) {
       var certfile = node.localfile;
       var keyfile = node.localkeyfile;
       connectionOption.certificateFile = certfile;
-      connectionOption.privateKeyFile =  keyfile;
+      connectionOption.privateKeyFile = keyfile;
 
       if (!fs.existsSync(certfile)) {
         node_error("Local certificate file not found:" + certfile)
@@ -135,11 +142,11 @@ module.exports = function (RED) {
     }
 
 
-   async function getBrowseName(_session, nodeId, callback) {
-    const dataValue = await _session.read({
-      attributeId: AttributeIds.BrowseName,
-      nodeId
-    });
+    async function getBrowseName(_session, nodeId, callback) {
+      const dataValue = await _session.read({
+        attributeId: AttributeIds.BrowseName,
+        nodeId
+      });
       if (dataValue.statusCode === opcua.StatusCodes.Good) {
         const browseName = dataValue.value.value;
         return callback(null, browseName);
@@ -155,10 +162,10 @@ module.exports = function (RED) {
       msg.payload = {};
 
       verbose_log("EventFields=" + eventFields);
-      
+
       async.forEachOf(eventFields, function (variant, index, callback) {
         console.log("EVENT Field: " + fields[index] + stringify(variant));
-        
+
         if (variant.dataType === DataType.Null) {
           if (--cnt === 0) node.send(msg);
           callback("Variants dataType is Null");
@@ -202,7 +209,7 @@ module.exports = function (RED) {
       verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!! Node: " + node.name);
     };
     const backoff = function (attempt, delay) {
-      verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds. Node:  " + node.name);
+      verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds. Node:  " + node.name + " " + opcuaEndpoint.endpoint);
     };
     const reconnection = function () {
       verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  Starting Reconnection !!!!!!!!!!!!!!!!!!! Node: " + node.name);
@@ -228,7 +235,7 @@ module.exports = function (RED) {
         node.client.on("backoff", backoff);
         node.client.on("start_reconnection", reconnection);
       }
-      catch(err) {
+      catch (err) {
         node_error("Cannot create client, check connection options: " + stringify(connectionOption));
       }
       items = [];
@@ -311,8 +318,13 @@ module.exports = function (RED) {
           return;
         }
         verbose_log("Exact endpointUrl: " + opcuaEndpoint.endpoint + " hostname: " + os.hostname());
+
+        await node.client.clientCertificateManager.initialize();
         await node.client.connect(opcuaEndpoint.endpoint);
       } catch (err) {
+
+        console.log(err);
+
         verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt securityMode:" + stringify(connectionOption.securityMode) + " securityPolicy:" + stringify(connectionOption.securityPolicy));
         verbose_warn("Case B: UserName & password does not match to server (needed by Sign): " + userIdentity.userName + " " + userIdentity.password);
         set_node_errorstatus_to("invalid endpoint " + opcuaEndpoint.endpoint, err);
@@ -323,57 +335,13 @@ module.exports = function (RED) {
       // This will succeed first time only if security policy and mode are None
       // Later user can use path and local file to access server certificate file
 
-      try {
-        if (!node.client) {
-          node_error("Client not yet created & connected, cannot getEndpoints!");
-          return;
-        }
-        const endpoints = await node.client.getEndpoints();
-        var i = 0;
-        endpoints.forEach(function (endpoint, i) {
-          /*
-          verbose_log("endpoint " + endpoint.endpointUrl + "");
-          verbose_log("Application URI " + endpoint.server.applicationUri);
-          verbose_log("Product URI " + endpoint.server.productUri);
-          verbose_log("Application Name " + endpoint.server.applicationName.text);
-          */
-          var applicationName = endpoint.server.applicationName.text;
-          if (!applicationName) {
-            applicationName = "OPCUA_Server";
-          }
-          /*
-          verbose_log("Security Mode " + endpoint.securityMode.toString());
-          verbose_log("securityPolicyUri " + endpoint.securityPolicyUri);
-          verbose_log("Type " + endpoint.server.applicationType);
-          */
-          // verbose_log("certificate " + "..." + " endpoint.serverCertificate");
-          endpoint.server.discoveryUrls = endpoint.server.discoveryUrls || [];
-          // verbose_log("discoveryUrls " + endpoint.server.discoveryUrls.join(" - "));
-          serverCertificate = endpoint.serverCertificate;
-          // Use applicationName instead of fixed server_certificate
-          var certificate_filename = path.join(__dirname, "../../PKI/" + applicationName + i + ".pem");
-          if (serverCertificate) {
-            fs.writeFile(certificate_filename, crypto_utils.toPem(serverCertificate, "CERTIFICATE"), function () {});
-          }
-        });
-
-        endpoints.forEach(function (endpoint) {
-          // verbose_log("Identify Token for : Security Mode= " + endpoint.securityMode.toString(), " Policy=", endpoint.securityPolicyUri);
-          endpoint.userIdentityTokens.forEach(function (token) {
-            /*
-            verbose_log("policyId " + token.policyId);
-            verbose_log("tokenType " + token.tokenType.toString());
-            verbose_log("issuedTokenType " + token.issuedTokenType);
-            verbose_log("issuerEndpointUrl " + token.issuerEndpointUrl);
-            verbose_log("securityPolicyUri " + token.securityPolicyUri);
-            */
-          });
-        });
+      if (!node.client) {
+        node_error("Client not yet created & connected, cannot getEndpoints!");
+        return;
       }
-      catch (err) {
-        node_error("Cannot read endpoints: " + err.toString());
-      }
-
+     
+      dumpCertificates(node.client);
+     
       // STEP 3
       verbose_log("Create session ...");
       try {
@@ -578,10 +546,10 @@ module.exports = function (RED) {
       if (node.session) {
         // With Single Read using now read to get sourceTimeStamp and serverTimeStamp
         node.session.read({
-            nodeId: items[0],
-            attributeId: 13,
-            indexRange: range
-          },
+          nodeId: items[0],
+          attributeId: 13,
+          indexRange: range
+        },
           function (err, dataValue, diagnostics) {
             if (err) {
               if (diagnostics) {
@@ -694,9 +662,9 @@ module.exports = function (RED) {
           }
           else {
             set_node_status_to("active multiple reading");
-            
+
             if (msg.payload === "ALL") {
-              node.send({"topic": "ALL", "payload": dataValues, "items": multipleItems});
+              node.send({ "topic": "ALL", "payload": dataValues, "items": multipleItems });
               return;
             }
             for (var i = 0; i < dataValues.length; i++) {
@@ -771,18 +739,18 @@ module.exports = function (RED) {
 
       if (node.session) {
         // TODO this could loop through all items
-        node.session.readAllAttributes(coerceNodeId(items[0]), function(err, result) {
+        node.session.readAllAttributes(coerceNodeId(items[0]), function (err, result) {
           if (!err) {
-              // console.log("INFO: " + JSON.stringify(result));
-              var newMsg = Object.assign(msg, result);
-              node.send(newMsg);
+            // console.log("INFO: " + JSON.stringify(result));
+            var newMsg = Object.assign(msg, result);
+            node.send(newMsg);
           }
           else {
             set_node_status_to("error");
-            node_error("Cannot read attributes from nodeId: " + items[0])    
+            node_error("Cannot read attributes from nodeId: " + items[0])
           }
         });
-      
+
       } else {
         set_node_status_to("Session invalid");
         node_error("Session is not active!")
@@ -813,7 +781,7 @@ module.exports = function (RED) {
         nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, parseInt(s), parseInt(ns));
       }
 
-      
+
       verbose_log("msg=" + stringify(msg));
       verbose_log("namespace=" + ns);
       verbose_log("string=" + s);
@@ -851,7 +819,7 @@ module.exports = function (RED) {
           nodeId: nodeid.toString(),
           attributeId: opcua.AttributeIds.Value,
           indexRange: range,
-          value: new opcua.DataValue({value: new opcua.Variant(opcuaDataValue)})
+          value: new opcua.DataValue({ value: new opcua.Variant(opcuaDataValue) })
         };
         verbose_log("VALUE TO WRITE: " + stringify(nodeToWrite.value.value));
         if (msg.timestamp) {
@@ -1319,7 +1287,7 @@ module.exports = function (RED) {
         if (subscription.isActive) {
           node.session.deleteSubscriptions({
             subscriptionIds: [subscription.subscriptionId]
-        }, function(err, response) {
+          }, function (err, response) {
             if (err) {
               node_error("Delete subscription error " + err);
             }
@@ -1327,7 +1295,7 @@ module.exports = function (RED) {
               verbose_log("Subscription deleted, response:" + stringify(response));
               subscription.terminate(); // Added to allow new subscription
             }
-        });
+          });
         }
       }
     }
@@ -1341,8 +1309,8 @@ module.exports = function (RED) {
         const crawler = new NodeCrawler(node.session);
         set_node_status_to("active browsing");
 
-        crawler.on("browsed", function(element) {
-          if (msg.collect===undefined || (msg.collect && msg.collect === false)) {
+        crawler.on("browsed", function (element) {
+          if (msg.collect === undefined || (msg.collect && msg.collect === false)) {
             var item = {};
             item.payload = Object.assign({}, element); // Clone element
             var dataType = "";
@@ -1363,64 +1331,64 @@ module.exports = function (RED) {
 
         // Browse from given topic
         const nodeId = msg.topic; // "ObjectsFolder";
-        crawler.read(nodeId, function(err, obj) {
-            if (!err) {
-              // Crawling done
-              if (msg.collect && msg.collect === true) {
-                verbose_log("Send all in one, items: " + allInOne.length);
-                var all = {};
-                all.topic = "AllInOne";
-                all.payload = allInOne;
-                set_node_status_to("browse done");
-                node.send(all);
-                return;
-              }
-              /*
-              let newMessage = opcuaBasics.buildBrowseMessage("");
-              let browseName = "";
-              // This is visual, but takes too long time
-              treeify.asLines(obj, true, true, function(line) {
-                if (line.indexOf("nodeId") > 0) {
-                  count2++;
-                  var nodeId = line.substring(line.indexOf("nodeId") + 8);
-                  // Use nodeId as topic
-                  newMessage = opcuaBasics.buildBrowseMessage(nodeId.toString());
-                  newMessage.nodeId = nodeId;
-                  newMessage.browseName = browseName;
-                }
-                if (line.indexOf("browseName:") > 0) {
-                  browseName = line.substring(line.indexOf("browseName:") + 12);
-                }
-                if (line.indexOf("dataType") > 0) {
-                  newMessage.dataType = line.substring(line.indexOf("dataType") + 10);
-                }
-                // Last item on treeify object structure is typeDefinition
-                if (line.indexOf("typeDefinition") > 0) {
-                  newMessage.typeDefinition = line.substring(line.indexOf("typeDefinition") + 16);
-                  var msg2 = newMessage;
-                  const nodesToRead = [{ nodeId: newMessage.nodeId, attributeId: opcua.AttributeIds.Description }];
-                  node.session.read(nodesToRead, function(err, dataValues) {
-                    if (!err && dataValues.length === 1) {
-                      // Should return only one, localeText
-                      if (dataValues[0] && dataValues[0].value && dataValues[0].value.value && dataValues[0].value.value.text) {
-                        // console.log("NODEID: " + newMessage.nodeId + " DESCRIPTION: " + dataValues[0].value.value.text);
-                        msg2.description = dataValues[0].value.value.text.toString();
-                      }
-                    }
-                    msg2.payload = Date.now(); // TODO check if real DataValue could be used
-                
-                    }
-                    else {
-                      node.send(msg2);
-                    }
-                  });
-                }
-                // console.log(line); // No console output
-              });
-              */
+        crawler.read(nodeId, function (err, obj) {
+          if (!err) {
+            // Crawling done
+            if (msg.collect && msg.collect === true) {
+              verbose_log("Send all in one, items: " + allInOne.length);
+              var all = {};
+              all.topic = "AllInOne";
+              all.payload = allInOne;
               set_node_status_to("browse done");
+              node.send(all);
+              return;
             }
-            crawler.dispose();
+            /*
+            let newMessage = opcuaBasics.buildBrowseMessage("");
+            let browseName = "";
+            // This is visual, but takes too long time
+            treeify.asLines(obj, true, true, function(line) {
+              if (line.indexOf("nodeId") > 0) {
+                count2++;
+                var nodeId = line.substring(line.indexOf("nodeId") + 8);
+                // Use nodeId as topic
+                newMessage = opcuaBasics.buildBrowseMessage(nodeId.toString());
+                newMessage.nodeId = nodeId;
+                newMessage.browseName = browseName;
+              }
+              if (line.indexOf("browseName:") > 0) {
+                browseName = line.substring(line.indexOf("browseName:") + 12);
+              }
+              if (line.indexOf("dataType") > 0) {
+                newMessage.dataType = line.substring(line.indexOf("dataType") + 10);
+              }
+              // Last item on treeify object structure is typeDefinition
+              if (line.indexOf("typeDefinition") > 0) {
+                newMessage.typeDefinition = line.substring(line.indexOf("typeDefinition") + 16);
+                var msg2 = newMessage;
+                const nodesToRead = [{ nodeId: newMessage.nodeId, attributeId: opcua.AttributeIds.Description }];
+                node.session.read(nodesToRead, function(err, dataValues) {
+                  if (!err && dataValues.length === 1) {
+                    // Should return only one, localeText
+                    if (dataValues[0] && dataValues[0].value && dataValues[0].value.value && dataValues[0].value.value.text) {
+                      // console.log("NODEID: " + newMessage.nodeId + " DESCRIPTION: " + dataValues[0].value.value.text);
+                      msg2.description = dataValues[0].value.value.text.toString();
+                    }
+                  }
+                  msg2.payload = Date.now(); // TODO check if real DataValue could be used
+              
+                  }
+                  else {
+                    node.send(msg2);
+                  }
+                });
+              }
+              // console.log(line); // No console output
+            });
+            */
+            set_node_status_to("browse done");
+          }
+          crawler.dispose();
         });
 
       } else {
@@ -1442,10 +1410,10 @@ module.exports = function (RED) {
         // TODO read nodeId to validate it before subscription
         try {
           monitoredItem = opcua.ClientMonitoredItem.create(subscription,
-          {
-            nodeId: msg.topic, // serverObjectId
-            attributeId: AttributeIds.EventNotifier
-          }, {
+            {
+              nodeId: msg.topic, // serverObjectId
+              attributeId: AttributeIds.EventNotifier
+            }, {
             samplingInterval: interval,
             queueSize: 100000,
             filter: msg.eventFilter,
@@ -1544,7 +1512,7 @@ module.exports = function (RED) {
       // monitoredItems = new Map();
       monitoredItems.clear();
       if (node.session) {
-        node.session.close(function(err) {
+        node.session.close(function (err) {
           if (err) {
             node_error("Session close error: " + err);
           }
