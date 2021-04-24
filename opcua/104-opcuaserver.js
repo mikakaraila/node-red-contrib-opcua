@@ -36,6 +36,12 @@ module.exports = function (RED) {
         this.port = n.port;
         this.endpoint = n.endpoint;
         this.autoAcceptUnknownCertificate = n.autoAcceptUnknownCertificate;
+        this.endpointNone = n.endpointNone;
+        this.endpointSign = n.endpointSign;
+        this.endpointSignEncrypt = n.endpointSignEncrypt;
+        this.endpointBasic128Rsa15 = n.endpointBasic128Rsa15;
+        this.endpointBasic256 = n.endpointBasic256;
+        this.endpointBasic256Sha256 = n.endpointBasic256Sha256;
         // Operating limits:
         this.maxNodesPerBrowse = n.maxNodesPerBrowse;
         this.maxNodesPerHistoryReadData = n.maxNodesPerHistoryReadData;
@@ -62,7 +68,31 @@ module.exports = function (RED) {
         var initialized = false;
         var folder = null;
 
-
+        // Server endpoints active configuration
+        var policies = [];
+        var modes = [];
+        
+        // Security modes None | Sign | SignAndEncrypt
+        if (this.endpointNone === true) {
+            policies.push(opcua.SecurityPolicy.None);
+            modes.push(opcua.MessageSecurityMode.None);
+        }
+        if (this.endpointSign === true) {
+            modes.push(opcua.MessageSecurityMode.Sign);
+        }
+        if (this.endpointSignEncrypt === true) {
+            modes.push(opcua.MessageSecurityMode.SignAndEncrypt);
+        }
+        // Security policies
+        if (this.endpointBasic128Rsa15 === true) {
+            policies.push(opcua.SecurityPolicy.Basic128Rsa15);
+        }
+        if (this.endpointBasic256 === true) {
+            policies.push(opcua.SecurityPolicy.Basic256);
+        }
+        if (this.endpointBasic256Sha256 === true) {
+            policies.push(opcua.SecurityPolicy.Basic256Sha256);
+        }
 
         function node_error(err) {
             console.error(chalk.red("[Error] Server node error on: " + node.name + " error: " + JSON.stringify(err)));
@@ -111,7 +141,8 @@ module.exports = function (RED) {
             node.server_options = {
                 serverCertificateManager,
                 userCertificateManager,
- 
+                securityPolicies: policies,
+                securityModes: modes,
                 port: parseInt(n.port),
                 resourcePath: "/" + node.endpoint, // Option was missing / can be 
                 maxAllowedSessionNumber: 1000,
@@ -157,8 +188,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.114",
-                buildDate: "2021-04-22T21:23:00"
+                buildNumber: "0.2.115",
+                buildDate: "2021-04-24T10:57:00"
             };
             
             var hostname = os.hostname();

@@ -27,6 +27,12 @@ limitations under the License.
             autoAcceptUnknownCertificate: {value: true},
             registerToDiscovery: {value: false},
             constructDefaultAddressSpace: {value: true},
+            endpointNone: {value: true},
+            endpointSign: {value: true},
+            endpointSignEncrypt: {value: true},
+            endpointBasic128Rsa15: {value: true},
+            endpointBasic256: {value: true},
+            endpointBasic256Sha256: {value: true},
             maxNodesPerBrowse: {value: 0, required: false},
             maxNodesPerHistoryReadData: {value: 0, required: false},
             maxNodesPerHistoryReadEvents: {value: 0, required: false},
@@ -82,52 +88,76 @@ limitations under the License.
         <input type="checkbox" id="node-input-constructDefaultAddressSpace" style="max-width:20px">
     </div>
     <div class="form-row">
+        <label for="node-input-endpointNone" style="width:72%;"><i class="icon-tasks"></i> Security mode: None</label>
+        <input type="checkbox" id="node-input-endpointNone" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-endpointSign" style="width:72%;"><i class="icon-tasks"></i> Security mode: Sign</label>
+        <input type="checkbox" id="node-input-endpointSign" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-endpointSignEncrypt" style="width:72%;"><i class="icon-tasks"></i> Security mode: Sign & Encrypt</label>
+        <input type="checkbox" id="node-input-endpointSignEncrypt" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-endpointBasic128Rsa15" style="width:72%;"><i class="icon-tasks"></i> Security policy: Basic128-Rsa15</label>
+        <input type="checkbox" id="node-input-endpointBasic128Rsa15" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-endpointBasic256" style="width:72%;"><i class="icon-tasks"></i> Security policy: Basic256</label>
+        <input type="checkbox" id="node-input-endpointBasic256" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-endpointBasic256Sha256" style="width:72%;"><i class="icon-tasks"></i> Security policy: Basic256-Sha256</label>
+        <input type="checkbox" id="node-input-endpointBasic256Sha256" style="max-width:20px">
+    </div>
+    <div class="form-row">
         <label for="node-input-maxNodesPerBrowse" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerBrowse</label>
-        <input type="number" id="node-input-maxNodesPerBrowse" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxNodesPerBrowse" placeholder="number" style="max-width:100px">
     </div>
     <div class="form-row">
         <label for="node-input-maxNodesPerHistoryReadData" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerHistoryReadData</label>
-        <input type="number" id="node-input-maxNodesPerHistoryReadData" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxNodesPerHistoryReadData" placeholder="number" style="max-width:100px">
     </div>
     <div class="form-row">
         <label for="node-input-maxNodesPerHistoryReadEvents" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerHistoryReadEvents</label>
-        <input type="number" id="node-input-maxNodesPerHistoryReadEvents" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxNodesPerHistoryReadEvents" placeholder="number" style="max-width:100px">
     </div>
     <div class="form-row">
         <label for="node-input-maxNodesPerHistoryUpdateData" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerHistoryUpdateData</label>
-        <input type="number" id="node-input-maxNodesPerHistoryUpdateData" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxNodesPerHistoryUpdateData" placeholder="number" style="max-width:100px">
     </div>
     <div class="form-row">
         <label for="node-input-maxNodesPerRead" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerRead</label>
-        <input type="number" id="node-input-maxNodesPerRead" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxNodesPerRead" placeholder="number" style="max-width:100px">
     </div>
     <div class="form-row">
         <label for="node-input-maxNodesPerWrite" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerWrite</label>
-        <input type="number" id="node-input-maxNodesPerWrite" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxNodesPerWrite" placeholder="number" style="max-width:100px">
     </div>
     <div class="form-row">
         <label for="node-input-maxNodesPerMethodCall" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerMethodCall</label>
-        <input type="number" id="node-input-maxNodesPerMethodCall" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxNodesPerMethodCall" placeholder="number" style="max-width:100px">
     </div>
     <div class="form-row">
         <label for="node-input-maxNodesPerRegisterNodes" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerRegisterNodes</label>
-        <input type="number" id="node-input-maxNodesPerRegisterNodes" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxNodesPerRegisterNodes" placeholder="number" style="max-width:100px">
     </div>
     <div class="form-row">
         <label for="node-input-maxNodesPerNodeManagement" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerNodeManagement</label>
-        <input type="number" id="node-input-maxNodesPerNodeManagement" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxNodesPerNodeManagement" placeholder="number" style="max-width:100px">
     </div>
     <div class="form-row">
         <label for="node-input-maxMonitoredItemsPerCall" style="width:72%;"><i class="icon-tasks"></i> maxMonitoredItemsPerCall</label>
-        <input type="number" id="node-input-maxMonitoredItemsPerCall" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxMonitoredItemsPerCall" placeholder="number" style="max-width:100px">
     </div>
     <div class="form-row">
         <label for="node-input-maxNodesPerHistoryUpdateEvents" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerHistoryUpdateEvents</label>
-        <input type="number" id="node-input-maxNodesPerHistoryUpdateEvents" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxNodesPerHistoryUpdateEvents" placeholder="number" style="max-width:100px">
     </div>
     <div class="form-row">
         <label for="node-input-maxNodesPerTranslateBrowsePathsToNodeIds" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerTranslateBrowsePathsToNodeIds</label>
-        <input type="number" id="node-input-maxNodesPerTranslateBrowsePathsToNodeIds" placeholder="number" style="max-width:120px">
+        <input type="number" id="node-input-maxNodesPerTranslateBrowsePathsToNodeIds" placeholder="number" style="max-width:100px">
     </div>
 </script>
 
@@ -136,6 +166,9 @@ limitations under the License.
     <p>Parameters PORT and ResourcePath can be given for the server.</p>
     <p>Register to local Discover Server, if true => OPC UA Server will register itself to opc.tcp://localhost:4840</p>
     <p>ConstructDefaultAddressSpace, if false then Server AddressSpace will be empty (no VendorName and sub objects)<p>
+    <p>Server active endpoints from security mode and policy:</p>
+    <p>Security mode: None Sign SignAndEncrypt<p>
+    <p>Security policy: Basic128-Rsa15 | Basic256 | Basic128-Sha256<p>
     <p>
         OPC UA server commands:
         <ul>
