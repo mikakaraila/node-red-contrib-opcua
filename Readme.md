@@ -92,6 +92,11 @@ Output message
 
 Release history (only couple of older releases):
 
+**v0.2.116**
+<p>
+Enhancement: server allow anonymous, added verbose to show trusted/rejected folders.<br/>
+</p>
+
 
 **v0.2.115**
 <p>
