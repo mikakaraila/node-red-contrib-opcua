@@ -27,6 +27,7 @@ limitations under the License.
             autoAcceptUnknownCertificate: {value: true},
             registerToDiscovery: {value: false},
             constructDefaultAddressSpace: {value: true},
+            allowAnonymous: {value: true},
             endpointNone: {value: true},
             endpointSign: {value: true},
             endpointSignEncrypt: {value: true},
@@ -87,6 +88,11 @@ limitations under the License.
         <label for="node-input-constructDefaultAddressSpace" style="width:72%;"><i class="icon-tasks"></i> Build default AddressSpace</label>
         <input type="checkbox" id="node-input-constructDefaultAddressSpace" style="max-width:20px">
     </div>
+    <div class="form-row">
+        <label for="node-input-allowAnonymous" style="width:72%;"><i class="icon-tasks"></i> Allow anonymous user</label>
+        <input type="checkbox" id="node-input-allowAnonymous" style="max-width:20px">
+    </div>
+
     <div class="form-row">
         <label for="node-input-endpointNone" style="width:72%;"><i class="icon-tasks"></i> Security mode: None</label>
         <input type="checkbox" id="node-input-endpointNone" style="max-width:20px">

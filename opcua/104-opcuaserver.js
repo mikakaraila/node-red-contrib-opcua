@@ -36,6 +36,7 @@ module.exports = function (RED) {
         this.port = n.port;
         this.endpoint = n.endpoint;
         this.autoAcceptUnknownCertificate = n.autoAcceptUnknownCertificate;
+        this.allowAnonymous = n.allowAnonymous;
         this.endpointNone = n.endpointNone;
         this.endpointSign = n.endpointSign;
         this.endpointSignEncrypt = n.endpointSignEncrypt;
@@ -143,6 +144,7 @@ module.exports = function (RED) {
                 userCertificateManager,
                 securityPolicies: policies,
                 securityModes: modes,
+                allowAnonymous: n.allowAnonymous,
                 port: parseInt(n.port),
                 resourcePath: "/" + node.endpoint, // Option was missing / can be 
                 maxAllowedSessionNumber: 1000,
@@ -188,8 +190,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.115",
-                buildDate: "2021-04-24T10:57:00"
+                buildNumber: "0.2.116",
+                buildDate: "2021-04-25T10:28:00"
             };
             
             var hostname = os.hostname();
@@ -346,10 +348,11 @@ module.exports = function (RED) {
                 }
                 await node.server.start();
 
-                verbose_log("Using server certificate  " + node.server.certificateFile);
-                verbose_log("Using PKI  folder         " + node.server.serverCertificateManager.rootDir);
-                verbose_log("Using UserPKI  folder     " + node.server.userCertificateManager.rootDir);
-
+                verbose_log("Using server certificate    " + node.server.certificateFile);
+                verbose_log("Using PKI folder            " + node.server.serverCertificateManager.rootDir);
+                verbose_log("Using UserPKI folder        " + node.server.userCertificateManager.rootDir);
+                verbose_log("Trusted certificate folder  " + node.server.serverCertificateManager.trustedFolder);
+                verbose_log("Tejected certificate folder " + node.server.serverCertificateManager.rejectedFolder);
 
                 // Client connects with userName
                 node.server.on("session_activated", (session) => {
