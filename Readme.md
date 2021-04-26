@@ -92,6 +92,11 @@ Output message
 
 Release history (only couple of older releases):
 
+**v0.2.117**
+<p>
+Enhancement: Added users to server. Users.json contains username, password and role for each user.<br/>
+</p>
+
 **v0.2.116**
 <p>
 Enhancement: server allow anonymous, added verbose to show trusted/rejected folders.<br/>
