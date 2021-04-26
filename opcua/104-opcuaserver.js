@@ -23,6 +23,7 @@ module.exports = function (RED) {
     var opcua = require('node-opcua');
     var path = require('path');
     var os = require("os");
+    var fs = require("fs");
     var chalk = require("chalk");
     var opcuaBasics = require('./opcua-basics');
     const {parse, stringify} = require('flatted');
@@ -68,6 +69,16 @@ module.exports = function (RED) {
         var equipmentNotFound = true;
         var initialized = false;
         var folder = null;
+        let userManager; // users with username, password and role
+        let users = [{ username: "", password: "", role: "" }]; // Empty as default
+
+        verbose_log("Loading default users from file: users.json");
+        // From the node-red-contrib-opcua folder or input as opcuaCommand
+        if (fs.existsSync("users.json")) {
+            users = JSON.parse(fs.readFileSync("users.json"));
+            verbose_log("Users: " + JSON.stringify(users));
+            setUsers(users);
+        }
 
         // Server endpoints active configuration
         var policies = [];
@@ -95,6 +106,45 @@ module.exports = function (RED) {
             policies.push(opcua.SecurityPolicy.Basic256Sha256);
         }
 
+        // This should be possible to inject for server
+        function setUsers() {   
+            // User manager
+            userManager = {
+                isValidUser: (username, password) => {
+                    const uIndex = users.findIndex(function(u) { return u.username === username; });                    
+                    if (uIndex < 0) {
+                        return false;
+                    }
+                    if (users[uIndex].password !== password) {
+                        return false;
+                    }
+                    return true;
+                },
+                getUserRole: username => {
+                    if (username === "Anonymous" || username === "anonymous") {
+                        return WellKnownRoles.Anonymous;
+                    }
+                    const uIndex = users.findIndex(function(x) { return x.username === username; });
+                    if (uIndex < 0) {  
+                        return WellKnownRoles.Guest; // by default were guest! ( i.e anonymous), read-only access 
+                    }
+                    const userRole = users[uIndex].role;
+
+                    // Default available roles, note each variable / methods should have permissions for real use case
+                    if (userRole === "Anonymous") return WellKnownRoles.Anonymous;
+                    if (userRole === "Guest") return WellKnownRoles.AuthenticatedUser;
+                    if (userRole === "Engineer") return WellKnownRoles.Engineer;
+                    if (userRole === "Observer") return WellKnownRoles.Observer;
+                    if (userRole === "Operator") return WellKnownRoles.Operator;
+                    if (userRole === "ConfigureAmin") return WellKnownRoles.ConfigureAdmin;
+                    if (userRole === "SecurityAmin") return WellKnownRoles.SecurityAdmin;
+
+                    // Return configurated role
+                    return userRole;
+                }
+            };
+        }
+          
         function node_error(err) {
             console.error(chalk.red("[Error] Server node error on: " + node.name + " error: " + JSON.stringify(err)));
             node.error("Server node error on: " + node.name + " error: " + JSON.stringify(err));
@@ -125,7 +175,7 @@ module.exports = function (RED) {
                         path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')   // ISA95
         ];
         verbose_warn("node set:" + xmlFiles.toString());
-
+        
         async function initNewServer() {
             initialized = false;
             verbose_warn("create Server from XML ...");
@@ -182,6 +232,7 @@ module.exports = function (RED) {
                     maxNodesPerTranslateBrowsePathsToNodeIds: node.maxNodesPerTranslateBrowsePathsToNodeIds
                   }
                 },
+                userManager, // users with username, password & role, see file users.json
                 isAuditing: false,
                 registerServerMethod: registerMethod
             };
@@ -352,7 +403,7 @@ module.exports = function (RED) {
                 verbose_log("Using PKI folder            " + node.server.serverCertificateManager.rootDir);
                 verbose_log("Using UserPKI folder        " + node.server.userCertificateManager.rootDir);
                 verbose_log("Trusted certificate folder  " + node.server.serverCertificateManager.trustedFolder);
-                verbose_log("Tejected certificate folder " + node.server.serverCertificateManager.rejectedFolder);
+                verbose_log("Rejected certificate folder " + node.server.serverCertificateManager.rejectedFolder);
 
                 // Client connects with userName
                 node.server.on("session_activated", (session) => {
@@ -739,7 +790,19 @@ module.exports = function (RED) {
                 case "getNamespaceIndex":
                     returnValue = "ns=" + addressSpace.getNamespaceIndex(msg.topic);
                     break;
-                  default:
+
+                case "setUsers":
+                    if (msg.payload.hasOwnProperty("users")) {
+                        users = msg.payload.users;
+                        verbose_log("NEW USERS: " + JSON.stringify(users));
+                        setUsers();
+                    }
+                    else {
+                        verbose_warn("No users defined in the input msg)");
+                    }
+                    break;
+    
+                default:
                     node_error("unknown OPC UA Command");
             }
 
