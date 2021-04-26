@@ -1,0 +1,17 @@
+[
+    {
+      "username": "visitor",
+      "password": "qwerty",
+      "role": "Guest"
+    },
+    {
+      "username": "JohnSmith",
+      "password": "1234",
+      "role": "Operator"
+    },
+    {
+      "username": "Administrator",
+      "password": "HardPassword!",
+      "role": "ConfigureAdmin"
+    }
+  ]
