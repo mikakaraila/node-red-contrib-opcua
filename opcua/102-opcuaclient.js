@@ -475,6 +475,9 @@ module.exports = function (RED) {
         " Item from Topic: " + msg.topic + " session Id: " + node.session.sessionId);
 
       switch (node.action) {
+        case "register":
+          register_action_input(msg);
+          break;
         case "read":
           read_action_input(msg);
           break;
@@ -519,6 +522,15 @@ module.exports = function (RED) {
       //node.send(msg); // msg.payload is here actual inject caused wrong values
     }
     node.on("input", processInputMsg);
+
+    async function register_action_input(msg) {
+      verbose_log("register nodes : " + stringify(msg.payload));
+      // First test, let´s see if this needs some refactoring. Same way perhaps as with readMultiple
+      // msg.topic not used, but cannot be empty
+      // msg.paylod == array of nodeIds to register
+      const registeredNodes = await node.session.registerNodes(msg.payload);
+      verbose_log("RegisteredNodes: " + stringify(registeredNodes));
+    }
 
     function read_action_input(msg) {
 
