@@ -478,6 +478,9 @@ module.exports = function (RED) {
         case "register":
           register_action_input(msg);
           break;
+        case "unregister":
+          unregister_action_input(msg);
+          break;  
         case "read":
           read_action_input(msg);
           break;
@@ -530,6 +533,15 @@ module.exports = function (RED) {
       // msg.paylod == array of nodeIds to register
       const registeredNodes = await node.session.registerNodes(msg.payload);
       verbose_log("RegisteredNodes: " + stringify(registeredNodes));
+    }
+
+    async function unregister_action_input(msg) {
+      verbose_log("unregister nodes : " + stringify(msg.payload));
+      // First test, let´s see if this needs some refactoring. Same way perhaps as with readMultiple
+      // msg.topic not used, but cannot be empty
+      // msg.paylod == array of nodeIds to register
+      const unregisteredNodes = await node.session.registerNodes(msg.payload);
+      verbose_log("UnregisteredNodes: " + stringify(unregisteredNodes));
     }
 
     function read_action_input(msg) {
@@ -773,7 +785,7 @@ module.exports = function (RED) {
     }
 
     async function build_extension_object_action_input(msg) {
-      verbose_log("construct extension object for " + stringify(msg));
+      verbose_log("Construct ExtensionObject from " + JSON.stringify(msg));
       var item = "";
       if (msg.topic) {
         var n = msg.topic.indexOf("datatype=");
@@ -793,14 +805,30 @@ module.exports = function (RED) {
       }
 
       if (node.session) {
-        var ExtensionNodeId = coerceNodeId(items[0]);
-        var ExtensionData = await node.session.constructExtensionObject(ExtensionNodeId, JSON.parse(msg.payload));
-        var newmsg = {};
-        newmsg.payload = ExtensionData.toString();
-        newmsg.datatype = "ExtensionObject";
-        newmsg.topic = items[0];
-        verbose_log("Extension Object msg: " + stringify(newmsg))
-        node.send(newmsg);
+        try {
+          const ExtensionNodeId = coerceNodeId(items[0]);
+          verbose_log("ExtensionNodeId: " + ExtensionNodeId);
+          const ExtensionTypeDefinition = await node.session.read({ nodeId: ExtensionNodeId, attributeId: opcua.AttributeIds.Value}); // opcua.AttributeIds.DataTypeDefinition});
+          verbose_log("ExtensionType: " + JSON.stringify(ExtensionTypeDefinition));
+          // const ExtensionData = await node.session.constructExtensionObject(ExtensionNodeId, {}); // ExtensionTypeDefinition); // JSON.parse(msg.payload));
+          // const ExtensionType = ExtensionTypeDefinition.value.dataType;
+          const ExtensionType = await node.session.read({ nodeId: ExtensionNodeId, attributeId: opcua.AttributeIds.DataType}); // opcua.AttributeIds.DataTypeDefinition});
+          verbose_log("ExtensionObject DataType nodeId: " + ExtensionType.value.value);
+          const ExtensionData = await node.session.constructExtensionObject(ExtensionType.value.value); // ExtensionNodeId);
+          if (ExtensionData) {
+            verbose_log("ExtensionData: " + ExtensionData.toString());
+            // OK build new message with ExtensionObject
+            var newmsg = {};
+            newmsg.payload = ExtensionData.toString();
+            newmsg.datatype = "ExtensionObject";
+            newmsg.topic = items[0];
+            verbose_log("Extension Object msg: " + stringify(newmsg))
+            node.send(newmsg);
+          }
+        }
+        catch(err) {
+          node_error("Failed to build ExtensionObject, error: " + err);
+        }
       } else {
         set_node_status_to("Session invalid");
         node_error("Session is not active!")

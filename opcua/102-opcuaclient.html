@@ -101,6 +101,7 @@ limitations under the License.
             <option value="readmultiple">READ MULTIPLE</option>
             <option value="writemultiple">WRITE MULTIPLE</option>
             <option value="register">REGISTER</option>
+            <option value="unregister">UNREGISTER</option>
         </select>
     </div>
     <div class="form-row" id="node-input-timerow">
@@ -159,6 +160,7 @@ limitations under the License.
             <li>Monitor</li>
             <li>Read Multiple</li>
             <li>Register</li>
+            <li>Unregister</li>
          </ul>
     </p>
     <p>Server certificate options are:</p>
@@ -176,6 +178,7 @@ limitations under the License.
     <p>Inject your OPC UA address (NodeId) by the <strong>Topic</strong> of an Inject node or with the OpcUa-Item cotrolled by an Inject node.</p>
     <p>To Read/Write inject the Topic for every operation.</p>
     <p>Use register to registerNodeIds, if server supports registeredNodes then it will perform better on normal read or readMultiple</p>
+    <p>Use unregister to unregisterNodeIds, if server supports unregisteredNodes then it will release earlier registered nodeIds</p>
     <p>The value to Write should be injected by an OpcUa-Item.</p>
     <p>Inject the Topic only once on Subscribe or Event for subscription and you got the changing value on every Interval.
         Every inject subscribes a new monitored Item.</p>

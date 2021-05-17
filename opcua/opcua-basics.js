@@ -16,7 +16,7 @@
 
 "use strict";
 const { stringify } = require('flatted');
-const { ModelChangeStructureDataType } = require('node-opcua');
+// const { coerceUInt64, coerceInt64, constructInt64 } = require('node-opcua');
 var opcua = require('node-opcua');
 
 const typedArrays = {
@@ -778,6 +778,18 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
             var uint32 = new Uint32Array([value]);
             nValue = uint32[0];
             break;
+        case "UInt64":
+            uaType = opcua.DataType.UInt64;
+            // console.log("BYTES uint64: " + value);
+            var bytes = value.toString().split(",");
+            nValue = { arrayType: opcua.VariantArrayType.Scalar, dataType: opcua.DataType.UInt64, value: [parseInt(bytes[0]), parseInt(bytes[1])] };
+            break;
+        case "Int64":
+            uaType = opcua.DataType.Int64;
+            // console.log("BYTES int64: " + value);
+            var bytes = value.toString().split(",");
+            nValue = { arrayType: opcua.VariantArrayType.Scalar, dataType: opcua.DataType.Int64, value: [parseInt(bytes[0]), parseInt(bytes[1])] };
+            break;
         case "Boolean":
             uaType = opcua.DataType.Boolean;
             if (value && value !== "false") {
@@ -856,6 +868,10 @@ module.exports.build_new_dataValue = function (datatype, value) {
                 value: parseFloat(value)
             };
             break;
+        case "Int64":
+            // console.log("BYTES INT64: " + JSON.stringify(value));
+            nValue = { arrayType: opcua.VariantArrayType.Scalar, dataType: opcua.DataType.Int64, value: value.value };
+            break;
         case "Int32":
             nValue = {
                 dataType: opcua.DataType.Int32,
@@ -873,6 +889,10 @@ module.exports.build_new_dataValue = function (datatype, value) {
                 dataType: opcua.DataType.SByte,
                 value: parseInt(value)
             };
+            break;
+        case "UInt64":
+            // console.log("BYTES UINT64: " + value);
+            nValue = { arrayType: opcua.VariantArrayType.Scalar, dataType: opcua.DataType.UInt64, value: value.value };
             break;
         case "UInt32":
             nValue = {
