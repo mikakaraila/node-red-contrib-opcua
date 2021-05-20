@@ -808,26 +808,33 @@ module.exports = function (RED) {
         try {
           const ExtensionNodeId = coerceNodeId(items[0]);
           verbose_log("ExtensionNodeId: " + ExtensionNodeId);
-          const ExtensionTypeDefinition = await node.session.read({ nodeId: ExtensionNodeId, attributeId: opcua.AttributeIds.Value}); // opcua.AttributeIds.DataTypeDefinition});
+          const ExtensionTypeDefinition = await node.session.read({ nodeId: ExtensionNodeId, attributeId: opcua.AttributeIds.DataTypeDefinition});
           verbose_log("ExtensionType: " + JSON.stringify(ExtensionTypeDefinition));
-          // const ExtensionData = await node.session.constructExtensionObject(ExtensionNodeId, {}); // ExtensionTypeDefinition); // JSON.parse(msg.payload));
-          // const ExtensionType = ExtensionTypeDefinition.value.dataType;
-          const ExtensionType = await node.session.read({ nodeId: ExtensionNodeId, attributeId: opcua.AttributeIds.DataType}); // opcua.AttributeIds.DataTypeDefinition});
+
+          verbose_log("ExtType NodeId: " + msg.browseName);
+          var end = msg.browseName.indexOf(";datatype");
+          var typeString = msg.browseName.substring(0, end);
+          let customTypeNodeId = coerceNodeId(typeString);
+          verbose_log("Custom Type NodeId: " + customTypeNodeId);
+
+          const ExtensionType = await node.session.read({ nodeId: customTypeNodeId, attributeId: opcua.AttributeIds.DataTypeDefinition});
           verbose_log("ExtensionObject DataType nodeId: " + ExtensionType.value.value);
-          const ExtensionData = await node.session.constructExtensionObject(ExtensionType.value.value); // ExtensionNodeId);
+          var newmsg = {};
+          newmsg.type = ExtensionType.value.value;
+          newmsg.datatype = "ExtensionObjectType";
+          newmsg.topic = items[0];
+          const ExtensionData = await node.session.constructExtensionObject(customTypeNodeId, {});
           if (ExtensionData) {
             verbose_log("ExtensionData: " + ExtensionData.toString());
-            // OK build new message with ExtensionObject
-            var newmsg = {};
-            newmsg.payload = ExtensionData.toString();
-            newmsg.datatype = "ExtensionObject";
-            newmsg.topic = items[0];
-            verbose_log("Extension Object msg: " + stringify(newmsg))
-            node.send(newmsg);
           }
+          newmsg.payload = JSON.stringify(ExtensionData); // New value with default values
+          verbose_log("Extension Object msg: " + stringify(newmsg))
+          node.send(newmsg);
         }
         catch(err) {
-          node_error("Failed to build ExtensionObject, error: " + err);
+          if (err) {
+            node_error("Failed to build ExtensionObject, error: " + err);
+          }
         }
       } else {
         set_node_status_to("Session invalid");
