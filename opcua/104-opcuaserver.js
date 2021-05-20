@@ -36,6 +36,7 @@ module.exports = function (RED) {
         this.name = n.name;
         this.port = n.port;
         this.endpoint = n.endpoint;
+        this.users = n.users;
         this.autoAcceptUnknownCertificate = n.autoAcceptUnknownCertificate;
         this.allowAnonymous = n.allowAnonymous;
         this.endpointNone = n.endpointNone;
@@ -72,12 +73,18 @@ module.exports = function (RED) {
         let userManager; // users with username, password and role
         let users = [{ username: "", password: "", role: "" }]; // Empty as default
 
-        verbose_log("Loading default users from file: users.json");
+        if (node.users && node.users.length > 0) {
+            verbose_log("Loading default users from file: " + node.users + " (current folder: " + __dirname + ")");
+        }
         // From the node-red-contrib-opcua folder or input as opcuaCommand
-        if (fs.existsSync("users.json")) {
-            users = JSON.parse(fs.readFileSync("users.json"));
-            verbose_log("Users: " + JSON.stringify(users));
+        if (fs.existsSync(node.users)) {
+            users = JSON.parse(fs.readFileSync(node.users));
+            verbose_log("Loaded users: " + JSON.stringify(users));
             setUsers(users);
+        }
+        else {
+            console.error(chalk.red("File: " + node.users + " not found! You can inject users to server or add file to current folder: " + __dirname));
+            node.error("File: " + node.users + " not found! You can inject users to server or add file to current folder: " + __dirname);
         }
 
         // Server endpoints active configuration
@@ -136,8 +143,8 @@ module.exports = function (RED) {
                     if (userRole === "Engineer") return WellKnownRoles.Engineer;
                     if (userRole === "Observer") return WellKnownRoles.Observer;
                     if (userRole === "Operator") return WellKnownRoles.Operator;
-                    if (userRole === "ConfigureAmin") return WellKnownRoles.ConfigureAdmin;
-                    if (userRole === "SecurityAmin") return WellKnownRoles.SecurityAdmin;
+                    if (userRole === "ConfigureAdmin") return WellKnownRoles.ConfigureAdmin;
+                    if (userRole === "SecurityAdmin") return WellKnownRoles.SecurityAdmin;
 
                     // Return configurated role
                     return userRole;
@@ -241,8 +248,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.220",
-                buildDate: "2021-05-17T22:55:00"
+                buildNumber: "0.2.221",
+                buildDate: "2021-05-18T19:45:00"
             };
             
             var hostname = os.hostname();

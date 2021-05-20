@@ -24,6 +24,7 @@ limitations under the License.
             port: {value: "53880", required: true},
             name: {value:""},
             endpoint: {value: ""},
+            users: {value: "users.json"},
             autoAcceptUnknownCertificate: {value: true},
             registerToDiscovery: {value: false},
             constructDefaultAddressSpace: {value: true},
@@ -77,6 +78,10 @@ limitations under the License.
         <input type="text" id="node-input-endpoint" placeholder="UA/SimpleNodeRedServer">
     </div>
     <div class="form-row">
+        <label for="node-input-users"><i class="icon-tasks"></i> Users file</label>
+        <input type="text" id="node-input-users" placeholder="users.json">
+    </div>
+    <div class="form-row">
         <label for="node-input-autoAcceptUnknownCertificate" style="width:72%;"><i class="icon-tasks"></i> Auto Accept Unknown Certificates</label>
         <input type="checkbox" id="node-input-autoAcceptUnknownCertificate" style="max-width:20px">
     </div>
@@ -92,7 +97,6 @@ limitations under the License.
         <label for="node-input-allowAnonymous" style="width:72%;"><i class="icon-tasks"></i> Allow anonymous user</label>
         <input type="checkbox" id="node-input-allowAnonymous" style="max-width:20px">
     </div>
-
     <div class="form-row">
         <label for="node-input-endpointNone" style="width:72%;"><i class="icon-tasks"></i> Security mode: None</label>
         <input type="checkbox" id="node-input-endpointNone" style="max-width:20px">
@@ -170,6 +174,7 @@ limitations under the License.
 <script type="text/x-red" data-help-name="OpcUa-Server">
     <p>Creates OPC UA server with own variables, object structures and methods to endpoint: opc.tcp://localhost:PORT/ResourcePath/</p>
     <p>Parameters PORT and ResourcePath can be given for the server.</p>
+    <p>File that contains username, password and role.</p>
     <p>Register to local Discover Server, if true => OPC UA Server will register itself to opc.tcp://localhost:4840</p>
     <p>ConstructDefaultAddressSpace, if false then Server AddressSpace will be empty (no VendorName and sub objects)<p>
     <p>Server active endpoints from security mode and policy:</p>
