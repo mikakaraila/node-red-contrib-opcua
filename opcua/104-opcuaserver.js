@@ -591,7 +591,7 @@ module.exports = function (RED) {
                         name = msg.topic.substring(0, e - 1);
                         datatype = msg.topic.substring(e + 9);
                         // ExtentionObject contains extra info like typeId
-                        if (datatype.indexOf(";")) {
+                        if (datatype.indexOf(";") >= 0) {
                             datatype = datatype.substring(0, datatype.indexOf(";"));
                         }
                         var arrayType = opcua.VariantArrayType.Scalar;
