@@ -37,6 +37,7 @@ module.exports = function (RED) {
         this.port = n.port;
         this.endpoint = n.endpoint;
         this.users = n.users;
+        this.nodeset = n.nodeset;
         this.autoAcceptUnknownCertificate = n.autoAcceptUnknownCertificate;
         this.allowAnonymous = n.allowAnonymous;
         this.endpointNone = n.endpointNone;
@@ -181,6 +182,10 @@ module.exports = function (RED) {
                         path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.AutoID.NodeSet2.xml'), // Support for RFID Readers
                         path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')   // ISA95
         ];
+        // Add custom nodeset (xml-file) for server
+        if (node.nodeset && fs.existsSync(node.nodeset)) {
+            xmlFiles[3] = node.nodeset;
+        }
         verbose_warn("node set:" + xmlFiles.toString());
         
         async function initNewServer() {
@@ -585,6 +590,10 @@ module.exports = function (RED) {
                     if (e > 0) {
                         name = msg.topic.substring(0, e - 1);
                         datatype = msg.topic.substring(e + 9);
+                        // ExtentionObject contains extra info like typeId
+                        if (datatype.indexOf(";")) {
+                            datatype = datatype.substring(0, datatype.indexOf(";"));
+                        }
                         var arrayType = opcua.VariantArrayType.Scalar;
                         var arr = datatype.indexOf("Array");
                         var dim1 = 0;        // Fix for the scalars
@@ -675,6 +684,10 @@ module.exports = function (RED) {
                             opcuaDataType = opcua.DataType.DateTime;
                             variables[browseName] = new Date();
                         }
+                        if (datatype == "ExtensionObject") {
+                            opcuaDataType = opcua.DataType.ExtensionObject;
+                            variables[browseName] = {};
+                        }
                         if (datatype == "ByteString") {
                             opcuaDataType = opcua.DataType.ByteString;
                             variables[browseName] = Buffer.from("");
@@ -698,6 +711,22 @@ module.exports = function (RED) {
                             var index = parseInt(msg.topic.substring(3,4));
                             namespace = allNamespaces[index];
                         }
+                        if (datatype === "ExtensionObject") {
+                            var typeId = msg.topic.substring(msg.topic.indexOf("typeId=") + 7);
+                            verbose_log("ExtensionObject typeId: " + typeId);
+                            var extVar = addressSpace.constructExtensionObject(opcua.coerceNodeId(typeId), {}); // build default value for extension object
+                            verbose_log("Server returned: " + JSON.stringify(extVar));
+                            extNode = namespace.addVariable({
+                                organizedBy: addressSpace.findNode(parentFolder.nodeId),
+                                browseName: browseName,
+                                dataType: "ExtensionObject", // typeId,
+                                valueRank,
+                                value: { dataType: DataType.ExtensionObject, value: extVar },
+                            });
+                            // TODO get/set functions and other tricks as with normal scalar
+                            return opcua.StatusCodes.Good;
+                        }
+
                         var newVAR = namespace.addVariable({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
                             nodeId: name,
