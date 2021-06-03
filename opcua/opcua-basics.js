@@ -664,8 +664,9 @@ function getArrayValues(datatype, items) {
             uaArray.values[index] = parseFloat(item);
         }
         else if (uaArray.uaType === opcua.DataType.Boolean) {
+            console.log("Item: " + item + " index: " + index)
             uaArray.values[index] = false;
-            if (item === 1 || item === "true") {
+            if (item === 1 || item === "1" || item === "true" || item === true) {
                 uaArray.values[index] = true;
             }
         }
@@ -836,7 +837,13 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
                 // Already processed, return value
                 return value;
             }
-            var items = value.split(",");
+            var items;
+            if (Array.isArray(value) === true && value.length > 0) {
+                items = value;
+            }
+            else {
+                items = value.split(",");
+            }
             arrayValues = getArrayValues(datatype, items);
             uaType = getArrayType(datatype);
         }
