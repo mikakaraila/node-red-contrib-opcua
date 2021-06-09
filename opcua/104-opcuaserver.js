@@ -253,8 +253,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.222",
-                buildDate: "2021-06-03T08:00:00"
+                buildNumber: "0.2.223",
+                buildDate: "2021-06-09T21:23:00"
             };
             
             var hostname = os.hostname();
@@ -567,11 +567,27 @@ module.exports = function (RED) {
                     if (folder) {
                         parentFolder = folder; // Use previously created folder as parentFolder or setFolder() can be used to set parentFolder
                     }
-                    folder = addressSpace.getOwnNamespace().addObject({
-                        organizedBy: addressSpace.findNode(parentFolder.nodeId),
-                        nodeId: msg.topic,
-                        browseName: msg.topic.substring(7)
-                    });
+                    // Own namespace
+                    if (msg.topic.indexOf("ns=1;") >= 0) {
+                        folder = addressSpace.getOwnNamespace().addObject({
+                            organizedBy: addressSpace.findNode(parentFolder.nodeId),
+                            nodeId: msg.topic,
+                            browseName: msg.topic.substring(7)
+                        });
+                    }
+                    else {
+                        verbose_log("Topic: " + msg.topic + " index: " + msg.topic.substring(3));
+                        const index = parseInt(msg.topic.substring(3));
+                        verbose_log("ns index: " + index);
+                        const uri = addressSpace.getNamespaceUri(index);
+                        verbose_log("ns uri: " + uri);
+                        const ns = addressSpace.getNamespace(uri); // Or index
+                        folder = ns.addObject({
+                            organizedBy: addressSpace.findNode(parentFolder.nodeId),
+                            nodeId: msg.topic,
+                            browseName: msg.topic.substring(7)
+                        })
+                    }
                     break;
 
                 case "addVariable":
@@ -628,31 +644,42 @@ module.exports = function (RED) {
                                 valueRank = 3;
                             }
                         }
+                        
+                        var namespace = addressSpace.getOwnNamespace(); // Default
+                        var nsindex=1;
+                        if (msg.topic.indexOf("ns=1;") !== 0) {
+                            var allNamespaces = addressSpace.getNamespaceArray();
+                            // console.log("ALL ns: " + stringify(allNamespaces));
+                            // Select namespace by index
+                            nsindex = parseInt(msg.topic.substring(3));
+                            namespace = allNamespaces[nsindex];
+                        }
+
                         var dimensions = valueRank <= 0 ? null : [dim1]; // Fix for conformance check TODO dim2, dim3
                         var browseName = name.substring(7);
-                        variables[browseName] = 0;
+                        variables[nsindex + ":" + browseName] = 0;
                         if (valueRank == 1) {
                             arrayType = opcua.VariantArrayType.Array;
                             dimensions = [dim1];
-                            variables[browseName] = new Float32Array(dim1); // [];
+                            variables[nsindex + ":" + browseName] = new Float32Array(dim1); // [];
                             for (var i=0; i<dim1; i++) {
-                                variables[browseName][i] = 0;
+                                variables[nsindex + ":" + browseName][i] = 0;
                             }
                         }
                         if (valueRank == 2) {
                             arrayType = opcua.VariantArrayType.Matrix;
                             dimensions = [dim1, dim2];
-                            variables[browseName] = new Float32Array(dim1*dim2); // [];
+                            variables[nsindex + ":" + browseName] = new Float32Array(dim1*dim2); // [];
                             for (var i=0; i<dim1*dim2; i++) {
-                                variables[browseName][i] = 0;
+                                variables[nsindex + ":" + browseName][i] = 0;
                             }
                         }
                         if (valueRank == 3) {
                             arrayType = opcua.VariantArrayType.Matrix; // Actually no Cube => Matrix with 3 dims
                             dimensions = [dim1, dim2, dim3];
-                            variables[browseName] = new Float32Array(dim1*dim2*dim3); // [];
+                            variables[nsindex + ":" + browseName] = new Float32Array(dim1*dim2*dim3); // [];
                             for (var i=0; i<dim1*dim2*dim3; i++) {
-                                variables[browseName][i] = 0;
+                                variables[nsindex + ":" + browseName][i] = 0;
                             }
                         }
 
@@ -682,35 +709,35 @@ module.exports = function (RED) {
                         }
                         if (datatype == "DateTime") {
                             opcuaDataType = opcua.DataType.DateTime;
-                            variables[browseName] = new Date();
+                            variables[nsindex + ":" + browseName] = new Date();
                         }
                         if (datatype == "ExtensionObject") {
                             opcuaDataType = opcua.DataType.ExtensionObject;
-                            variables[browseName] = {};
+                            variables[nsindex + ":" + browseName] = {};
                         }
                         if (datatype == "ByteString") {
                             opcuaDataType = opcua.DataType.ByteString;
-                            variables[browseName] = Buffer.from("");
+                            variables[nsindex + ":" + browseName] = Buffer.from("");
                         }
                         if (datatype == "String") {
                             opcuaDataType = opcua.DataType.String;
-                            variables[browseName] = "";
+                            variables[nsindex + ":" + browseName] = "";
                         }
                         if (datatype == "Boolean") {
                             opcuaDataType = opcua.DataType.Boolean;
-                            variables[browseName] = true;
+                            variables[nsindex + ":" + browseName] = true;
                         }
                         verbose_log("Datatype: " + datatype);
                         verbose_log("OPC UA type id: "+ opcuaDataType.toString() + " dims[" + dim1 + "," + dim2 +"," + dim3 +"] == " + dimensions);
-                        
-                        var namespace = addressSpace.getOwnNamespace(); // Default
-                        if (msg.topic.indexOf("ns=1;") !== 0) {
-                            var allNamespaces = addressSpace.getNamespaceArray();
-                            // console.log("ALL ns: " + stringify(allNamespaces));
-                            // Select namespace by index, works up to index = 9
-                            var index = parseInt(msg.topic.substring(3,4));
-                            namespace = allNamespaces[index];
+                        // Initial value for server variable
+                        var init = msg.topic.indexOf("value=");
+                        if (init > 0) {
+                            var initialValue = msg.topic.substring(init+6);
+                            verbose_log("BrowseName: " + nsindex + ":" + browseName + " initial value: " + initialValue);
+                            variables[nsindex + ":" + browseName] = opcuaBasics.build_new_value_by_datatype(datatype, initialValue);
                         }
+
+                        
                         if (datatype === "ExtensionObject") {
                             var typeId = msg.topic.substring(msg.topic.indexOf("typeId=") + 7);
                             verbose_log("ExtensionObject typeId: " + typeId);
@@ -723,6 +750,8 @@ module.exports = function (RED) {
                                 valueRank,
                                 value: { dataType: DataType.ExtensionObject, value: extVar },
                             });
+                            var newext = { "payload" : { "messageType" : "Variable", "variableName": browseName, "nodeId": extNode.nodeId.toString() }};
+                            node.send(newext);
                             // TODO get/set functions and other tricks as with normal scalar
                             return opcua.StatusCodes.Good;
                         }
@@ -741,19 +770,19 @@ module.exports = function (RED) {
                                             arrayType,
                                             dimensions,
                                             dataType: opcuaDataType,
-                                            value: variables[browseName]
+                                            value: variables[nsindex + ":" + browseName]
                                         });
                                     }
                                     else {
                                         return new opcua.Variant({
                                             arrayType,
                                             dataType: opcuaDataType,
-                                            value: variables[browseName]
+                                            value: variables[nsindex + ":" + browseName]
                                         });
                                     } 
                                 },
                                 set: function (variant) {
-                                    verbose_log("Server set new variable value : " + variables[browseName] + " browseName: " + browseName + " new:" + stringify(variant));
+                                    verbose_log("Server set new variable value : " + variables[nsindex + ":" + browseName] + " browseName: " + nsindex + ":" + browseName + " new:" + stringify(variant));
                                     /*
                                     // TODO Array partial write need some more studies
                                     if (msg.payload.range) {
@@ -770,17 +799,20 @@ module.exports = function (RED) {
                                     }
                                     else {
                                         */
-                                        variables[browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
+                                        variables[nsindex + ":" + browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
                                     // }
                                     // variables[browseName] = Object.assign(variables[browseName], opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value));
-                                    verbose_log("Server variable: " + variables[browseName] + " browseName: " + browseName);
-                                    var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": browseName, "variableValue": variables[browseName] }};
+                                    verbose_log("Server variable: " + variables[nsindex + ":" + browseName] + " browseName: " + nsindex + ":" + browseName);
+                                    var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": nsindex + ":" + browseName, "variableValue": variables[nsindex + ":" + browseName] }};
                                     verbose_log("msg Payload:" + JSON.stringify(SetMsg));
                                     node.send(SetMsg);
                                     return opcua.StatusCodes.Good;
                                 }
                             }
                         });
+                        var newvar = { "payload" : { "messageType" : "Variable", "variableName": nsindex + ":" + browseName, "nodeId": newVAR.nodeId.toString() }};
+                        node.send(newvar);
+
                     }
                     break;
 
