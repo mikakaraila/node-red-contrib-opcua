@@ -92,6 +92,13 @@ Output message
 
 Release history (only couple of older releases):
 
+
+**v0.2.223**
+<p>
+Fixed: Namespace index used with variables (set value).<br/>
+Enhancements: Initial value can be set to server variable, server returns nodeId as variable created. Added support for StringArray.
+</p>
+
 **v0.2.117**
 <p>
 Enhancement: Added users to server. Users.json contains username, password and role for each user.<br/>
