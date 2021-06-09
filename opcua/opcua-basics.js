@@ -653,6 +653,12 @@ function getArrayValues(datatype, items) {
         uaArray.uaType = opcua.DataType.Double;
         uaArray.values = new Float64Array(items);
     }
+    if (datatype.indexOf("String") >= 0) {
+        uaArray.uaType = opcua.DataType.String;
+        uaArray.values = new Array(items);
+        console.log("ITEMS:" + items.toString());
+    }
+
     if (uaArray.uaType === null) {
         console.warn("Array support for String nor ByteString etc. not implemented, only basic types supported!");
         console.error("Unknown type for Array: " + datatype + " cannot convert items:" + items);
@@ -669,6 +675,9 @@ function getArrayValues(datatype, items) {
             if (item === 1 || item === "1" || item === "true" || item === true) {
                 uaArray.values[index] = true;
             }
+        }
+        else if (uaArray.uaType === opcua.DataType.String) {
+            uaArray.values[index] = item;
         }
         else {
             uaArray.values[index] = parseInt(item);
@@ -710,6 +719,9 @@ function getArrayType(datatype) {
     }
     if (datatype.indexOf("Double") >= 0 || datatype.indexOf("Float64") >= 0) {
         return opcua.DataType.Double;
+    }
+    if (datatype.indexOf("String") >= 0) {
+        return opcua.DataType.String;
     }
     console.warn("Array support for String nor ByteString etc. not implemented, only basic types supported!");
     console.error("Unknown type for Array: " + datatype);

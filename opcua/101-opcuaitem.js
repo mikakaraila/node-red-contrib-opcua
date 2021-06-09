@@ -60,7 +60,7 @@ module.exports = function (RED) {
                 if (msg.datatype) {
                     msg.payload = opcuaBasics.build_new_value_by_datatype(msg.datatype, node.value);
                 }
-                verbose_warn("Setting value to " + stringify(msg));
+                verbose_warn("NODE value, setting value to " + stringify(msg));
             }
             // Input msg is dynamic and will overwrite node.value
             if (msg.payload && msg.payload.length > 0) {
@@ -71,7 +71,7 @@ module.exports = function (RED) {
                 if (msg.datatype) {
                     msg.payload = opcuaBasics.build_new_value_by_datatype(msg.datatype, msg.payload);
                 }
-                verbose_warn("Setting value to " + stringify(msg));
+                verbose_warn("Payload value, setting value to " + stringify(msg));
             }
             node.send(msg);
         });
