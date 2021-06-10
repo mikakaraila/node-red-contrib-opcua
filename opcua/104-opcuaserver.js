@@ -75,17 +75,16 @@ module.exports = function (RED) {
         let users = [{ username: "", password: "", role: "" }]; // Empty as default
 
         if (node.users && node.users.length > 0) {
-            verbose_log("Loading default users from file: " + node.users + " (current folder: " + __dirname + ")");
-        }
-        // From the node-red-contrib-opcua folder or input as opcuaCommand
-        if (fs.existsSync(node.users)) {
-            users = JSON.parse(fs.readFileSync(node.users));
-            verbose_log("Loaded users: " + JSON.stringify(users));
-            setUsers(users);
-        }
-        else {
-            console.error(chalk.red("File: " + node.users + " not found! You can inject users to server or add file to current folder: " + __dirname));
-            node.error("File: " + node.users + " not found! You can inject users to server or add file to current folder: " + __dirname);
+            verbose_log("Trying to load default users from file: " + node.users + " (current folder: " + __dirname + ")");
+            if (fs.existsSync(node.users)) {
+                users = JSON.parse(fs.readFileSync(node.users));
+                verbose_log("Loaded users: " + JSON.stringify(users));
+                setUsers(users);
+            }
+            else {
+                verbose_log(chalk.red("File: " + node.users + " not found! You can inject users to server or add file to current folder: " + __dirname));
+                node.error("File: " + node.users + " not found! You can inject users to server or add file to current folder: " + __dirname);
+            }
         }
 
         // Server endpoints active configuration
@@ -253,8 +252,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.223",
-                buildDate: "2021-06-09T21:23:00"
+                buildNumber: "0.2.224",
+                buildDate: "2021-06-10T21:19:00"
             };
             
             var hostname = os.hostname();
