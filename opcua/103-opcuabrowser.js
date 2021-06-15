@@ -139,7 +139,9 @@ module.exports = function (RED) {
             {
                 callback(err);
             }
-
+            if (client) {
+                client.disconnect();
+            }
         }
 
         setupClient(opcuaEndpoint.endpoint, function (err) {
