@@ -207,12 +207,15 @@ module.exports = function (RED) {
     // Listener functions that can be removed on reconnect
     const reestablish = function () {
       verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!! Node: " + node.name);
+      set_node_status2_to("reconnect", "re-establised");
     };
     const backoff = function (attempt, delay) {
       verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds. Node:  " + node.name + " " + opcuaEndpoint.endpoint);
+      set_node_status2_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
     };
     const reconnection = function () {
       verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  Starting Reconnection !!!!!!!!!!!!!!!!!!! Node: " + node.name);
+      set_node_status2_to("reconnect", "starting...");
     };
 
     function create_opcua_client(callback) {
@@ -255,14 +258,18 @@ module.exports = function (RED) {
       }
     }
 
-    function close_opcua_client(callback) {
+    function close_opcua_client(message, error) {
       if (node.client) {
         try {
           node.client.disconnect(function () {
             node.client = null;
             verbose_log("Client disconnected!");
-            if (callback) {
-              callback();
+            if (error === 0) {
+              set_node_status_to("closed");
+            }
+            else {
+              set_node_errorstatus_to(message, error)
+              node.error("Client disconnected & closed: " + message + " error: " + error.toString());
             }
           });
         }
@@ -280,6 +287,17 @@ module.exports = function (RED) {
         fill: statusParameter.fill,
         shape: statusParameter.shape,
         text: statusParameter.status
+      });
+    }
+
+    function set_node_status2_to(statusValue, message) {
+      verbose_log("Client status: " + statusValue);
+      var statusParameter = opcuaBasics.get_node_status(statusValue);
+      currentStatus = statusValue;
+      node.status({
+        fill: statusParameter.fill,
+        shape: statusParameter.shape,
+        text: statusParameter.status + " " + message
       });
     }
 
@@ -323,11 +341,10 @@ module.exports = function (RED) {
         await node.client.connect(opcuaEndpoint.endpoint);
       } catch (err) {
 
-        console.log(err);
-
+        // console.log(err);
         verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt securityMode:" + stringify(connectionOption.securityMode) + " securityPolicy:" + stringify(connectionOption.securityPolicy));
         verbose_warn("Case B: UserName & password does not match to server (needed by Sign): " + userIdentity.userName + " " + userIdentity.password);
-        set_node_errorstatus_to("invalid endpoint " + opcuaEndpoint.endpoint, err);
+        set_node_errorstatus_to("invalid endpoint", err);
         return;
       }
       verbose_log("Connected to " + opcuaEndpoint.endpoint);
@@ -350,13 +367,13 @@ module.exports = function (RED) {
         // sessionName = "Node-red OPC UA Client node " + node.name;
         if (!node.client) {
           node_error("Client not yet created, cannot create session");
-          close_opcua_client(set_node_errorstatus_to("connection error", "no client"));
+          close_opcua_client("connection error: no client", 0);
           return;
         }
         session = await node.client.createSession(userIdentity);
         if (!session) {
           node_error("Create session failed!");
-          close_opcua_client(set_node_errorstatus_to("connection error", "no session"));
+          close_opcua_client("connection error: no session", 0);
           return;
         }
         node.session = session;
@@ -371,7 +388,7 @@ module.exports = function (RED) {
         node_error(node.name + " OPC UA connection error: " + err.message);
         verbose_log(err);
         node.session = null;
-        close_opcua_client(set_node_errorstatus_to("connection error", err));
+        close_opcua_client("connection error", err);
       }
     }
 
@@ -584,7 +601,8 @@ module.exports = function (RED) {
               }
               node_error(node.name + " error at active reading: " + err.message);
               set_node_errorstatus_to("error", err);
-              reset_opcua_client(connect_opcua_client);
+              // No actual error session created, this case cause connections to server
+              // reset_opcua_client(connect_opcua_client);
             } else {
               set_node_status_to("active reading");
               verbose_log("\tNode : " + msg.topic);
@@ -685,7 +703,8 @@ module.exports = function (RED) {
             }
             node_error(node.name + " error at active reading: " + err.message);
             set_node_errorstatus_to("error", err);
-            reset_opcua_client(connect_opcua_client);
+            // No actual error session existing, this case cause connections to server
+            // reset_opcua_client(connect_opcua_client);
           }
           else {
             set_node_status_to("active multiple reading");
@@ -844,7 +863,10 @@ module.exports = function (RED) {
 
 
     async function write_action_input(msg) {
-      verbose_log("writing");
+      verbose_log("writing:" + JSON.stringify(msg));
+      if (msg && msg.topic && msg.topic.indexOf("ns=") != 0) {
+        return; // NOT an item
+      }
       // Topic value: ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT
       var ns = msg.topic.substring(3, 4); // Parse namespace, ns=2
       var dIndex = msg.topic.indexOf("datatype=");
@@ -860,6 +882,7 @@ module.exports = function (RED) {
       }
 
       var nodeid = {}; // new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
+      // console.log("Topic: " + msg.topic + " ns=" + ns + " s=" + s);
       verbose_log(opcua.makeBrowsePath(msg.topic, "."));
 
       if (msg.topic.substring(5, 6) == 's') {
@@ -924,7 +947,8 @@ module.exports = function (RED) {
           if (err) {
             set_node_errorstatus_to("error", err);
             node_error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
-            reset_opcua_client(connect_opcua_client);
+            // No actual error session existing, this case cause connections to server
+            // reset_opcua_client(connect_opcua_client);
           } else {
             set_node_status_to("value written");
             verbose_log("Value written!");
@@ -988,7 +1012,8 @@ module.exports = function (RED) {
           if (err) {
             set_node_errorstatus_to("error", err);
             node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
-            reset_opcua_client(connect_opcua_client);
+            // No actual error session created, this case cause connections to server
+            // reset_opcua_client(connect_opcua_client);
           } else {
             set_node_status_to("active writing");
             verbose_log("Values written!");
@@ -1019,7 +1044,8 @@ module.exports = function (RED) {
           // monitoredItems = new Map();
           monitoredItems.clear();
           set_node_status_to("terminated");
-          reset_opcua_client(connect_opcua_client);
+          // No actual error session existing, this case cause connections to server
+          // reset_opcua_client(connect_opcua_client);
         }
       }
     }
@@ -1040,7 +1066,8 @@ module.exports = function (RED) {
           // monitoredItems = new Map();
           monitoredItems.clear();
           set_node_status_to("terminated");
-          reset_opcua_client(connect_opcua_client);
+          // No actual error session created, this case cause connections to server
+          // reset_opcua_client(connect_opcua_client);
         }
       }
     }
@@ -1062,7 +1089,8 @@ module.exports = function (RED) {
           // monitoredItems = new Map();
           monitoredItems.clear();
           set_node_status_to("terminated");
-          reset_opcua_client(connect_opcua_client);
+          // No actual error session exists, this case cause connections to server
+          // reset_opcua_client(connect_opcua_client);
         }
       }
     }
@@ -1516,7 +1544,8 @@ module.exports = function (RED) {
           );
         } catch (err) {
           node_error('subscription.monitorEvent:' + err);
-          reset_opcua_client(connect_opcua_client);
+          // No actual error session exists, this case cause connections to server
+          // reset_opcua_client(connect_opcua_client);
         }
         monitoredItems.set(msg.topic, monitoredItem.monitoredItemId);
         monitoredItem.on("initialized", function () {
@@ -1572,7 +1601,8 @@ module.exports = function (RED) {
           // monitoredItems = new Map();
           monitoredItems.clear();
           set_node_status_to("terminated");
-          reset_opcua_client(connect_opcua_client);
+          // No actual error session created, this case cause connections to server
+          // reset_opcua_client(connect_opcua_client);
         }
       }
     }
@@ -1618,7 +1648,7 @@ module.exports = function (RED) {
         verbose_warn("No session to close!");
       }
       //reset_opcua_client(connect_opcua_client);
-      set_node_status_to("reconnectiong...");
+      set_node_status_to("reconnect");
       create_opcua_client(connect_opcua_client);
     }
 
@@ -1637,11 +1667,11 @@ module.exports = function (RED) {
           }
 
           node.session = null;
-          close_opcua_client(set_node_status_to("closed"));
+          close_opcua_client("closed", 0);
         });
       } else {
         node.session = null;
-        close_opcua_client(set_node_status_to("closed"));
+        close_opcua_client("closed", 0);
       }
     });
 
@@ -1660,12 +1690,12 @@ module.exports = function (RED) {
 
           set_node_status_to("session closed");
           node.session = null;
-          close_opcua_client(set_node_errorstatus_to("node error", err));
+          close_opcua_client("node error", err);
         });
 
       } else {
         node.session = null;
-        close_opcua_client(set_node_status_to("node error"));
+        close_opcua_client("node error", 0);
       }
     });
   }

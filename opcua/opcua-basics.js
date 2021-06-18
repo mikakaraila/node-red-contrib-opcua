@@ -446,6 +446,12 @@ module.exports.get_node_status = function (statusValue) {
             fillValue = "green";
             shapeValue = "ring";
             break;
+        
+        case "reconnect":
+        case "closed":
+            fillValue = "yellow";
+            shapeValue = "dot";
+            break;
 
         case "active":
         case "active reading":
@@ -467,7 +473,10 @@ module.exports.get_node_status = function (statusValue) {
             shapeValue = "dot";
             break;
         case "error":
+        case "invalid endpoint":
         case "disconnected":
+        case "connection error":
+        case "node error":
         case "terminated":
             fillValue = "red";
             shapeValue = "ring";
