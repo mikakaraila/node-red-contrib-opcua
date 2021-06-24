@@ -192,8 +192,8 @@ module.exports = function (RED) {
             verbose_warn("create Server from XML ...");
             // DO NOT USE "%FQDN%" anymore, hostname is OK
             const applicationUri =  opcua.makeApplicationUrn(os.hostname(), "node-red-contrib-opcua-server");
-            const serverCertificateManager = createCertificateManager();
-            const userCertificateManager = createUserCertificateManager();
+            const serverCertificateManager = createCertificateManager(node.autoAcceptUnknownCertificate);
+            const userCertificateManager = createUserCertificateManager(node.autoAcceptUnknownCertificate);
 
 
             var registerMethod = null;
@@ -252,8 +252,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.225",
-                buildDate: "2021-06-18T12:00:00"
+                buildNumber: "0.2.226",
+                buildDate: "2021-06-24T08:22:00"
             };
             
             var hostname = os.hostname();
