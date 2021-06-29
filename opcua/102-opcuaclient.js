@@ -65,6 +65,7 @@ module.exports = function (RED) {
     var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
     var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
     var multipleItems = []; // Store & read multiple nodeIds
+    var writeMultipleItems = []; // Store & write multiple nodeIds & values
 
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
@@ -483,7 +484,7 @@ module.exports = function (RED) {
       }
 
       if (!msg || !msg.topic) {
-        verbose_warn("can't work without OPC UA NodeId - msg.topic");
+        verbose_warn("can't work without OPC UA NodeId - msg.topic empty");
         //node.send(msg); // do not send in case of error
         return;
       }
@@ -962,7 +963,8 @@ module.exports = function (RED) {
 
     function writemultiple_action_input(msg) {
       verbose_log("writing multiple");
-      if (msg.topic) {
+      // Store as with readmultiple item
+      if (msg.topic && msg.topic!=="writemultiple" && !Array.isArray(msg.payload)) {
         // Topic value: ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT
         var ns = msg.topic.substring(3, 4); // Parse namespace, ns=2
         var dIndex = msg.topic.indexOf("datatype=");
@@ -974,41 +976,50 @@ module.exports = function (RED) {
         } else {
           s = msg.topic.substring(7); // Parse nodeId string, s=1:PST-007-Alarm-Level@Training?SETPOINT
         }
-
+/*
         var nodeid = {}; // new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
-        verbose_log(opcua.makeBrowsePath(msg.topic, "."));
-
+        // verbose_log(opcua.makeBrowsePath(msg.topic, ".")); // msg.topic is not always nodeId
         if (msg.topic.substring(5, 6) == 's') {
           nodeid = new nodeId.NodeId(nodeId.NodeIdType.STRING, s, parseInt(ns));
-        } else {
+        }
+        if (msg.topic.substring(5, 6) == 'i') {
           nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, parseInt(s), parseInt(ns));
         }
-      }
-
-      verbose_log("msg=" + stringify(msg));
-      verbose_log("namespace=" + ns);
-      verbose_log("string=" + s);
-      if (msg.datatype) {
-        verbose_log("type=" + msg.datatype);
-      }
-      verbose_log("payload value=" + stringify(msg.payload));
-
-      if (node.session) {
-        const nodesToWrite = msg.payload.map(function (msgToWrite) {
-          var opcuaDataValue = opcuaBasics.build_new_dataValue(msgToWrite.datatype || msg.datatype, msgToWrite.value);
-          const nodeToWrite = {
-            nodeId: msgToWrite.nodeId || (nodeid && nodeid.toString()),
+*/
+        // Store nodeId to read multipleItems array
+        if (msg.topic !== "writemultiple" && msg.topic !== "clearitems") {
+          var opcuaDataValue = opcuaBasics.build_new_dataValue(msg.datatype, msg.payload);
+          var item = { 
+            nodeId: msg.topic,
+            datatype: msg.datatype,
             attributeId: opcua.AttributeIds.Value,
             indexRange: null,
             value: new opcua.DataValue({ value: opcuaDataValue })
           };
-          if (msgToWrite.timestamp || msg.timestamp) {
-            nodeToWrite.value.sourceTimestamp = new Date(msgToWrite.timestamp || msg.timestamp).getTime();
-          }
-          return nodeToWrite;
-        });
-        verbose_log("Writing nodes with values:" + stringify(nodesToWrite));
-        node.session.write(nodesToWrite, function (err, statusCode) {
+          item.value.sourceTimestamp = new Date(msg.timestamp).getTime();
+          console.log("ITEM: " + stringify(item));
+          writeMultipleItems.push(item);
+        }
+
+        if (msg.topic === "clearitems") {
+          verbose_log("clear items...");
+          writeMultipleItems = [];
+          set_node_status_to("clear items");
+          return;
+        }
+        if (msg.topic !== "writemultiple") {
+          set_node_status_to("nodeId stored");
+          return;
+        }
+      }
+      if (node.session && msg.topic === "writemultiple") {
+        //  node.session.read({timestampsToReturn: TimestampsToReturn.Both, nodesToRead: multipleItems}, function (err, dataValues, diagnostics) {
+        verbose_log("Writing items: " + stringify(writeMultipleItems));
+        if (writeMultipleItems.length === 0) {
+          node_error(node.name + " no items to write");
+          return;
+        }
+        node.session.write(writeMultipleItems, function (err, statusCode) {
           if (err) {
             set_node_errorstatus_to("error", err);
             node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
@@ -1020,6 +1031,49 @@ module.exports = function (RED) {
             node.send({ payload: statusCode });
           }
         });
+      }
+    
+/*
+      verbose_log("msg=" + stringify(msg));
+      verbose_log("namespace=" + ns);
+      verbose_log("string=" + s);
+      if (msg.datatype) {
+        verbose_log("type=" + msg.datatype);
+      }
+      verbose_log("payload value=" + stringify(msg.payload));
+*/
+      // OLD original way to use payload
+      if (node.session) {
+        if (Array.isArray(msg.payload)) {
+          const nodesToWrite = msg.payload.map(function (msgToWrite) {
+            var opcuaDataValue = opcuaBasics.build_new_dataValue(msgToWrite.datatype || msg.datatype, msgToWrite.value);
+            const nodeToWrite = {
+              nodeId: msgToWrite.nodeId || (nodeid && nodeid.toString()),
+              attributeId: opcua.AttributeIds.Value,
+              indexRange: null,
+              value: new opcua.DataValue({ value: opcuaDataValue })
+            };
+            if (msgToWrite.timestamp || msg.timestamp) {
+              nodeToWrite.value.sourceTimestamp = new Date(msgToWrite.timestamp || msg.timestamp).getTime();
+            }
+            return nodeToWrite;
+          });
+          verbose_log("Writing nodes with values:" + stringify(nodesToWrite));
+        
+          node.session.write(nodesToWrite, function (err, statusCode) {
+            if (err) {
+              set_node_errorstatus_to("error", err);
+              node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
+              // No actual error session created, this case cause connections to server
+              // reset_opcua_client(connect_opcua_client);
+            } else {
+              set_node_status_to("active writing");
+              verbose_log("Values written!");
+              node.send({ payload: statusCode });
+            }
+          });
+        }
+
       } else {
         set_node_status_to("Session invalid");
         node_error("Session is not active!")
