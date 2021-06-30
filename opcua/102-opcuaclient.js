@@ -593,7 +593,8 @@ module.exports = function (RED) {
         node.session.read({
             nodeId: items[0],
             attributeId: 13,
-            indexRange: range
+            indexRange: range,
+            timestampsToReturn: opcua.TimestampsToReturn.Both
           },
           function (err, dataValue, diagnostics) {
             if (err) {
@@ -627,6 +628,8 @@ module.exports = function (RED) {
 
                   msg.payload = dataValue.value.value;
                   msg.statusCode = dataValue.statusCode;
+                  msg.serverTimestamp = dataValue.serverTimestamp;
+                  msg.sourceTimestamp = dataValue.sourceTimestamp;
 
                   if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
                     verbose_log("Status-Code:" + (dataValue.statusCode.toString(16)));
@@ -672,9 +675,10 @@ module.exports = function (RED) {
       // Store nodeId to read multipleItems array
       if (msg.topic !== "readmultiple" && msg.topic !== "clearitems") {
         if (item.length > 0) {
-          multipleItems.push(item);
+          multipleItems.push({ nodeId: item, attributeId: AttributeIds.Value, TimestampsToReturn: opcua.TimestampsToReturn.Server });
         } else {
-          multipleItems.push(msg.topic); // support for multiple item reading
+          // msg.topic
+          multipleItems.push({ nodeId: msg.topic, attributeId: AttributeIds.Value, TimestampsToReturn: opcua.TimestampsToReturn.Server }); // support for multiple item reading
         }
       }
 
@@ -740,10 +744,21 @@ module.exports = function (RED) {
                   } else {
                     verbose_warn("\tStatus-Code:" + dataValue.statusCode.toString(16));
                   }
+
+                  var serverTs = dataValue.serverTimestamp;
+                  var sourceTs = dataValue.sourceTimestamp;
+                  if (serverTs === null) {
+                    serverTs = new Date();
+                  }
+                  if (sourceTs === null) {
+                    sourceTs = new Date();
+                  }
                   // Use nodeId in topic, arrays are same length
                   node.send({
                     topic: multipleItems[i],
-                    payload: dataValue.value.value
+                    payload: dataValue.value.value,
+                    serverTimestamp: serverTs,
+                    sourceTimestamp: sourceTs
                   });
                 } catch (e) {
                   if (dataValue) {
