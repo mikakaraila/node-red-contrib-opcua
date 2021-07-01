@@ -675,10 +675,10 @@ module.exports = function (RED) {
       // Store nodeId to read multipleItems array
       if (msg.topic !== "readmultiple" && msg.topic !== "clearitems") {
         if (item.length > 0) {
-          multipleItems.push({ nodeId: item, attributeId: AttributeIds.Value, TimestampsToReturn: opcua.TimestampsToReturn.Server });
+          multipleItems.push({ nodeId: item, attributeId: AttributeIds.Value, TimestampsToReturn: opcua.TimestampsToReturn.Both });
         } else {
           // msg.topic
-          multipleItems.push({ nodeId: msg.topic, attributeId: AttributeIds.Value, TimestampsToReturn: opcua.TimestampsToReturn.Server }); // support for multiple item reading
+          multipleItems.push({ nodeId: msg.topic, attributeId: AttributeIds.Value, TimestampsToReturn: opcua.TimestampsToReturn.Both }); // support for multiple item reading
         }
       }
 
@@ -701,7 +701,7 @@ module.exports = function (RED) {
           node_error(node.name + " no items to read");
           return;
         }
-        node.session.readVariableValue(multipleItems, function (err, dataValues, diagnostics) {
+        node.session.read(multipleItems, function (err, dataValues, diagnostics) {
           if (err) {
             if (diagnostics) {
               verbose_log('diagnostics:' + diagnostics);
