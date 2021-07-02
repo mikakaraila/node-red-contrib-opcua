@@ -71,7 +71,7 @@ module.exports = function (RED) {
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
 
 
-    connectionOption.clientCertificateManager = createCertificateManager();
+    connectionOption.clientCertificateManager = createCertificateManager(true); // AutoAccept certificates, TODO add to client node as parameter if really needed
 
 
     if (node.certificate === "l" && node.localfile) {
