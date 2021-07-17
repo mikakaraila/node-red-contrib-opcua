@@ -100,7 +100,7 @@ module.exports = function (RED) {
     connectionOption.endpointMustExist = false;
     connectionOption.defaultSecureTokenLifetime = 40000 * 5;
     connectionOption.connectionStrategy = {
-      maxRetry: 10, // Limited to max 10 ~5min // 10512000, // 10 years should be enough. No infinite parameter for backoff.
+      maxRetry: 10512000, // Limited to max 10 ~5min // 10512000, // 10 years should be enough. No infinite parameter for backoff.
       initialDelay: 5000, // 5s
       maxDelay: 30 * 1000 // 30s
     };
@@ -965,9 +965,13 @@ module.exports = function (RED) {
             node_error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
             // No actual error session existing, this case cause connections to server
             // reset_opcua_client(connect_opcua_client);
+            msg.payload = err;
+            node.send(msg);
           } else {
             set_node_status_to("value written");
             verbose_log("Value written!");
+            msg.payload = opcua.StatusCodes.Good;
+            node.send(msg);
           }
         });
       } else {
@@ -1040,6 +1044,7 @@ module.exports = function (RED) {
             node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
             // No actual error session created, this case cause connections to server
             // reset_opcua_client(connect_opcua_client);
+            node.send({ payload: err });
           } else {
             set_node_status_to("active writing");
             verbose_log("Values written!");
@@ -1081,6 +1086,7 @@ module.exports = function (RED) {
               node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
               // No actual error session created, this case cause connections to server
               // reset_opcua_client(connect_opcua_client);
+              node.send({ payload: err });
             } else {
               set_node_status_to("active writing");
               verbose_log("Values written!");
