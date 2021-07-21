@@ -52,6 +52,8 @@ module.exports = function (RED) {
       }
     } else if (n.arg0type === "DateTime") {
       node.inputArguments.push({dataType: n.arg0type, value: new Date(n.arg0value)});
+    } else if (n.arg0type === "NodeId") {
+      node.inputArguments.push({dataType: n.arg0type, value: opcua.coerceNodeId(n.arg0value)});
     } else if (n.arg0type === "String") {
       node.inputArguments.push({dataType: n.arg0type, value: n.arg0value});
     } else if (n.arg0type === "ScanData") {
@@ -74,6 +76,8 @@ module.exports = function (RED) {
       }
     } else if (n.arg1type === "DateTime") {
       node.inputArguments.push({dataType: n.arg1type, value: new Date(n.arg1value)});
+    } else if (n.arg1type === "NodeId") {
+      node.inputArguments.push({dataType: n.arg1type, value: opcua.coerceNodeId(n.arg1value)});
     } else if (n.arg1type === "String") {
       node.inputArguments.push({dataType: n.arg1type, value: n.arg1value});
     } else if (n.arg1type === "Double" || n.arg1type === "Float" ) {
@@ -93,6 +97,8 @@ module.exports = function (RED) {
       }
     } else if (n.arg2type === "DateTime") {
       node.inputArguments.push({dataType: n.arg2type, value: new Date(n.arg2value)});
+    } else if (n.arg2type === "NodeId") {
+      node.inputArguments.push({dataType: n.arg2type, value: opcua.coerceNodeId(n.arg2value)});
     } else if (n.arg2type === "String") {
       node.inputArguments.push({dataType: n.arg2type, value: n.arg2value});
     } else if (n.arg2type === "Double" || n.arg2type === "Float" ) {
