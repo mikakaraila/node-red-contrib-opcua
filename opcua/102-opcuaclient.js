@@ -959,7 +959,7 @@ module.exports = function (RED) {
         }
 
         set_node_status_to("writing");
-        node.session.write(nodeToWrite, function (err) {
+        node.session.write(nodeToWrite, function (err, statusCode) {
           if (err) {
             set_node_errorstatus_to("error", err);
             node_error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
@@ -969,8 +969,8 @@ module.exports = function (RED) {
             node.send(msg);
           } else {
             set_node_status_to("value written");
-            verbose_log("Value written!");
-            msg.payload = opcua.StatusCodes.Good;
+            verbose_log("Value written! Result:" + statusCode);
+            msg.payload = statusCode;
             node.send(msg);
           }
         });
