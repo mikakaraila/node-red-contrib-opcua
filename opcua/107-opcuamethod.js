@@ -209,6 +209,18 @@ module.exports = function (RED) {
       if (msg.methodId && msg.inputArguments) {
         verbose_log("Calling method: " + JSON.stringify(msg.methodId));
         verbose_log("InputArguments: " + JSON.stringify(msg.inputArguments));
+        // Quick fix to coerce NodeId when input arguments are injected other normal can be converted as msg is created
+	      try {
+          msg.inputArguments.forEach((arg) => {
+            if(arg.dataType === "NodeId") {
+              arg.value = opcua.coerceNodeId(arg.value);
+            }
+          });
+        }
+        catch(err) {
+          node.error("Invalid NodeId: " + err);
+          return;
+        }
         const callMethodRequest = new opcua.CallMethodRequest({
           objectId: opcua.coerceNodeId(msg.objectId),
           methodId: opcua.coerceNodeId(msg.methodId),
