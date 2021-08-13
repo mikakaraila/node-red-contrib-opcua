@@ -181,9 +181,13 @@ module.exports = function (RED) {
                         path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.AutoID.NodeSet2.xml'), // Support for RFID Readers
                         path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')   // ISA95
         ];
-        // Add custom nodeset (xml-file) for server
-        if (node.nodeset && fs.existsSync(node.nodeset)) {
-            xmlFiles[3] = node.nodeset;
+        // Add custom nodesets (xml-files) for server
+        if (node.nodesetDir && fs.existsSync(node.nodesetDir)) {
+            fs.readdirSync(node.nodesetDir).forEach(fileName => {
+                if (path.extname(fileName).toLowerCase() === '.xml') {
+                    xmlFiles.push(path.join(node.nodesetDir, fileName));
+                };
+            });
         }
         verbose_warn("node set:" + xmlFiles.toString());
         
