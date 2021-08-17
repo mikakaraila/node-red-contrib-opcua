@@ -863,6 +863,10 @@ module.exports = function (RED) {
                     returnValue = "ns=" + addressSpace.getNamespaceIndex(msg.topic);
                     break;
 
+                case "getNamespaces":
+                    returnValue = addressSpace.getNamespaceArray().reduce((dict, namespace, index) => (dict[namespace.namespaceUri] = index, dict), {});
+                    break;
+
                 case "setUsers":
                     if (msg.payload.hasOwnProperty("users")) {
                         users = msg.payload.users;
