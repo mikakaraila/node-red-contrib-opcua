@@ -121,8 +121,9 @@ module.exports.calc_milliseconds_by_time_and_unit = function (time, unit) {
     return time;
 };
 
-module.exports.collectAlarmFields = function (field, key, value, payload) {
-    console.log("Collect field: " + field + " key: " + key + " value:" + value + " payload:" + payload);
+module.exports.collectAlarmFields = function (field, key, value, payload, node) {
+    console.log("Collect field: " + field + " key: " + key + " value:" + value + " payload:" + stringify(payload));
+    
     switch (field) {
         // Common fields
         case "EventId":
