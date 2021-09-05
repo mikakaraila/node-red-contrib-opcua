@@ -173,7 +173,7 @@ module.exports = function (RED) {
         } else if (variant.dataType === DataType.NodeId) {
           getBrowseName(session, variant.value, function (err, name) {
             if (!err) {
-              opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload);
+              opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload, node);
               set_node_status_to("active event");
             }
             if (--cnt === 0) node.send(msg);
@@ -181,7 +181,7 @@ module.exports = function (RED) {
           });
         } else {
           setImmediate(function () {
-            opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload);
+            opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload, node);
             set_node_status_to("active event");
             if (--cnt === 0) node.send(msg);
             callback();
@@ -536,6 +536,9 @@ module.exports = function (RED) {
         case "writemultiple":
           writemultiple_action_input(msg)
           break;
+        case "acknowledge":
+          acknowledge_input(msg);
+          break;
         default:
           verbose_warn("Unknown action: " + node.action + " with msg " + stringify(msg));
           break;
@@ -543,6 +546,20 @@ module.exports = function (RED) {
       //node.send(msg); // msg.payload is here actual inject caused wrong values
     }
     node.on("input", processInputMsg);
+
+    async function acknowledge_input(msg) {    
+      // msg.topic is nodeId of the alarm object like Prosys ns=6;s=MyLevel.Alarm
+      // msg.conditionId is actual conditionObejct that contains ns=6;s=MyLevel.Alarm/0:EventId current/latest eventId will be read
+      // msg.comment will be used as comment in the acknowledge
+      const dataValue = await node.session.read({ nodeId: msg.conditionId, attributeId: AttributeIds.Value });
+      const eventId = dataValue.value.value;
+      verbose_log("Acknowledge: " + msg.topic + " conditionObject: " + msg.conditionId + " eventId: " + eventId + " comment: " + msg.comment);
+      const status = await node.session.acknowledgeCondition(msg.topic, eventId, msg.comment);
+      if (status !== opcua.StatusCodes.Good) {
+        node_error(node.name + " error at acknowledge, status: " + status.toString());
+        set_node_errorstatus_to("error", status.toString());  
+      }
+    }
 
     async function register_action_input(msg) {
       verbose_log("register nodes : " + stringify(msg.payload));
