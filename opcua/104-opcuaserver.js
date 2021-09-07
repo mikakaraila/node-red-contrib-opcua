@@ -257,8 +257,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.237",
-                buildDate: "2021-09-05T19:21:00"
+                buildNumber: "0.2.238",
+                buildDate: "2021-09-07T19:56:00"
             };
             
             var hostname = os.hostname();
@@ -420,6 +420,9 @@ module.exports = function (RED) {
                 verbose_log("Using UserPKI folder        " + node.server.userCertificateManager.rootDir);
                 verbose_log("Trusted certificate folder  " + node.server.serverCertificateManager.trustedFolder);
                 verbose_log("Rejected certificate folder " + node.server.serverCertificateManager.rejectedFolder);
+
+                // Needed for Alarms and Conditions
+                node.server.engine.addressSpace.installAlarmsAndConditionsService();
 
                 // Client connects with userName
                 node.server.on("session_activated", (session) => {
@@ -877,10 +880,174 @@ module.exports = function (RED) {
                         verbose_warn("No users defined in the input msg)");
                     }
                     break;
-    
+
+                case "installDiscreteAlarm":
+                    verbose_warn("install discrete alarm for node: ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
+                    var alarmText = msg.alarmText;
+                    var priority = msg.priority;
+                    var nodeStr = msg.topic.substring(0, msg.topic.indexOf(";datatype=")); 
+                    var nodeId = addressSpace.findNode(nodeStr);
+                    var boolVar = false;
+                    if (nodeId) {
+                        var namespace = addressSpace.getOwnNamespace(); // Default
+                        var alarmState = namespace.addVariable({
+                            nodeId: nodeStr + "-" + "AlarmState",
+                            browseName: nodeStr.substring(7) + "-" + "AlarmState",
+                            displayName: nodeStr.substring(7) + "-" + "AlarmState",
+                            propertyOf: nodeId,
+                            dataType: "Boolean",
+                            eventSourceOf: "i=2253", // Use server as default event source
+                            value: {
+                                get: function () {
+                                    return new opcua.Variant({
+                                        dataType: "Boolean",
+                                        value: boolVar
+                                    });
+                                },
+                                set: function (variant) {
+                                    boolVar = variant.value;
+                                    return opcua.StatusCodes.Good;
+                                }
+                            }
+                        });
+                        var discreteAlarm = addressSpace.findEventType("DiscreteAlarmType");
+                        var alarm = namespace.instantiateDiscreteAlarm(discreteAlarm,
+                            {
+                                nodeId: nodeStr + "-" + "DiscreteAlarm",
+                                browseName: nodeStr.substring(7) + "-" + "DiscreteAlarm",
+                                displayName: nodeStr.substring(7) + "-" + "DiscreteAlarm",
+                                organizedBy: nodeId,
+                                conditionSource: alarmState,
+                                browseName: "DiscreteAlarmInstance",
+                                inputNode: alarmState,   // the variable that will be monitored for change, generate below
+                                optionals: [ "Acknowledge", "ConfirmedState", "Confirm" ], // confirm state and confirm Method
+                            }
+                        );
+                        alarm.setEnabledState(true);
+                       
+                        try {
+                            alarmState.on("value_changed", function (newDataValue) {
+                                if (newDataValue.value.value === true) {
+                                    if (alarm && alarm.getEnabledState()) {
+                                        alarm.activeState.setValue(true);
+                                        alarm.ackedState.setValue(false);
+                                        
+                                        alarm.raiseNewCondition(new opcua.ConditionInfo({
+                                          severity: priority,
+                                          message: alarmText,
+                                          retain: true,
+                                          quality: newDataValue.statusCode
+                                        }));
+                                        
+                                      }
+                                  
+                                    // alarm.raiseNewCondition(); // {severity: priority, message: alarmText});
+                                }
+                                if (newDataValue.value.value === false) {
+                                    alarm.deactivateAlarm();
+                                }
+                            });
+                        }
+                        catch(error) {
+                            console.error("Error: " + error.toString());
+                        }
+                        
+                    }
+                    else {
+                        node_error("Cannot find node: " + msg.topic + " nodeId: " + nodeStr);
+                    }
+                    break;    
+
+                case "installLimitAlarm":
+                        verbose_warn("install limit alarm for node: ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
+                        var highhighLimit = msg.hh;
+                        var highLimit = msg.h;
+                        var lowLimit = msg.l;
+                        var lowlowLimit = msg.ll;
+                        var nodeStr = msg.topic.substring(0, msg.topic.indexOf(";datatype=")); 
+                        var nodeId = addressSpace.findNode(nodeStr);
+                        var levelVar = 0.0;
+                        if (nodeId) {
+                            var namespace = addressSpace.getOwnNamespace(); // Default
+                            
+                            var alarmState = namespace.addVariable({
+                                nodeId: nodeStr + "-" + "LimitState",
+                                browseName: nodeStr.substring(7) + "-" + "LimitState",
+                                displayName: nodeStr.substring(7) + "-" + "LimitState",
+                                propertyOf: nodeId,
+                                dataType: "Float",
+                                eventSourceOf: "i=2253", // nodeId, // Use server!
+                                value: {
+                                    get: function () {
+                                        return new opcua.Variant({
+                                            dataType: "Float",
+                                            value: levelVar
+                                        });
+                                    },
+                                    set: function (variant) {
+                                        levelVar = variant.value;
+                                        return opcua.StatusCodes.Good;
+                                    }
+                                }
+                            });
+                            
+                            var alarm = namespace.instantiateNonExclusiveLimitAlarm("NonExclusiveLimitAlarmType",
+                                {
+                                    nodeId: nodeStr + "-" + "LimitAlarm",
+                                    browseName: nodeStr.substring(7) + "-" + "LimitAlarm",
+                                    displayName: nodeStr.substring(7) + "-" + "LimitAlarm",
+                                    organizedBy: nodeId,
+                                    conditionSource: alarmState,
+                                    browseName: "LimitAlarmInstance",
+                                    inputNode: alarmState,   // the variable that will be monitored for change, generate below
+                                    highHighLimit: highhighLimit,
+                                    highLimit: highLimit,
+                                    lowLimit: lowLimit,
+                                    lowLowLimit: lowlowLimit,
+                                    severity: priority,
+                                    optionals: [ "Acknowledge", "ConfirmedState", "Confirm" ], // confirm state and confirm Method
+                                }
+                            );
+                            //alarm.setEnabledState(true);
+                            
+                            /*
+                            try {
+                                alarmState.on("value_changed", function (newDataValue) {
+                                    if (newDataValue.value.value === true) {
+                                        if (alarm && alarm.getEnabledState()) {
+                                            alarm.activeState.setValue(true);
+                                            alarm.ackedState.setValue(false);
+                                            
+                                            alarm.raiseNewCondition(new opcua.ConditionInfo({
+                                              severity: priority,
+                                              message: alarmText,
+                                              retain: true,
+                                              quality: newDataValue.statusCode
+                                            }));
+                                            
+                                          }
+                                      
+                                        // alarm.raiseNewCondition(); // {severity: priority, message: alarmText});
+                                    }
+                                    if (newDataValue.value.value === false) {
+                                        alarm.deactivateAlarm();
+                                    }
+                                });
+                            }
+                            catch(error) {
+                                console.error("Error: " + error.toString());
+                            }
+                            */
+                        }
+                        else {
+                            node_error("Cannot find node: " + msg.topic + " nodeId: " + nodeStr);
+                        }
+                        break;    
+        
                 default:
                     node_error("unknown OPC UA Command");
             }
+
 
             return returnValue;
         }
