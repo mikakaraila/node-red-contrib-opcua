@@ -195,6 +195,8 @@ limitations under the License.
             <li><b>addFolder</b>          msg.topic = "ns=1;s=NewFolder"  // Note parent folder is objects if not set by setFolder</li>
             <li><b>addVariable</b>        msg.topic = "ns=1;s=VariableName;datatype=Double" // parent folder is set above</li>
             <li><b>installHistorian</b>   msg.topic = "ns=1;s=VariableName;datatype=Double</li>
+            <li><b>installDiscreteAlarm</b> msg.topic = "ns=1;s=VariableName;datatype=Double" parentObject msg.alarmText for the alarm, msg.priority for alarm severity</li>
+            <li><b>installLimitAlarm</b>  msg.topic = "ns=1;s=VariableName;datatype=Double" parentObject msg.hh=highhighLimit, msg.h=highLimit, msg.l=lowLimit, msg.ll=lowlowLimit</li>
             <li><b>addExtensionObject</b> msg.topic = "ns=1;s=VariableName;datatype=ExtensionObject;TypeId=ns=3;i=1001</li>
             <li><b>deleteNode</b>         msg.payload = "ns=1;s=VariableName"</li>
             <li><b>registerNamespace</b>  msg.topic = "www.acme.com" output msg.payload = ns=index </li>
