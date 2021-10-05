@@ -465,7 +465,9 @@ module.exports = function (RED) {
       }
 
       if (!node.client || !node.session) {
-        if (currentStatus == 'connecting') {
+        verbose_log("Not connected, current status:" + currentStatus);
+        // Added statuses when msg must be put to queue
+        if (currentStatus == '' || currentStatus == 'create client' || currentStatus == 'connecting') {
           cmdQueue.push(msg);
         } else {
           verbose_warn("can't work without OPC UA Session");
@@ -547,17 +549,22 @@ module.exports = function (RED) {
     }
     node.on("input", processInputMsg);
 
-    async function acknowledge_input(msg) {    
+    async function acknowledge_input(msg) {
       // msg.topic is nodeId of the alarm object like Prosys ns=6;s=MyLevel.Alarm
       // msg.conditionId is actual conditionObejct that contains ns=6;s=MyLevel.Alarm/0:EventId current/latest eventId will be read
       // msg.comment will be used as comment in the acknowledge
       const dataValue = await node.session.read({ nodeId: msg.conditionId, attributeId: AttributeIds.Value });
       const eventId = dataValue.value.value;
-      verbose_log("Acknowledge: " + msg.topic + " conditionObject: " + msg.conditionId + " eventId: " + eventId + " comment: " + msg.comment);
-      const status = await node.session.acknowledgeCondition(msg.topic, eventId, msg.comment);
-      if (status !== opcua.StatusCodes.Good) {
-        node_error(node.name + " error at acknowledge, status: " + status.toString());
-        set_node_errorstatus_to("error", status.toString());  
+      verbose_log("Acknowledge (alarm object == topic): " + msg.topic + " conditionObject (nodeId of eventId): " + msg.conditionId + " value of eventId: 0x" + eventId.toString("hex") + " comment: " + msg.comment);
+      if (eventId) {
+        const status = await node.session.acknowledgeCondition(msg.topic, eventId, msg.comment);
+        if (status !== opcua.StatusCodes.Good) {
+          node_error(node.name + " error at acknowledge, status: " + status.toString());
+          set_node_errorstatus_to("error", status.toString());  
+        }
+      }
+      else {
+        node_error(node.name + " error at acknowledge, no eventId, possible wrong msg.conditionId " + msg.conditionId);
       }
     }
 
