@@ -467,7 +467,9 @@ module.exports = function (RED) {
       if (!node.client || !node.session) {
         verbose_log("Not connected, current status:" + currentStatus);
         // Added statuses when msg must be put to queue
-        if (currentStatus == '' || currentStatus == 'create client' || currentStatus == 'connecting') {
+         // Added statuses when msg must be put to queue
+        const statuses = ['', 'create client', 'connecting', 'reconnect'];
+        if (statuses.includes(currentStatus)) {
           cmdQueue.push(msg);
         } else {
           verbose_warn("can't work without OPC UA Session");
