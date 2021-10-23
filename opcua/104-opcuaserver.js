@@ -28,7 +28,7 @@ module.exports = function (RED) {
     var opcuaBasics = require('./opcua-basics');
     const {parse, stringify} = require('flatted');
     const { createCertificateManager, createUserCertificateManager } = require("./utils");
-
+    const { ExtensionObject } = require("node-opcua-extension-object");
     function OpcUaServerNode(n) {
 
         RED.nodes.createNode(this, n);
@@ -257,8 +257,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.240",
-                buildDate: "2021-10-06T19:01:00"
+                buildNumber: "0.2.242",
+                buildDate: "2021-10-23T12:33:00"
             };
             
             var hostname = os.hostname();
@@ -750,12 +750,14 @@ module.exports = function (RED) {
                             verbose_log("ExtensionObject typeId: " + typeId);
                             var extVar = addressSpace.constructExtensionObject(opcua.coerceNodeId(typeId), {}); // build default value for extension object
                             verbose_log("Server returned: " + JSON.stringify(extVar));
-                            extNode = namespace.addVariable({
+                            var extNode = namespace.addVariable({
                                 organizedBy: addressSpace.findNode(parentFolder.nodeId),
+                                nodeId: name,
                                 browseName: browseName,
-                                dataType: "ExtensionObject", // typeId,
+                                dataType: opcua.coerceNodeId(typeId), // "ExtensionObject", // "StructureDefinition", // typeId,
                                 valueRank,
-                                value: { dataType: DataType.ExtensionObject, value: extVar },
+                                value: { dataType: opcua.DataType.ExtensionObject, value: extVar },
+                                // value: { dataType: DataType.StructureDefinition, value: extVar },
                             });
                             var newext = { "payload" : { "messageType" : "Variable", "variableName": browseName, "nodeId": extNode.nodeId.toString() }};
                             node.send(newext);
