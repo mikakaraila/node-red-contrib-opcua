@@ -871,24 +871,14 @@ module.exports = function (RED) {
           verbose_log("ExtensionNodeId: " + ExtensionNodeId);
           const ExtensionTypeDefinition = await node.session.read({ nodeId: ExtensionNodeId, attributeId: opcua.AttributeIds.DataTypeDefinition});
           verbose_log("ExtensionType: " + JSON.stringify(ExtensionTypeDefinition));
-
-          verbose_log("ExtType NodeId: " + msg.browseName);
-          var end = msg.browseName.indexOf(";datatype");
-          var typeString = msg.browseName.substring(0, end);
-          let customTypeNodeId = coerceNodeId(typeString);
-          verbose_log("Custom Type NodeId: " + customTypeNodeId);
-
-          const ExtensionType = await node.session.read({ nodeId: customTypeNodeId, attributeId: opcua.AttributeIds.DataTypeDefinition});
-          verbose_log("ExtensionObject DataType nodeId: " + ExtensionType.value.value);
           var newmsg = {};
-          newmsg.type = ExtensionType.value.value;
-          newmsg.datatype = "ExtensionObjectType";
-          newmsg.topic = items[0];
-          const ExtensionData = await node.session.constructExtensionObject(customTypeNodeId, {});
+          const ExtensionData = await node.session.constructExtensionObject(ExtensionNodeId, {});
           if (ExtensionData) {
             verbose_log("ExtensionData: " + ExtensionData.toString());
           }
-          newmsg.payload = JSON.stringify(ExtensionData); // New value with default values
+          // Simplified
+          newmsg.topic = msg.topic;
+          newmsg.payload = ExtensionData; //  JSON.stringify(ExtensionData); // New value with default values
           verbose_log("Extension Object msg: " + stringify(newmsg))
           node.send(newmsg);
         }
