@@ -893,9 +893,8 @@ module.exports = function (RED) {
       }
     }
 
-
     async function write_action_input(msg) {
-      verbose_log("writing:" + JSON.stringify(msg));
+      // verbose_log("writing:" + stringify(msg));
       if (msg && msg.topic && msg.topic.indexOf("ns=") != 0) {
         return; // NOT an item
       }
@@ -922,20 +921,24 @@ module.exports = function (RED) {
       } else {
         nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, parseInt(s), parseInt(ns));
       }
-  
-      verbose_log("msg=" + stringify(msg));
+      // Less output
       verbose_log("namespace=" + ns);
       verbose_log("string=" + s);
       verbose_log("type=" + msg.datatype);
-      verbose_log("value=" + stringify(msg.payload));
-      verbose_log(nodeid.toString());
       var opcuaDataValue = opcuaBasics.build_new_dataValue(msg.datatype, msg.payload);
-      verbose_log("DATATYPE: " + stringify(opcuaDataValue));
       
-      if (msg.datatype && msg.datatype === "ExtensionObject" && node.session) {
-        var obj = JSON.parse(msg.payload);
-        extensionobject = await node.session.constructExtensionObject(nodeid, obj);
-        verbose_log("ExtensionObject=" + stringify(extensionobject));
+      if (msg.datatype && msg.datatype.indexOf("ExtensionObject") >= 0 && node.session) {
+        if (msg.topic.indexOf("typeId=")) {
+          var typeId = msg.topic.substring(msg.topic.indexOf("typeId=")+7);
+          console.log("ExtensionObject TypeId= " + typeId);
+          extensionobject = await node.session.constructExtensionObject(coerceNodeId(typeId), {}); // Create first with default values
+          verbose_log("ExtensionObject=" + stringify(extensionobject));
+          Object.assign(extensionobject, msg.payload); // MERGE payload over default values
+          opcuaDataValue = {
+            dataType: opcua.DataType.ExtensionObject,
+            value: extensionobject
+          };
+        }
       }
       
       // TODO Fix object array according range
