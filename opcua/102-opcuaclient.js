@@ -506,6 +506,9 @@ module.exports = function (RED) {
         case "read":
           read_action_input(msg);
           break;
+        case "history":
+          readhistory_action_input(msg);
+          break;
         case "info":
           info_action_input(msg);
           break;
@@ -680,6 +683,75 @@ module.exports = function (RED) {
       } else {
         set_node_status_to("Session invalid");
         node_error("Session is not active!")
+      }
+    }
+
+    async function readhistory_action_input(msg) {
+      verbose_log("Read historical values from msg.topic = nodeId: " + msg.topic + " msg.aggregate (raw|min|ave|max|interpolative), aggregate: " + msg.aggregate);
+      var start;
+      var end = Date.now();
+      if (msg.end) {
+        verbose_log("msg.end  : " + msg.end.toString());
+        end = msg.end;
+      }
+      if (!msg.start) {
+        start = end -  (1 * 60 * 60 * 1000); // read last 1 hour of history
+      }
+      else {
+        start = msg.start;
+        verbose_log("msg.start: " + msg.start.toString());
+      }
+      verbose_log("Start time, msg.start or default start 1h ago, start: " + new Date(start));
+      verbose_log("End time,   msg.end or default to now,           end: " + new Date(end));
+      // For aggregates
+      var processingInterval = end - start; // Whole range 10 * 1000; // 10s interval
+      if (node.session) {
+        if (msg.aggregate && msg.aggregate === "raw") {
+          verbose_log("NodeId: " + msg.topic + " from: " + new Date(start) + " to: " + new Date(end) );
+          var historicalReadResult = await node.session.readHistoryValue({nodeId: msg.topic}, new Date(start), new Date(end));
+          msg.payload = historicalReadResult;
+          node.send(msg);
+        }
+        if (msg.aggregate && msg.aggregate==="max") {
+          var resultMax = await node.session.readAggregateValue(
+            {nodeId: msg.topic},
+            new Date(start),
+            new Date(end),
+            opcua.AggregateFunction.Maximum,
+            processingInterval);
+            msg.payload = resultMax;
+            node.send(msg);
+        }
+        if (msg.aggregate && msg.aggregate==="min") {
+          var resultMin = await node.session.readAggregateValue(
+            {nodeId: msg.topic},
+            new Date(start),
+            new Date(end),
+            opcua.AggregateFunction.Minimum,
+            processingInterval);
+            msg.payload = resultMin;
+            node.send(msg);
+        }
+        if (msg.aggregate && msg.aggregate==="ave") {
+          var resultAve = await node.session.readAggregateValue(
+            {nodeId: msg.topic},
+            new Date(start),
+            new Date(end),
+            opcua.AggregateFunction.Average,
+            processingInterval);
+            msg.payload = resultAve;
+            node.send(msg);
+        }
+        if (msg.aggregate && msg.aggregate==="interpolative") {
+          var resultInter = await node.session.readAggregateValue(
+            {nodeId: msg.topic},
+            new Date(start),
+            new Date(end),
+            opcua.AggregateFunction.Interpolative,
+            processingInterval);
+            msg.payload = resultInter;
+            node.send(msg);
+        }
       }
     }
 

@@ -103,6 +103,7 @@ limitations under the License.
             <option value="register">REGISTER</option>
             <option value="unregister">UNREGISTER</option>
             <option value="acknowledge">ACKNOWLEDGE</option>
+            <option value="history">HISTORY</option>
         </select>
     </div>
     <div class="form-row" id="node-input-timerow">
@@ -163,6 +164,7 @@ limitations under the License.
             <li>Register</li>
             <li>Unregister</li>
             <li>Acknowledge</li>
+            <li>History</li>
          </ul>
     </p>
     <p>Server certificate options are:</p>
@@ -196,4 +198,8 @@ limitations under the License.
     <p>Browse will lookup address space from the injected msg.topic (nodeId)</p>
     <p> if msg.collect === true then result will be collected into one msg. msg.payload will be array of items</p>
     <p> msg.payload.range = "2:4" and FloatArray or any Array datatype then indexes from 2 to 4 will be used to read or write depending on action</p>
+    <p>History will read mdg.topic = nodeId and msg.aggregate = "raw", historical values or aggregate "min" or "max" or "ave" or "interpolative"</p>
+    <p> Other needed parameters start time and end time:
+    <p> msg.start if not given 1 hour from now will be used</p>
+    <p> msg.end   if not given default value is now</p>
 </script>
