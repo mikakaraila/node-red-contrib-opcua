@@ -30,6 +30,7 @@ module.exports = function (RED) {
   const {stringify} = require('flatted');
   // const dataTypeFactory = require("node-opcua-factory");
   // const ScanData = getOrCreateConstructor("ScanData", dataTypeFactory);
+  var opcuaBasics = require('./opcua-basics');
 
   function OPCUAMethodNode(n) {
     RED.nodes.createNode(this, n)
@@ -40,6 +41,18 @@ module.exports = function (RED) {
 
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
+    var currentStatus = '';
+
+    function set_node_status_to(statusValue) {
+      verbose_log("Client status: " + statusValue);
+      var statusParameter = opcuaBasics.get_node_status(statusValue);
+      currentStatus = statusValue;
+      node.status({
+        fill: statusParameter.fill,
+        shape: statusParameter.shape,
+        text: statusParameter.status
+      });
+    }
 
     if (n.arg0type === undefined || n.arg0type === "" || n.arg0value === "") {
       // Do nothing
@@ -54,6 +67,8 @@ module.exports = function (RED) {
       node.inputArguments.push({dataType: n.arg0type, value: new Date(n.arg0value)});
     } else if (n.arg0type === "NodeId") {
       node.inputArguments.push({dataType: n.arg0type, value: opcua.coerceNodeId(n.arg0value)});
+    } else if (n.arg0type === "ExtensionObject") {
+      node.inputArguments.push({dataType: n.arg0type, value: JSON.parse(n.arg0value)});
     } else if (n.arg0type === "String") {
       node.inputArguments.push({dataType: n.arg0type, value: n.arg0value});
     } else if (n.arg0type === "ScanData") {
@@ -78,6 +93,8 @@ module.exports = function (RED) {
       node.inputArguments.push({dataType: n.arg1type, value: new Date(n.arg1value)});
     } else if (n.arg1type === "NodeId") {
       node.inputArguments.push({dataType: n.arg1type, value: opcua.coerceNodeId(n.arg1value)});
+    } else if (n.arg1type === "ExtensionObject") {
+      node.inputArguments.push({dataType: n.arg12type, value: JSON.parse(n.arg1value)});
     } else if (n.arg1type === "String") {
       node.inputArguments.push({dataType: n.arg1type, value: n.arg1value});
     } else if (n.arg1type === "Double" || n.arg1type === "Float" ) {
@@ -99,6 +116,8 @@ module.exports = function (RED) {
       node.inputArguments.push({dataType: n.arg2type, value: new Date(n.arg2value)});
     } else if (n.arg2type === "NodeId") {
       node.inputArguments.push({dataType: n.arg2type, value: opcua.coerceNodeId(n.arg2value)});
+    } else if (n.arg2type === "ExtensionObject") {
+      node.inputArguments.push({dataType: n.arg2type, value: JSON.parse(n.arg2value)});
     } else if (n.arg2type === "String") {
       node.inputArguments.push({dataType: n.arg2type, value: n.arg2value});
     } else if (n.arg2type === "Double" || n.arg2type === "Float" ) {
@@ -121,6 +140,13 @@ module.exports = function (RED) {
       connectionOption.securityPolicy = opcua.MessageSecurityMode.None;
     }
     connectionOption.endpointMustExist = false;
+    connectionOption.defaultSecureTokenLifetime = 40000 * 5;
+    connectionOption.connectionStrategy = {
+      maxRetry: 10512000, // Limited to max 10 ~5min // 10512000, // 10 years should be enough. No infinite parameter for backoff.
+      initialDelay: 5000, // 5s
+      maxDelay: 30 * 1000 // 30s
+    };
+    connectionOption.keepSessionAlive = true;
 
     if (opcuaEndpoint.login) {
       userIdentity.userName = opcuaEndpoint.credentials.user;
@@ -128,6 +154,7 @@ module.exports = function (RED) {
       userIdentity.type = uaclient.UserTokenType.UserName; // New TypeScript API parameter
     }
     console.log("Input arguments:" + JSON.stringify(node.inputArguments));
+    
     async function setupClient(url, callback) {
 
       const client = opcua.OPCUAClient.create(connectionOption);
@@ -139,6 +166,7 @@ module.exports = function (RED) {
         // step 2 : createSession
         const session = await client.createSession(userIdentity);
         node.log("start session on " + opcuaEndpoint.endpoint);
+        set_node_status_to("session active");
         node.session = session;
       } catch (err) {
         node.error("Cannot connect to " + JSON.stringify(opcuaEndpoint));
@@ -165,16 +193,16 @@ module.exports = function (RED) {
 
     setupClient(opcuaEndpoint.endpoint, function (err) {
       if (err) {
-          node_error(err);
-          node.status({
-              fill: "red",
-              shape: "dot",
-              text: "Error Items: " + node.items ? node.items.length : '-'
-          });
+        node_error(err);
+        node.status({
+          fill: "red",
+          shape: "dot",
+          text: "Error: " + err.toString()
+        });
       }
+
       node.log("Waiting method calls...");
     });
-
 
     node.on("input", function (msg) {
       var message = {}
@@ -201,7 +229,7 @@ module.exports = function (RED) {
       if (node.session) {
         message.outputArguments = null;
         verbose_log("Call method: " + JSON.stringify(message));
-        node.callMethod(message)
+        node.callMethod(message);
       }
     })
 
@@ -209,11 +237,20 @@ module.exports = function (RED) {
       if (msg.methodId && msg.inputArguments) {
         verbose_log("Calling method: " + JSON.stringify(msg.methodId));
         verbose_log("InputArguments: " + JSON.stringify(msg.inputArguments));
+        var extensionobject = await node.session.constructExtensionObject(opcua.coerceNodeId(n.arg0typeid), {}); // TODO make while loop to enable await
         // Quick fix to coerce NodeId when input arguments are injected other normal can be converted as msg is created
 	      try {
           msg.inputArguments.forEach((arg) => {
-            if(arg.dataType === "NodeId") {
+            if (arg.dataType === "NodeId") {
               arg.value = opcua.coerceNodeId(arg.value);
+            }
+            if (arg.dataType === "ExtensionObject") {
+              verbose_log("ExtensionObject=" + stringify(extensionobject));
+              Object.assign(extensionobject, arg.value);
+              arg.value = new opcua.Variant({
+                dataType: opcua.DataType.ExtensionObject,
+                value: extensionobject
+              });
             }
           });
         }
@@ -221,24 +258,31 @@ module.exports = function (RED) {
           node.error("Invalid NodeId: " + err);
           return;
         }
-        const callMethodRequest = new opcua.CallMethodRequest({
-          objectId: opcua.coerceNodeId(msg.objectId),
-          methodId: opcua.coerceNodeId(msg.methodId),
-          inputArguments: msg.inputArguments,
-          outputArguments: msg.outputArguments
-        });
-
+        var callMethodRequest;
+        try {
+          callMethodRequest = new opcua.CallMethodRequest({
+            objectId: opcua.coerceNodeId(msg.objectId),
+            methodId: opcua.coerceNodeId(msg.methodId),
+            inputArguments: msg.inputArguments,
+            outputArguments: msg.outputArguments
+          });
+        }
+        catch(err) {
+          set_node_status_to("error: " + err)
+          node.error("Build method request failed, error:" + err);
+        }
         verbose_log("Call request: " + callMethodRequest.toString());
         verbose_log("Calling: " + callMethodRequest);
         try {
           const result = await node.session.call(callMethodRequest);
-          verbose_log("Results: " + result);
+          verbose_log("Results: " + JSON.stringify(result));
           msg.result = result;
           msg.payload = [];
           if (result && result.statusCode === opcua.StatusCodes.Good) {
             var i = 0;
             // console.log("Value:" + result.outputArguments[i].value);
             while (result.outputArguments.length > i) {
+              console.log("Result:" + JSON.stringify(result.outputArguments[i]));
               msg.payload.push(result.outputArguments[i]); // Just copy results to payload[] array
               i++;
             }
@@ -254,7 +298,8 @@ module.exports = function (RED) {
           */
           node.send(msg);
         } catch (err) {
-          node.error("Method execution error:" + err);
+          set_node_status_to("Method execution error: " + err)
+          node.error("Method execution error: " + err);
         }
       }
     }

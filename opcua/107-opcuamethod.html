@@ -28,12 +28,15 @@ limitations under the License.
       inputArguments: {value: []},
       arg0name: {value: ""},
       arg0type: {value: ""},
+      arg0typeid: {value: ""},
       arg0value: {value: ""},
       arg1name: {value: ""},
       arg1type: {value: ""},
+      arg1typeid: {value: ""},
       arg1value: {value: ""},
       arg2name: {value: ""},
       arg2type: {value: ""},
+      arg2typeid: {value: ""},
       arg2value: {value: ""}
     },
     inputs: 1,
@@ -66,9 +69,9 @@ limitations under the License.
     <div class="form-row">
         <span>
         <label for="node-input-arg0name"><i class="icon-tasks"></i>Arg0 Name</label>
-        <input type="text" id="node-input-arg0name" placeholder="Name" style="width:20%;">
+        <input type="text" id="node-input-arg0name" placeholder="Name" style="width:10%;">
         <label for="node-input-arg0type"><i class="icon-tasks"></i>Type</label>
-        <select id="node-input-arg0type" style="max-width:120px">
+        <select id="node-input-arg0type" style="max-width:150px">
             <option value="">-</option>
             <option value="String">String</option>
             <option value="Double">Double</option>
@@ -82,17 +85,20 @@ limitations under the License.
             <option value="Boolean">Boolean</option>
             <option value="DateTime">DateTime</option>
             <option value="NodeId">NodeId</option>
+            <option value="ExtensionObject">ExtensionObject</option>
         </select>
+        <label for="node-input-arg0typeid"><i class="icon-tasks"></i>TypeId</label>
+        <input type="text" id="node-input-arg0typeid" placeholder="" style="width:10%;">
         <label for="node-input-arg0value"><i class="icon-tasks"></i>Value</label>
-        <input type="text" id="node-input-arg0value" placeholder="" style="width:20%;">
+        <input type="text" id="node-input-arg0value" placeholder="" style="width:25%;">
         </span>
     </div>
     <div class="form-row">
         <span>
         <label for="node-input-arg1name"><i class="icon-tasks"></i>Arg1 Name</label>
-        <input type="text" id="node-input-arg1name" placeholder="Name" style="width:20%;">
+        <input type="text" id="node-input-arg1name" placeholder="Name" style="width:10%;">
         <label for="node-input-arg1type"><i class="icon-tasks"></i>Type</label>
-        <select id="node-input-arg1type" style="max-width:120px">
+        <select id="node-input-arg1type" style="max-width:150px">
             <option value="">-</option>
             <option value="String">String</option>
             <option value="Double">Double</option>
@@ -106,17 +112,20 @@ limitations under the License.
             <option value="Boolean">Boolean</option>
             <option value="DateTime">DateTime</option>
             <option value="NodeId">NodeId</option>
+            <option value="ExtensionObject">ExtensionObject</option>
         </select>
+        <label for="node-input-arg1typeid"><i class="icon-tasks"></i>TypeId</label>
+        <input type="text" id="node-input-arg1typeid" placeholder="" style="width:10%;">
         <label for="node-input-arg1value"><i class="icon-tasks"></i>Value</label>
-        <input type="text" id="node-input-arg1value" placeholder="" style="width:20%;">
+        <input type="text" id="node-input-arg1value" placeholder="" style="width:25%;">
         </span>
     </div>
     <div class="form-row">
         <span>
         <label for="node-input-arg2name"><i class="icon-tasks"></i>Arg2 Name</label>
-        <input type="text" id="node-input-arg2name" placeholder="Name" style="width:20%;">
+        <input type="text" id="node-input-arg2name" placeholder="Name" style="width:10%;">
         <label for="node-input-arg2type"><i class="icon-tasks"></i>Type</label>
-        <select id="node-input-arg2type" style="max-width:120px">
+        <select id="node-input-arg2type" style="max-width:150px">
             <option value="">-</option>
             <option value="String">String</option>
             <option value="Double">Double</option>
@@ -130,9 +139,12 @@ limitations under the License.
             <option value="Boolean">Boolean</option>
             <option value="DateTime">DateTime</option>
             <option value="NodeId">NodeId</option>
+            <option value="ExtensionObject">ExtensionObject</option>
         </select>
+        <label for="node-input-arg2typeid"><i class="icon-tasks"></i>TypeId</label>
+        <input type="text" id="node-input-arg2typeid" placeholder="" style="width:10%;">
         <label for="node-input-arg2value"><i class="icon-tasks"></i>Value</label>
-        <input type="text" id="node-input-arg2value" placeholder="" style="width:20%;">
+        <input type="text" id="node-input-arg2value" placeholder="" style="width:25%;">
         </span>
     </div>
     <hr>
@@ -156,7 +168,7 @@ limitations under the License.
                 <ul>
                     <li>name (parameter name, not used inside method call)
                     <li>dataType (basic DataTypes like Double, Float, Int32 etc.)
-                    <li>value (value or Variant)
+                    <li>value (value or Variant or JSON Object in case of ExtensionObject)
                 </ul>
         </ul>
     </div>
