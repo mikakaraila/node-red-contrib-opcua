@@ -257,8 +257,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.244",
-                buildDate: "2021-11-01T18:50:00"
+                buildNumber: "0.2.245",
+                buildDate: "2021-11-28T23:20:00"
             };
             
             var hostname = os.hostname();
@@ -423,7 +423,7 @@ module.exports = function (RED) {
 
                 // Needed for Alarms and Conditions
                 node.server.engine.addressSpace.installAlarmsAndConditionsService();
-
+                opcua.addAggregateSupport(node.server.engine.addressSpace);
                 // Client connects with userName
                 node.server.on("session_activated", (session) => {
                    if (session.userIdentityToken && session.userIdentityToken.userName) {
