@@ -707,8 +707,24 @@ module.exports = function (RED) {
       var processingInterval = end - start; // Whole range 10 * 1000; // 10s interval
       if (node.session) {
         if (msg.aggregate && msg.aggregate === "raw") {
-          verbose_log("NodeId: " + msg.topic + " from: " + new Date(start) + " to: " + new Date(end) );
-          var historicalReadResult = await node.session.readHistoryValue({nodeId: msg.topic}, new Date(start), new Date(end));
+          var numValues = 1000;
+          if (msg.numValuesPerNode) {
+            numValues = parseInt(msg.numValuesPerNode);
+          }
+          var returnBounds = false;
+          if (msg.returnBounds) {
+            returnBounds = msg.returnBounds;
+          }
+          // Old one: ReadRawModifiedDetails
+          // No constructor: ExtraReadHistoryValueParameters
+            var historyReadDetails = new Object({
+            isReadModified: false, // Fixed, any need to modify?
+            numValuesPerNode: numValues,
+            returnBounds: returnBounds,
+            timestampsToReturn: opcua.TimestampsToReturn.Both // Fixed, return always both
+          });
+          verbose_log("NodeId: " + msg.topic + " from: " + new Date(start) + " to: " + new Date(end) + " options: " + JSON.stringify(historyReadDetails));
+          var historicalReadResult = await node.session.readHistoryValue({nodeId: msg.topic}, new Date(start), new Date(end), historyReadDetails);
           msg.payload = historicalReadResult;
           node.send(msg);
         }
@@ -971,8 +987,9 @@ module.exports = function (RED) {
         return; // NOT an item
       }
       // Topic value: ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT
-      var ns = msg.topic.substring(3, 4); // Parse namespace, ns=2
+      
       var dIndex = msg.topic.indexOf("datatype=");
+      var ns = msg.topic.substring(3, dIndex-1); // Parse namespace, ns=2 or ns=10 TODO TEST 2 digits namespace
       var s = "";
       var range = null;
       var extensionobject = null;
@@ -987,16 +1004,24 @@ module.exports = function (RED) {
       var nodeid = {}; // new nodeId.NodeId(nodeId.NodeIdType.STRING, s, ns);
       // console.log("Topic: " + msg.topic + " ns=" + ns + " s=" + s);
       verbose_log(opcua.makeBrowsePath(msg.topic, "."));
-
+      // TODO ns=10 TEST 2 digits namespace
+      if (dIndex> 0) {
+        nodeid = opcua.coerceNodeId(msg.topic.substring(0, dIndex-1));
+      }
+      else {
+        nodeid = opcua.coerceNodeId(msg.topic);
+      }
+      /*
       if (msg.topic.substring(5, 6) == 's') {
         nodeid = new nodeId.NodeId(nodeId.NodeIdType.STRING, s, parseInt(ns));
       } else {
         nodeid = new nodeId.NodeId(nodeId.NodeIdType.NUMERIC, parseInt(s), parseInt(ns));
       }
+      */
       // Less output
-      verbose_log("namespace=" + ns);
-      verbose_log("string=" + s);
-      verbose_log("type=" + msg.datatype);
+      // verbose_log("namespace=" + ns);
+      // verbose_log("string=" + s);
+      verbose_log("NodeId= " + nodeid.toString() + " type=" + msg.datatype);
       var opcuaDataValue = opcuaBasics.build_new_dataValue(msg.datatype, msg.payload);
       
       if (msg.datatype && msg.datatype.indexOf("ExtensionObject") >= 0 && node.session) {
