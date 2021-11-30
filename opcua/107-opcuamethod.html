@@ -26,6 +26,7 @@ limitations under the License.
       methodId: {value: ""},
       name: {value: ""},
       inputArguments: {value: []},
+      outputArguments: {value: []},
       arg0name: {value: ""},
       arg0type: {value: ""},
       arg0typeid: {value: ""},
@@ -37,7 +38,11 @@ limitations under the License.
       arg2name: {value: ""},
       arg2type: {value: ""},
       arg2typeid: {value: ""},
-      arg2value: {value: ""}
+      arg2value: {value: ""},
+      out0name: {value: ""},
+      out0type: {value: ""},
+      out0typeid: {value: ""},
+      out0value: {value: ""}
     },
     inputs: 1,
     outputs: 1,
@@ -147,6 +152,34 @@ limitations under the License.
         <input type="text" id="node-input-arg2value" placeholder="" style="width:25%;">
         </span>
     </div>
+    <div class="form-row">
+        <span>
+        <label for="node-input-out0name"><i class="icon-tasks"></i>Out0 Name</label>
+        <input type="text" id="node-input-out0name" placeholder="Name" style="width:10%;">
+        <label for="node-input-out0type"><i class="icon-tasks"></i>Type</label>
+        <select id="node-input-out0type" style="max-width:150px">
+            <option value="">-</option>
+            <option value="String">String</option>
+            <option value="Double">Double</option>
+            <option value="Float">Float</option>
+            <option value="Int32">Int32</option>
+            <option value="Int16">Int16</option>
+            <option value="SByte">Int8 (SByte)</option>
+            <option value="UInt32">UInt32</option>
+            <option value="UInt16">UInt16</option>
+            <option value="Byte">UInt8 (Byte)</option>
+            <option value="Boolean">Boolean</option>
+            <option value="DateTime">DateTime</option>
+            <option value="NodeId">NodeId</option>
+            <option value="ExtensionObject">ExtensionObject</option>
+        </select>
+        <label for="node-input-out0typeid"><i class="icon-tasks"></i>TypeId</label>
+        <input type="text" id="node-input-out0typeid" placeholder="" style="width:10%;">
+        <label for="node-input-out0value"><i class="icon-tasks"></i>Value</label>
+        <input type="text" id="node-input-out0value" placeholder="" style="width:25%;">
+        </span>
+    </div>
+
     <hr>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i>Name</label>
@@ -164,7 +197,7 @@ limitations under the License.
         <ul>
             <li>objectId (nodeId of object)
             <li>methodId (nodeId of method)
-            <li>arguments in node limited to arg 0 to 2):
+            <li>arguments in node limited to arg 0 to 2:
                 <ul>
                     <li>name (parameter name, not used inside method call)
                     <li>dataType (basic DataTypes like Double, Float, Int32 etc.)
@@ -192,7 +225,7 @@ limitations under the License.
     <div>
         <strong>Output message:</strong>
         <ul>
-            <li>statusCode
+            <li>result statusCode
             <li>inputArgumentResults (Array)
             <li>inputArgumentDiagnosticInfos (Array)
             <li>outputArguments (Array)

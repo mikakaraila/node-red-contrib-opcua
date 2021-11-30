@@ -38,10 +38,12 @@ module.exports = function (RED) {
     this.methodId = n.methodId;
     this.name = n.name;
     this.inputArguments = n.inputArguments;
+    this.outputArguments = n.outputArguments;
 
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
     var currentStatus = '';
+    node.outputArguments = [];
 
     function set_node_status_to(statusValue) {
       verbose_log("Client status: " + statusValue);
@@ -68,7 +70,7 @@ module.exports = function (RED) {
     } else if (n.arg0type === "NodeId") {
       node.inputArguments.push({dataType: n.arg0type, value: opcua.coerceNodeId(n.arg0value)});
     } else if (n.arg0type === "ExtensionObject") {
-      node.inputArguments.push({dataType: n.arg0type, value: JSON.parse(n.arg0value)});
+      node.inputArguments.push({dataType: n.arg0type, typeid: n.arg0typeid, value: JSON.parse(n.arg0value)});
     } else if (n.arg0type === "String") {
       node.inputArguments.push({dataType: n.arg0type, value: n.arg0value});
     } else if (n.arg0type === "ScanData") {
@@ -94,7 +96,7 @@ module.exports = function (RED) {
     } else if (n.arg1type === "NodeId") {
       node.inputArguments.push({dataType: n.arg1type, value: opcua.coerceNodeId(n.arg1value)});
     } else if (n.arg1type === "ExtensionObject") {
-      node.inputArguments.push({dataType: n.arg12type, value: JSON.parse(n.arg1value)});
+      node.inputArguments.push({dataType: n.arg12type, typeid: n.arg1typeid, value: JSON.parse(n.arg1value)});
     } else if (n.arg1type === "String") {
       node.inputArguments.push({dataType: n.arg1type, value: n.arg1value});
     } else if (n.arg1type === "Double" || n.arg1type === "Float" ) {
@@ -117,13 +119,39 @@ module.exports = function (RED) {
     } else if (n.arg2type === "NodeId") {
       node.inputArguments.push({dataType: n.arg2type, value: opcua.coerceNodeId(n.arg2value)});
     } else if (n.arg2type === "ExtensionObject") {
-      node.inputArguments.push({dataType: n.arg2type, value: JSON.parse(n.arg2value)});
+      node.inputArguments.push({dataType: n.arg2type, typeid: n.arg0typeid, value: JSON.parse(n.arg2value)});
     } else if (n.arg2type === "String") {
       node.inputArguments.push({dataType: n.arg2type, value: n.arg2value});
     } else if (n.arg2type === "Double" || n.arg2type === "Float" ) {
       node.inputArguments.push({dataType: n.arg2type, value: parseFloat(n.arg2value)});
     } else {
       node.inputArguments.push({dataType: n.arg2type, value: parseInt(n.arg2value)});
+    }
+
+    if (n.out0type === undefined || n.out0type === "") {
+      // Do nothing
+    } else if (n.out0type === "Boolean") {
+      if (n.out0value === "True") {
+        node.outputArguments.push({dataType: n.out0type, value: true});
+      }
+      else {
+        node.outputArguments.push({dataType: n.out0type, value: false});
+      }
+    } else if (n.out0type === "DateTime") {
+      node.outputArguments.push({dataType: n.out0type, value: new Date(n.out0value)});
+    } else if (n.out0type === "NodeId") {
+      node.outputArguments.push({dataType: n.out0type, value: opcua.coerceNodeId(n.out0value)});
+    } else if (n.out0type === "ExtensionObject") {
+      node.outputArguments.push({dataType: n.out0type, typeid: n.out0typeid, value: JSON.parse(n.out0value)});
+    } else if (n.out0type === "String") {
+      node.outputArguments.push({dataType: n.out0type, value: n.out0value});
+    } else if (n.out0type === "ScanData") {
+      node.outputArguments.push({dataType: n.out0type, value: new ScanData(n.out0value)});
+    }
+    else if (n.out0type === "Double" || n.out0type === "Float" ) {
+      node.outputArguments.push({dataType: n.out0type, value: parseFloat(n.out0value)});
+    } else {
+      node.outputArguments.push({dataType: n.out0type, value: parseInt(n.out0value)});
     }
 
     var connectionOption = {};
@@ -211,8 +239,10 @@ module.exports = function (RED) {
       message.methodId = msg.methodId || node.methodId;
       message.methodType = msg.methodType || node.methodType;
       message.inputArguments = msg.inputArguments || node.inputArguments;
+      message.outputArguments = msg.outputArguments || node.outputArguments;
       // message.inputArguments.push({ dataType: "String", value: "sin" });
       // message.inputArguments.push({ dataType: "Double", value: 3.3 });
+      // message.inputArguments.push({ dataType: "ExtensionObject", typeid: "ns=3;i=3010", value: 3.3 });
 
       if (!message.objectId) {
         verbose_warn("No objectId for Method");
@@ -227,7 +257,7 @@ module.exports = function (RED) {
         return
       }
       if (node.session) {
-        message.outputArguments = null;
+        // message.outputArguments = [ {"dataType": opcua.DataType.Double, "value": 0.0} ];
         verbose_log("Call method: " + JSON.stringify(message));
         node.callMethod(message);
       }
@@ -237,14 +267,24 @@ module.exports = function (RED) {
       if (msg.methodId && msg.inputArguments) {
         verbose_log("Calling method: " + JSON.stringify(msg.methodId));
         verbose_log("InputArguments: " + JSON.stringify(msg.inputArguments));
-        var extensionobject = await node.session.constructExtensionObject(opcua.coerceNodeId(n.arg0typeid), {}); // TODO make while loop to enable await
+        verbose_log("OutputArguments: " + JSON.stringify(msg.outputArguments));
+        
         // Quick fix to coerce NodeId when input arguments are injected other normal can be converted as msg is created
 	      try {
-          msg.inputArguments.forEach((arg) => {
+          // msg.inputArguments.forEach((arg) => {
+          var i=0;
+          var arg;
+          while (i < msg.inputArguments.length) {
+            arg = msg.inputArguments[i];
             if (arg.dataType === "NodeId") {
               arg.value = opcua.coerceNodeId(arg.value);
             }
             if (arg.dataType === "ExtensionObject") {
+              var extensionobject = null;
+              if (arg.typeid) {
+                extensionObject = await node.session.constructExtensionObject(opcua.coerceNodeId(arg.typeid), {}); // TODO make while loop to enable await
+                // delete arg.typeid; // Check if needed to remove just in case
+              }
               verbose_log("ExtensionObject=" + stringify(extensionobject));
               Object.assign(extensionobject, arg.value);
               arg.value = new opcua.Variant({
@@ -252,17 +292,23 @@ module.exports = function (RED) {
                 value: extensionobject
               });
             }
-          });
+            i++;
+          }
+          // });
+          // TODO outputArguments as inputArguments
         }
         catch(err) {
           node.error("Invalid NodeId: " + err);
           return;
         }
+        verbose_log("Updated InputArguments: " + JSON.stringify(msg.inputArguments));
         var callMethodRequest;
+        var diagInfo;
         try {
           callMethodRequest = new opcua.CallMethodRequest({
             objectId: opcua.coerceNodeId(msg.objectId),
             methodId: opcua.coerceNodeId(msg.methodId),
+            inputArgumentDiagnosticInfos: diagInfo,
             inputArguments: msg.inputArguments,
             outputArguments: msg.outputArguments
           });
@@ -271,21 +317,36 @@ module.exports = function (RED) {
           set_node_status_to("error: " + err)
           node.error("Build method request failed, error:" + err);
         }
+
         verbose_log("Call request: " + callMethodRequest.toString());
         verbose_log("Calling: " + callMethodRequest);
         try {
           const result = await node.session.call(callMethodRequest);
-          verbose_log("Results: " + JSON.stringify(result));
+          if (diagInfo) {
+            verbose_log("Diagn. info: " + JSON.stringify(diagInfo));
+          }
+          verbose_log("Output args: " + JSON.stringify(msg.outputArguments));
+          verbose_log("Results:     " + JSON.stringify(result));
           msg.result = result;
-          msg.payload = [];
           if (result && result.statusCode === opcua.StatusCodes.Good) {
             var i = 0;
-            // console.log("Value:" + result.outputArguments[i].value);
-            while (result.outputArguments.length > i) {
-              console.log("Result:" + JSON.stringify(result.outputArguments[i]));
-              msg.payload.push(result.outputArguments[i]); // Just copy results to payload[] array
-              i++;
+            msg.output = result.outputArguments; // Original outputArguments
+            msg.payload = []; // Store values back to array
+            if (result.outputArguments.length == 1) {
+              verbose_log("Value: " + result.outputArguments[i].value);
+              msg.payload = result.outputArguments[0].value; // Return only if one output argument
             }
+            else {
+              while (result.outputArguments.length > i) {
+                verbose_log("Value[" + i + "]:" + result.outputArguments[i].toString());
+                msg.payload.push(result.outputArguments[i].value); // Just copy result value to payload[] array, actual value needed mostly
+                i++;
+              }
+            }
+          }
+          else {
+            set_node_status_to("error: " + result.statusCode.description)
+            node.error("Execute method result, error:" + result.statusCode.description);  
           }
           // make this better, not generic solution, but result contains everything
           /*
