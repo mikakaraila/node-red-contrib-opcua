@@ -516,7 +516,8 @@ module.exports = function (RED) {
         function read_message(payload) {
             switch (payload.messageType) {
                 case 'Variable':
-                    variables[payload.variableName] = payload.variableValue;
+                    var ns = payload.namespace.toString();
+                    variables[ns + ":" + payload.variableName] = payload.variableValue;
                     break;
                 default:
                     break;
@@ -661,6 +662,7 @@ module.exports = function (RED) {
                             nsindex = parseInt(msg.topic.substring(3));
                             namespace = allNamespaces[nsindex];
                         }
+
                         var ns = nsindex.toString();
                         var dimensions = valueRank <= 0 ? null : [dim1]; // Fix for conformance check TODO dim2, dim3
                         var browseName = name.substring(7);
