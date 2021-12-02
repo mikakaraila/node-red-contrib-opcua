@@ -661,32 +661,32 @@ module.exports = function (RED) {
                             nsindex = parseInt(msg.topic.substring(3));
                             namespace = allNamespaces[nsindex];
                         }
-
+                        var ns = nsindex.toString();
                         var dimensions = valueRank <= 0 ? null : [dim1]; // Fix for conformance check TODO dim2, dim3
                         var browseName = name.substring(7);
-                        variables[nsindex + ":" + browseName] = 0;
+                        variables[ns + ":" + browseName] = 0;
                         if (valueRank == 1) {
                             arrayType = opcua.VariantArrayType.Array;
                             dimensions = [dim1];
-                            variables[nsindex + ":" + browseName] = new Float32Array(dim1); // [];
+                            variables[ns + ":" + browseName] = new Float32Array(dim1); // [];
                             for (var i=0; i<dim1; i++) {
-                                variables[nsindex + ":" + browseName][i] = 0;
+                                variables[ns + ":" + browseName][i] = 0;
                             }
                         }
                         if (valueRank == 2) {
                             arrayType = opcua.VariantArrayType.Matrix;
                             dimensions = [dim1, dim2];
-                            variables[nsindex + ":" + browseName] = new Float32Array(dim1*dim2); // [];
+                            variables[ns + ":" + browseName] = new Float32Array(dim1*dim2); // [];
                             for (var i=0; i<dim1*dim2; i++) {
-                                variables[nsindex + ":" + browseName][i] = 0;
+                                variables[ns + ":" + browseName][i] = 0;
                             }
                         }
                         if (valueRank == 3) {
                             arrayType = opcua.VariantArrayType.Matrix; // Actually no Cube => Matrix with 3 dims
                             dimensions = [dim1, dim2, dim3];
-                            variables[nsindex + ":" + browseName] = new Float32Array(dim1*dim2*dim3); // [];
+                            variables[ns + ":" + browseName] = new Float32Array(dim1*dim2*dim3); // [];
                             for (var i=0; i<dim1*dim2*dim3; i++) {
-                                variables[nsindex + ":" + browseName][i] = 0;
+                                variables[ns + ":" + browseName][i] = 0;
                             }
                         }
 
@@ -716,23 +716,23 @@ module.exports = function (RED) {
                         }
                         if (datatype == "DateTime") {
                             opcuaDataType = opcua.DataType.DateTime;
-                            variables[nsindex + ":" + browseName] = new Date();
+                            variables[ns + ":" + browseName] = new Date();
                         }
                         if (datatype == "ExtensionObject") {
                             opcuaDataType = opcua.DataType.ExtensionObject;
-                            variables[nsindex + ":" + browseName] = {};
+                            variables[ns + ":" + browseName] = {};
                         }
                         if (datatype == "ByteString") {
                             opcuaDataType = opcua.DataType.ByteString;
-                            variables[nsindex + ":" + browseName] = Buffer.from("");
+                            variables[ns + ":" + browseName] = Buffer.from("");
                         }
                         if (datatype == "String") {
                             opcuaDataType = opcua.DataType.String;
-                            variables[nsindex + ":" + browseName] = "";
+                            variables[ns + ":" + browseName] = "";
                         }
                         if (datatype == "Boolean") {
                             opcuaDataType = opcua.DataType.Boolean;
-                            variables[nsindex + ":" + browseName] = true;
+                            variables[ns + ":" + browseName] = true;
                         }
                         verbose_log("Datatype: " + datatype);
                         verbose_log("OPC UA type id: "+ opcuaDataType.toString() + " dims[" + dim1 + "," + dim2 +"," + dim3 +"] == " + dimensions);
@@ -740,8 +740,8 @@ module.exports = function (RED) {
                         var init = msg.topic.indexOf("value=");
                         if (init > 0) {
                             var initialValue = msg.topic.substring(init+6);
-                            verbose_log("BrowseName: " + nsindex + ":" + browseName + " initial value: " + initialValue);
-                            variables[nsindex + ":" + browseName] = opcuaBasics.build_new_value_by_datatype(datatype, initialValue);
+                            verbose_log("BrowseName: " + ns + ":" + browseName + " initial value: " + initialValue);
+                            variables[ns + ":" + browseName] = opcuaBasics.build_new_value_by_datatype(datatype, initialValue);
                         }
 
                         
@@ -779,19 +779,19 @@ module.exports = function (RED) {
                                             arrayType,
                                             dimensions,
                                             dataType: opcuaDataType,
-                                            value: variables[nsindex + ":" + browseName]
+                                            value: variables[ns + ":" + browseName]
                                         });
                                     }
                                     else {
                                         return new opcua.Variant({
                                             arrayType,
                                             dataType: opcuaDataType,
-                                            value: variables[nsindex + ":" + browseName]
+                                            value: variables[ns + ":" + browseName]
                                         });
                                     } 
                                 },
                                 set: function (variant) {
-                                    verbose_log("Server set new variable value : " + variables[nsindex + ":" + browseName] + " browseName: " + nsindex + ":" + browseName + " new:" + stringify(variant));
+                                    verbose_log("Server set new variable value : " + variables[ns + ":" + browseName] + " browseName: " + ns + ":" + browseName + " new:" + stringify(variant));
                                     /*
                                     // TODO Array partial write need some more studies
                                     if (msg.payload.range) {
@@ -808,18 +808,18 @@ module.exports = function (RED) {
                                     }
                                     else {
                                         */
-                                        variables[nsindex + ":" + browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
+                                        variables[ns + ":" + browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
                                     // }
                                     // variables[browseName] = Object.assign(variables[browseName], opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value));
-                                    verbose_log("Server variable: " + variables[nsindex + ":" + browseName] + " browseName: " + nsindex + ":" + browseName);
-                                    var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": nsindex + ":" + browseName, "variableValue": variables[nsindex + ":" + browseName] }};
+                                    verbose_log("Server variable: " + variables[ns + ":" + browseName] + " browseName: " + ns + ":" + browseName);
+                                    var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": ns + ":" + browseName, "variableValue": variables[ns + ":" + browseName] }};
                                     verbose_log("msg Payload:" + JSON.stringify(SetMsg));
                                     node.send(SetMsg);
                                     return opcua.StatusCodes.Good;
                                 }
                             }
                         });
-                        var newvar = { "payload" : { "messageType" : "Variable", "variableName": nsindex + ":" + browseName, "nodeId": newVAR.nodeId.toString() }};
+                        var newvar = { "payload" : { "messageType" : "Variable", "variableName": ns + ":" + browseName, "nodeId": newVAR.nodeId.toString() }};
                         node.send(newvar);
 
                     }
