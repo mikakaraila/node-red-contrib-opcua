@@ -116,7 +116,7 @@ module.exports = function (RED) {
     else {
       userIdentity.type = opcua.UserTokenType.Anonymous;
     }
-    verbose_log("UserIdentity: " + stringify(userIdentity));
+    verbose_log("UserIdentity: " + JSON.stringify(userIdentity));
     var items = [];
     var subscription; // only one subscription needed to hold multiple monitored Items
 
@@ -349,6 +349,8 @@ module.exports = function (RED) {
         return;
       }
       verbose_log("Connected to " + opcuaEndpoint.endpoint);
+      verbose_log("Endpoint parameters: " + JSON.stringify(opcuaEndpoint)); 
+      verbose_log("Connection options: " + stringify(connectionOption));
       // STEP 2
       // This will succeed first time only if security policy and mode are None
       // Later user can use path and local file to access server certificate file
@@ -363,7 +365,7 @@ module.exports = function (RED) {
       // STEP 3
       verbose_log("Create session ...");
       try {
-        verbose_log("Create session with userIdentity: " + stringify(userIdentity));
+        verbose_log("Create session with userIdentity: " + JSON.stringify(userIdentity));
         //  {"clientName": "Node-red OPC UA Client node " + node.name},
         // sessionName = "Node-red OPC UA Client node " + node.name;
         if (!node.client) {
@@ -1811,7 +1813,17 @@ module.exports = function (RED) {
           verbose_warn("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
           node.client.removeListener("start_reconnection", reconnection);
         }
+        opcuaEndpoint = {}; // Clear
         opcuaEndpoint = msg.OpcUaEndpoint; // Check all parameters!
+        connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy]; // || opcua.SecurityPolicy.None;
+        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode]; // || opcua.MessageSecurityMode.None;
+        verbose_log("NEW connectionOption security parameters, policy: " + connectionOption.securityPolicy + " mode: " + connectionOption.securityMode);
+        if (opcuaEndpoint.login === true) {
+          userIdentity.userName = opcuaEndpoint.user;
+          userIdentity.password = opcuaEndpoint.password;
+          userIdentity.type = opcua.UserTokenType.UserName;
+          verbose_log("NEW UserIdentity: " + JSON.stringify(userIdentity));
+        }
         verbose_log("Using new endpoint:" + stringify(opcuaEndpoint));
       } else {
         verbose_log("Using endpoint:" + stringify(opcuaEndpoint));
