@@ -39,7 +39,8 @@
     "env-paths": "2.2.1",
     "es6-map": "^0.1.5",
     "flatted": "^3.2.2",
-    "node-opcua": "^2.61.0",
+    "node-opcua": "^2.62.5",
+    "node-opcua-file-transfer": "^2.62.5",
     "treeify": "^1.1.0"
   },
   "homepage": "https://github.com/mikakaraila/node-red-contrib-opcua#readme",

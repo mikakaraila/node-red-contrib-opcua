@@ -27,6 +27,7 @@ module.exports = function (RED) {
   var crypto_utils = opcua.crypto_utils;
   var UAProxyManager = require("node-opcua-client-proxy").UAProxyManager;
   var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
+  var fileTransfer = require("node-opcua-file-transfer");  
   var async = require("async");
   var treeify = require('treeify');
   var Map = require('es6-map');
@@ -548,6 +549,12 @@ module.exports = function (RED) {
         case "acknowledge":
           acknowledge_input(msg);
           break;
+        case "readfile":
+          read_file(msg);
+          break;
+        case "writefile":
+          write_file(msg);
+          break;
         default:
           verbose_warn("Unknown action: " + node.action + " with msg " + stringify(msg));
           break;
@@ -572,6 +579,70 @@ module.exports = function (RED) {
       }
       else {
         node_error(node.name + " error at acknowledge, no eventId, possible wrong msg.conditionId " + msg.conditionId);
+      }
+    }
+
+    async function read_file(msg) {
+      console.log("Read file, nodeId: " + msg.topic.toString());
+      var file_node = opcua.coerceNodeId(msg.topic);
+      if (node.session) {
+        try {
+          const clientFile = new fileTransfer.ClientFile(node.session, file_node);
+          fileTransfer.ClientFile.useGlobalMethod = true;
+          // Given that the file is opened in ReadMode Only
+          await clientFile.open(fileTransfer.OpenFileMode.Read);
+
+          // Read file size
+          const dataValue = await node.session.read({nodeId: file_node.toString() + "-Size"});
+          // Size is UInt64
+          const size = dataValue.value.value[1] + dataValue.value.value[0] * 0x100000000;
+          const buf = await clientFile.read(size);
+          await clientFile.close();
+          msg.payload = buf;
+
+          // Debug purpose, show content
+          verbose_log("File content: " + buf.toString());
+          node.send(msg);
+        }
+        catch(err) {
+          node_error(node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err);
+          set_node_errorstatus_to("error", err.toString());  
+        }
+      }
+      else {
+        verbose_warn("No open session to read file!");
+      }
+    }
+
+    async function write_file(msg) {
+      console.log("Write file, nodeId: " + msg.topic.toString());
+      var file_node = opcua.coerceNodeId(msg.topic);
+      if (node.session) {
+        try {
+            let buf;
+            if (msg.payload && msg.payload.length > 0) {
+              buf = msg.payload;
+            }
+            if (msg.fileName) {
+              verbose_log("Uploading file: " + msg.fileName);
+              buf = fs.readFileSync(msg.fileName);
+            }
+            const clientFile = new fileTransfer.ClientFile(node.session, file_node);
+            clientFile.useGlobalMethod = true;
+            // Given that the file is opened in WriteMode
+            await clientFile.open(fileTransfer.OpenFileMode.Write);
+            verbose_log("Local file content: " + buf.toString());
+            verbose_log("Writing file to server...");
+            await clientFile.write(buf);
+            await clientFile.close();
+            verbose_log("Write done!");
+        }
+        catch(err) {
+            console.error(chalk.red("Cannot write file, error: " + err));
+        }
+      }
+      else {
+        verbose_warn("No open session to write file!");
       }
     }
 

@@ -104,6 +104,8 @@ limitations under the License.
             <option value="unregister">UNREGISTER</option>
             <option value="acknowledge">ACKNOWLEDGE</option>
             <option value="history">HISTORY</option>
+            <option value="readfile">READ FILE</option>
+            <option value="writefile">WRITE FILE</option>
         </select>
     </div>
     <div class="form-row" id="node-input-timerow">
@@ -161,10 +163,13 @@ limitations under the License.
             <li>Build</li>
             <li>Monitor</li>
             <li>Read Multiple</li>
+            <li>Write Multiple</li>
             <li>Register</li>
             <li>Unregister</li>
             <li>Acknowledge</li>
             <li>History</li>
+            <li>Read file</li>
+            <li>Write file</li>
          </ul>
     </p>
     <p>Server certificate options are:</p>
@@ -202,4 +207,7 @@ limitations under the License.
     <p> Other needed parameters start time and end time:
     <p> msg.start if not given 1 hour from now will be used</p>
     <p> msg.end   if not given default value is now</p>
+    <p>Read file will read msg.topic nodeId from the server File object, msg.payload will contain buffer</p>
+    <p>Write file will write msg.topic nodeId to the server File object, msg.payload will contain buffer OR msg.fileName path to local file to be written to server </p>
+
 </script>
