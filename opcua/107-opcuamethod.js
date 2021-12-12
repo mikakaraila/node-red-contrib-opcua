@@ -174,7 +174,7 @@ module.exports = function (RED) {
       initialDelay: 5000, // 5s
       maxDelay: 30 * 1000 // 30s
     };
-    connectionOption.keepSessionAlive = true;
+    connectionOption.keepSessionAlive = false; // true;
 
     if (opcuaEndpoint.login) {
       userIdentity.userName = opcuaEndpoint.credentials.user;
@@ -183,7 +183,7 @@ module.exports = function (RED) {
     }
     console.log("Input arguments:" + JSON.stringify(node.inputArguments));
     
-    async function setupClient(url, callback) {
+    async function setupClient(url, message, callback) {
 
       const client = opcua.OPCUAClient.create(connectionOption);
       try {
@@ -193,9 +193,24 @@ module.exports = function (RED) {
 
         // step 2 : createSession
         const session = await client.createSession(userIdentity);
-        node.log("start session on " + opcuaEndpoint.endpoint);
+        verbose_log("start session on " + opcuaEndpoint.endpoint);
         set_node_status_to("session active");
         node.session = session;
+        verbose_log("Call method: " + JSON.stringify(message));
+        var status = await callMethod(message);
+        
+        if (node.session) {
+          node.session.close();
+          verbose_log("Session closed");
+          node.session = null;
+        }
+        if (status === opcua.StatusCodes.Good) {
+          node.status({
+            fill: "green",
+            shape: "dot",
+            text: "Method executed"
+          });
+        }
       } catch (err) {
         node.error("Cannot connect to " + JSON.stringify(opcuaEndpoint));
         callback(err);
@@ -219,60 +234,14 @@ module.exports = function (RED) {
       }
     }
 
-    setupClient(opcuaEndpoint.endpoint, function (err) {
-      if (err) {
-        node_error(err);
-        node.status({
-          fill: "red",
-          shape: "dot",
-          text: "Error: " + err.toString()
-        });
-      }
-
-      node.log("Waiting method calls...");
-    });
-
-    node.on("input", function (msg) {
-      var message = {}
-
-      message.objectId = msg.objectId || node.objectId;
-      message.methodId = msg.methodId || node.methodId;
-      message.methodType = msg.methodType || node.methodType;
-      message.inputArguments = msg.inputArguments || node.inputArguments;
-      message.outputArguments = msg.outputArguments || node.outputArguments;
-      // message.inputArguments.push({ dataType: "String", value: "sin" });
-      // message.inputArguments.push({ dataType: "Double", value: 3.3 });
-      // message.inputArguments.push({ dataType: "ExtensionObject", typeid: "ns=3;i=3010", value: 3.3 });
-
-      if (!message.objectId) {
-        verbose_warn("No objectId for Method");
-        return;
-      }
-      if (!message.methodId) {
-        verbose_warn("No method for Method");
-        return;
-      }
-      if (!message.inputArguments) {
-        verbose_warn("No Input Arguments for Method");
-        return
-      }
-      if (node.session) {
-        // message.outputArguments = [ {"dataType": opcua.DataType.Double, "value": 0.0} ];
-        verbose_log("Call method: " + JSON.stringify(message));
-        node.callMethod(message);
-      }
-    })
-
-    node.callMethod = async function (msg) {
+    async function callMethod(msg) {
       if (msg.methodId && msg.inputArguments) {
         verbose_log("Calling method: " + JSON.stringify(msg.methodId));
         verbose_log("InputArguments: " + JSON.stringify(msg.inputArguments));
         verbose_log("OutputArguments: " + JSON.stringify(msg.outputArguments));
-        
-        // Quick fix to coerce NodeId when input arguments are injected other normal can be converted as msg is created
-	      try {
-          // msg.inputArguments.forEach((arg) => {
-          var i=0;
+
+        try {
+          var i = 0;
           var arg;
           while (i < msg.inputArguments.length) {
             arg = msg.inputArguments[i];
@@ -283,7 +252,6 @@ module.exports = function (RED) {
               var extensionobject = null;
               if (arg.typeid) {
                 extensionObject = await node.session.constructExtensionObject(opcua.coerceNodeId(arg.typeid), {}); // TODO make while loop to enable await
-                // delete arg.typeid; // Check if needed to remove just in case
               }
               verbose_log("ExtensionObject=" + stringify(extensionobject));
               Object.assign(extensionobject, arg.value);
@@ -294,12 +262,9 @@ module.exports = function (RED) {
             }
             i++;
           }
-          // });
-          // TODO outputArguments as inputArguments
-        }
-        catch(err) {
+        } catch (err) {
           node.error("Invalid NodeId: " + err);
-          return;
+          return opcua.StatusCodes.BadNodeIdUnknown;
         }
         verbose_log("Updated InputArguments: " + JSON.stringify(msg.inputArguments));
         var callMethodRequest;
@@ -312,8 +277,7 @@ module.exports = function (RED) {
             inputArguments: msg.inputArguments,
             outputArguments: msg.outputArguments
           });
-        }
-        catch(err) {
+        } catch (err) {
           set_node_status_to("error: " + err)
           node.error("Build method request failed, error:" + err);
         }
@@ -335,35 +299,65 @@ module.exports = function (RED) {
             if (result.outputArguments.length == 1) {
               verbose_log("Value: " + result.outputArguments[i].value);
               msg.payload = result.outputArguments[0].value; // Return only if one output argument
-            }
-            else {
+            } else {
               while (result.outputArguments.length > i) {
                 verbose_log("Value[" + i + "]:" + result.outputArguments[i].toString());
                 msg.payload.push(result.outputArguments[i].value); // Just copy result value to payload[] array, actual value needed mostly
                 i++;
               }
             }
-          }
-          else {
+          } else {
             set_node_status_to("error: " + result.statusCode.description)
-            node.error("Execute method result, error:" + result.statusCode.description);  
+            node.error("Execute method result, error:" + result.statusCode.description);
+            return result.statusCode;
           }
-          // make this better, not generic solution, but result contains everything
-          /*
-          if (result && result.statusCode === opcua.StatusCodes.Good && result.outputArguments[0].value) {
-            msg.payload = result.outputArguments[0].value; // Works only if one output argument
-          }
-          else {
-            msg.payload = null;
-          }
-          */
           node.send(msg);
+          return opcua.StatusCodes.Good;
         } catch (err) {
           set_node_status_to("Method execution error: " + err)
           node.error("Method execution error: " + err);
+          return opcua.StatusCodes.BadMethodInvalid;
         }
       }
     }
+
+    node.on("input", function (msg) {
+      var message = {}
+      node.status({
+        fill: "green",
+        shape: "dot",
+        text: "Executing method"
+      });
+      message.objectId = msg.objectId || node.objectId;
+      message.methodId = msg.methodId || node.methodId;
+      message.methodType = msg.methodType || node.methodType;
+      message.inputArguments = msg.inputArguments || node.inputArguments;
+      message.outputArguments = msg.outputArguments || node.outputArguments;
+    
+      if (!message.objectId) {
+        verbose_warn("No objectId for Method");
+        return;
+      }
+      if (!message.methodId) {
+        verbose_warn("No method for Method");
+        return;
+      }
+      if (!message.inputArguments) {
+        verbose_warn("No Input Arguments for Method");
+        return
+      }
+
+      setupClient(opcuaEndpoint.endpoint, message, function (err) {
+        if (err) {
+          node_error(err);
+          node.status({
+            fill: "red",
+            shape: "dot",
+            text: "Error: " + err.toString()
+          });
+        }
+      });
+    });
 
     node.on("close", function (done) {
       if (node.session) {
