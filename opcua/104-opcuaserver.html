@@ -203,6 +203,7 @@ limitations under the License.
             <li><b>getNamespaceIndex</b>  msg.topic = "www.acme.com" output msg.payload = ns=index </li>
             <li><b>getNamespaces</b>      output msg.payload = { nsuri1: 1, nsuri2: 2, ... }</li>
             <li><b>setUsers</b>           msg.topic = "" msg.users JSON structure of users (username, password role)</li>
+            <li><b>addFile</b>            msg.topic = "ns=1;s=test.txt" // Note parent folder is objects if not set by setFolder/addFolder</li>
         </ul>
 
         Examples JSON Injects: <br />
@@ -214,6 +215,9 @@ limitations under the License.
         { "opcuaCommand": "addEquipment",  "nodeName": "Machine" }
         { "opcuaCommand": "addPhysicalAsset",  "nodeName": "PhysicalAsset" }
         { "opcuaCommand": "deleteNode",  "nodeId": "ns=4;s=PhysicalAsset2" }
+        </pre>
+        <pre>
+            msg.payload = { "opcuaCommand": "addFile",  "fileName": "c:/temp/test.txt" }
         </pre>
     </p>
     <p>
