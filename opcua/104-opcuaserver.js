@@ -21,6 +21,7 @@
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
+    var fileTransfer = require("node-opcua-file-transfer");
     var path = require('path');
     var os = require("os");
     var fs = require("fs");
@@ -257,8 +258,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.251",
-                buildDate: "2021-12-12T12:41:00"
+                buildNumber: "0.2.252",
+                buildDate: "2021-12-13T18:33:00"
             };
             
             var hostname = os.hostname();
@@ -1047,7 +1048,46 @@ module.exports = function (RED) {
                             node_error("Cannot find node: " + msg.topic + " nodeId: " + nodeStr);
                         }
                         break;    
-        
+                    case "addFile":
+                        // msg.topic   == nodeId for the file object
+                        // msg.payload == fileName
+                        if (msg.topic && msg.payload && msg.payload.fileName) {
+                            var file_node;
+                            file_node = opcua.coerceNodeId(msg.topic);
+                            var fileName = msg.payload.fileName;
+                            verbose_log("New file nodeId:" + file_node + " fileName: " + fileName);
+                            const fileType = addressSpace.findObjectType("FileType");
+                            if (folder) {
+                                parentFolder = folder; // Use previously created folder as parentFolder or setFolder() can be used to set parentFolder
+                            }
+                            var parentId = addressSpace.findNode(parentFolder.nodeId)
+                            if (!parentId) {
+                                parentId = addressSpace.rootFolder.objects; // Use this as exists always
+                            }
+                            var index = fileName.lastIndexOf("/");
+                            var fname = fileName;
+                            // Hide path from the filename
+                            if (index > 0) {
+                                fname = fileName.substring(index+1); // Skip / charater to get just filename
+                            }
+                            const newFile = fileType.instantiate({
+                                nodeId: file_node,
+                                browseName: fname,
+                                displayName: fname,
+                                organizedBy: parentId
+                            });
+                            fileTransfer.installFileType(newFile, { filename: fileName });
+                            // Make file writable, can be one extra parameter later inside msg object
+                            const Wnode = addressSpace.findNode(file_node.toString() + "-Writable");
+                            Wnode.setValueFromSource({ dataType: "Boolean", value: true});
+                            const userWnode = addressSpace.findNode(file_node.toString() + "-UserWritable");
+                            userWnode.setValueFromSource({ dataType: "Boolean", value: true});
+                        }
+                        else {
+                            verbose_warn("Check msg object, it must contain msg.payload.fileName!");
+                        }
+                        break;
+                
                 default:
                     node_error("unknown OPC UA Command");
             }
