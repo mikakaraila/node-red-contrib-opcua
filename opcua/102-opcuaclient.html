@@ -198,6 +198,8 @@ limitations under the License.
     <p>Read multiple will first store all input msg nodeId values to array</p>
     <p> when input message is string readmultiple then actual read is done. NOTE: If payload == ALL then all values are in one msg.payload</p>
     <p> when input message is string clearitems then nodeId array is cleared</p>
+    <p>Subscribe topic contains nodeId and datatype. NOTE: topic "multiple" and payload array of {nodeId: "ns=1;s=example", datatype: "Double}"<p>
+    <p>  Look examples folder and flow file OPCUA-MULTI-SUB.json<p>
     <p>Info read attributes from the given nodeId</p>
     <p>Build will construct Extension Object message with topic, datatype and payload (value)</p>
     <p>Browse will lookup address space from the injected msg.topic (nodeId)</p>

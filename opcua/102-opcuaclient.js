@@ -1367,8 +1367,36 @@ module.exports = function (RED) {
       return n;
     }
 
-    function subscribe_monitoredItem(subscription, msg) {
+    async function subscribe_monitoredItem(subscription, msg) {
       verbose_log("Session subscriptionId: " + subscription.subscriptionId);
+
+      // Simplified 
+      if (msg.topic === "multiple") {
+        verbose_log("Create monitored itemGroup for " + JSON.stringify(msg.payload));
+        const monitorItems = [];
+        for (var i=0; i<msg.payload.length; i++) {
+          monitorItems.push({attributeId: AttributeIds.Value, nodeId: msg.payload[i].nodeId});
+        }
+        const monitoringParameters = {
+          // clientHandle?: UInt32;
+          samplingInterval: 500, // TODO read from given parameters
+          // filter?: (ExtensionObject | null);
+          queueSize: 10,
+          discardOldest: true
+        };
+        const group = await subscription.monitorItems(monitorItems, monitoringParameters, TimestampsToReturn.Both);
+        group.on("initialized", async () => {
+          verbose_log(chalk.green("Initialized monitoredItemsGroup !"));
+        });
+        group.on("changed", (monitoredItem, dataValue, index) => {
+          const nodeId = monitorItems[index].nodeId.toString();
+         msg.topic = nodeId;
+          msg.payload = dataValue; // TODO Check if users want to get dataValue.value.value
+          node.send(msg);
+        });
+        return;
+      }
+
       var nodeStr = msg.topic;
       var dTypeIndex = nodeStr.indexOf(";datatype=");
       if (dTypeIndex > 0) {
