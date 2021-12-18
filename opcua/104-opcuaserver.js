@@ -258,8 +258,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.252",
-                buildDate: "2021-12-13T18:33:00"
+                buildNumber: "0.2.253",
+                buildDate: "2021-12-18T13:20:00"
             };
             
             var hostname = os.hostname();
