@@ -1389,10 +1389,13 @@ module.exports = function (RED) {
           verbose_log(chalk.green("Initialized monitoredItemsGroup !"));
         });
         group.on("changed", (monitoredItem, dataValue, index) => {
+          verbose_log("Change detected: " + monitoredItem.toString() + " " + dataValue.toString() + " " + index);
           const nodeId = monitorItems[index].nodeId.toString();
-         msg.topic = nodeId;
-          msg.payload = dataValue; // TODO Check if users want to get dataValue.value.value
-          node.send(msg);
+          if (nodeId) {
+            msg.topic = nodeId;
+            msg.payload = dataValue; // if users want to get dataValue.value.value example contains function node
+            node.send(msg);
+          }
         });
         return;
       }
