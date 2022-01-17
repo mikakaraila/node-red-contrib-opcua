@@ -56,6 +56,7 @@ module.exports = function (RED) {
     this.certificate = n.certificate; // n == NONE, l == Local file, e == Endpoint, u == Upload
     this.localfile = n.localfile; // Local certificate file
     this.localkeyfile = n.localkeyfile; // Local private key file
+    this.folderName4PKI = n.folderName4PKI; // Storage folder for PKI and certificates
     // this.upload = n.upload; // Upload
     // this.certificate_filename = n.certificate_filename;
     // this.certificate_data = n.certificate_data;
@@ -71,9 +72,10 @@ module.exports = function (RED) {
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
 
-
-    connectionOption.clientCertificateManager = createCertificateManager(true); // AutoAccept certificates, TODO add to client node as parameter if really needed
-
+    if (node.folderName4PKI && node.folderName4PKI.length>0) {
+      verbose_log("Node: " + node.name + " using own PKI folder:" + node.folderName4PKI);
+    }
+    connectionOption.clientCertificateManager = createCertificateManager(true, node.folderName4PKI); // AutoAccept certificates, TODO add to client node as parameter if really needed
 
     if (node.certificate === "l" && node.localfile) {
       verbose_log("Using 'own' local certificate file " + node.localfile);
@@ -647,21 +649,31 @@ module.exports = function (RED) {
     }
 
     async function register_action_input(msg) {
-      verbose_log("register nodes : " + stringify(msg.payload));
+      verbose_log("register nodes : " + msg.payload.toString());
       // First test, let´s see if this needs some refactoring. Same way perhaps as with readMultiple
       // msg.topic not used, but cannot be empty
       // msg.paylod == array of nodeIds to register
-      const registeredNodes = await node.session.registerNodes(msg.payload);
-      verbose_log("RegisteredNodes: " + stringify(registeredNodes));
+      if (msg.payload.length > 0) {
+        const registeredNodes = await node.session.registerNodes(msg.payload);
+        verbose_log("RegisteredNodes: " + registeredNodes.toString());
+      }
+      else {
+        verbose_warn("No items to register in the payload! Check node:" + node.name);
+      }
     }
 
     async function unregister_action_input(msg) {
-      verbose_log("unregister nodes : " + stringify(msg.payload));
+      verbose_log("unregister nodes : " + msg.payload.toString());
       // First test, let´s see if this needs some refactoring. Same way perhaps as with readMultiple
       // msg.topic not used, but cannot be empty
       // msg.paylod == array of nodeIds to register
-      const unregisteredNodes = await node.session.registerNodes(msg.payload);
-      verbose_log("UnregisteredNodes: " + stringify(unregisteredNodes));
+      if (msg.payload.length > 0) {
+        const unregisteredNodes = await node.session.registerNodes(msg.payload);
+        verbose_log("UnregisteredNodes: " + unregisteredNodes.toString());
+      }
+      else {
+        verbose_warn("No items to unregister in the payload! Check node:" + node.name);
+      }  
     }
 
     function read_action_input(msg) {
