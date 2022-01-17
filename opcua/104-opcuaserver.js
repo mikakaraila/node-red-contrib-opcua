@@ -21,6 +21,7 @@
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
+    var dumpXml = require("node-opcua-address-space/dist/src/nodeset_tools/nodeset_to_xml").dumpXml;
     var fileTransfer = require("node-opcua-file-transfer");
     var path = require('path');
     var os = require("os");
@@ -198,8 +199,8 @@ module.exports = function (RED) {
             verbose_warn("create Server from XML ...");
             // DO NOT USE "%FQDN%" anymore, hostname is OK
             const applicationUri =  opcua.makeApplicationUrn(os.hostname(), "node-red-contrib-opcua-server");
-            const serverCertificateManager = createCertificateManager(node.autoAcceptUnknownCertificate);
-            const userCertificateManager = createUserCertificateManager(node.autoAcceptUnknownCertificate);
+            const serverCertificateManager = createCertificateManager(node.autoAcceptUnknownCertificate, "");
+            const userCertificateManager = createUserCertificateManager(node.autoAcceptUnknownCertificate, "");
 
 
             var registerMethod = null;
@@ -258,8 +259,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.254",
-                buildDate: "2021-12-20T18:45:00"
+                buildNumber: "0.2.255",
+                buildDate: "2022-01-17T19:42:00"
             };
             
             var hostname = os.hostname();
@@ -1087,13 +1088,54 @@ module.exports = function (RED) {
                             verbose_warn("Check msg object, it must contain msg.payload.fileName!");
                         }
                         break;
-                
+                    case "saveAddressSpace":
+                        if (msg.topic && msg.payload && msg.filename) {
+                            // Save current objects forder to file
+                            verbose_log("Saving addressSpace from objects: " + node.server.engine.addressSpace.rootFolder.objects.toString());
+                            // const xmlstr = dumpXml(node.server.engine.addressSpace.rootFolder, {});
+                            const xmlstr = dumpXml(node.server.engine.addressSpace.rootFolder.objects, {});
+                            // TODO Check and validate msg.topic that it can be found
+                            // verbose_log("Saving addressSpace from objects: " + msg.topic.toString());
+                            // const xmlstr = dumpXml(opcua.coerceNodeId(msg.topic)); // NOT WORKING
+                            fs.writeFileSync(msg.filename, xmlstr.toString(), {encoding: "utf8"});
+                            node_error("Experimental feature, not yet fully functional!");
+                        }
+                        else {
+                            verbose_warn("Check msg object, it must contain msg.fileName for the address space in XML format!");
+                        }
+                        break;
+                    case "loadAddressSpace":
+                        if (msg.payload && msg.filename && fs.existsSync(msg.filename)) {
+                            if (node.server.engine.addressSpace) {
+                                node.server.engine.addressSpace.dispose();
+                            }
+                            const theNodesets = [opcua.nodesets.standard, opcua.nodesets.di, msg.filename];
+                            var xmlFiles = [path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml'),     // Standard & basic types
+                                path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.AutoID.NodeSet2.xml'), // Support for RFID Readers
+                                path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')   // ISA95
+                            ];
+    
+                            // now reload the file as part of a addressSpace;
+                            // node.server.engine.addressSpace = opcua.AddressSpace.create();
+                            loadXMLfiles(xmlFiles); //  theNodesets
+                            // await opcua.generateAddressSpace(node.server.engine.addressSpace, theNodesets);
+                        }
+                        else {
+                            verbose_warn("Check msg object, it must contain msg.payload.fileName for the address space in XML format!");
+                        }
+                        break;
                 default:
                     node_error("unknown OPC UA Command");
             }
-
-
             return returnValue;
+        }
+
+        async function loadXMLfiles(xmlFiles) {
+            var addressSpace = opcua.AddressSpace.create();
+            await opcua.generateAddressSpace(addressSpace, xmlFiles);
+            node.server.engine.addressSpace = addressSpace;
+            verbose_log("New address space loaded!");
+            node_error("Experimental feature, not yet functional!");
         }
 
         async function restart_server() {
