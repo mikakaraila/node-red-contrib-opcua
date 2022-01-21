@@ -40,7 +40,7 @@ module.exports = function (RED) {
   var TimestampsToReturn = read_service.TimestampsToReturn;
   var subscription_service = require("node-opcua-service-subscription");
 
-  const { createCertificateManager } = require("./utils");
+  const { createClientCertificateManager } = require("./utils");
   const { dumpCertificates } = require("./dump_certificates");
 
   const {parse, stringify} = require('flatted');
@@ -75,7 +75,7 @@ module.exports = function (RED) {
     if (node.folderName4PKI && node.folderName4PKI.length>0) {
       verbose_log("Node: " + node.name + " using own PKI folder:" + node.folderName4PKI);
     }
-    connectionOption.clientCertificateManager = createCertificateManager(true, node.folderName4PKI); // AutoAccept certificates, TODO add to client node as parameter if really needed
+    connectionOption.clientCertificateManager = createClientCertificateManager(true, node.folderName4PKI); // AutoAccept certificates, TODO add to client node as parameter if really needed
 
     if (node.certificate === "l" && node.localfile) {
       verbose_log("Using 'own' local certificate file " + node.localfile);

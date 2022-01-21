@@ -5,8 +5,17 @@ const envPaths = require("env-paths");
 const config = envPaths("node-red-opcua").config;
 
 
-let _g_certificateManager = null;
-function createCertificateManager(autoAccept, folderName) {
+let _g_clientCertificateManager = null;
+
+function createClientCertificateManager(autoAccept, folderName) {
+    return createCertificateManager(false, autoAccept, folderName);
+}
+
+function createServerCertificateManager(autoAccept, folderName) {
+    return createCertificateManager(true, autoAccept, folderName);
+}
+
+function createCertificateManager(isServer, autoAccept, folderName) {
     if (folderName && folderName.length > 0) {
         if (path.isAbsolute(folderName)) {
             folder = folderName;
@@ -22,17 +31,24 @@ function createCertificateManager(autoAccept, folderName) {
     }
     else {
         folder = config;
-        if (_g_certificateManager) {
-            return _g_certificateManager;
+        if (isServer) {
+            return new opcua.OPCUACertificateManager({
+                name: "PKI",
+                rootFolder: path.join(folder, "PKI"),
+                automaticallyAcceptUnknownCertificate: autoAccept
+            });
+        } else if (_g_clientCertificateManager){
+            return _g_clientCertificateManager;
+        } else {
+            return _g_clientCertificateManager = new opcua.OPCUACertificateManager({
+                name: "PKI",
+                rootFolder: path.join(folder, "PKI"),
+                automaticallyAcceptUnknownCertificate: autoAccept
+            });
         }
     }
-
-    return _g_certificateManager = new opcua.OPCUACertificateManager({
-        name: "PKI",
-        rootFolder: path.join(folder, "PKI"),
-        automaticallyAcceptUnknownCertificate: autoAccept
-    });
 }
+
 let _g_userCertificateManager = null;
 function createUserCertificateManager(autoAccept, folderName) {
      if (folderName && folderName.length > 0) {
@@ -60,5 +76,6 @@ function createUserCertificateManager(autoAccept, folderName) {
     });
 }
 
-exports.createCertificateManager = createCertificateManager;
+exports.createClientCertificateManager = createClientCertificateManager;
+exports.createServerCertificateManager = createServerCertificateManager;
 exports.createUserCertificateManager = createUserCertificateManager;
