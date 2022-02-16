@@ -1307,6 +1307,10 @@ module.exports = function (RED) {
       if (!subscription) {
         // first build and start subscription and subscribe on its started event by callback
         var timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
+        if (msg && msg.interval) {
+          timeMilliseconds = parseInt(msg.interval); // Use this instead of node.time and node.timeUnit
+        }
+        verbose_log("Using subscription with publish interval: " + timeMilliseconds);
         subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
         var message = { "topic": "subscriptionId", "payload": subscription.subscriptionId };
         node.send(message); // Make it possible to store
@@ -1385,13 +1389,18 @@ module.exports = function (RED) {
       // Simplified 
       if (msg.topic === "multiple") {
         verbose_log("Create monitored itemGroup for " + JSON.stringify(msg.payload));
+        let interval = 500; // Default interval
+        if (msg && msg.interval) {
+          interval = parseInt(msg.interval);
+        }
         const monitorItems = [];
         for (var i=0; i<msg.payload.length; i++) {
           monitorItems.push({attributeId: AttributeIds.Value, nodeId: msg.payload[i].nodeId});
         }
+        verbose_log("Using samplingInterval:" + interval);
         const monitoringParameters = {
           // clientHandle?: UInt32;
-          samplingInterval: 500, // TODO read from given parameters
+          samplingInterval: interval, // read from msg.interval
           // filter?: (ExtensionObject | null);
           queueSize: 10,
           discardOldest: true
