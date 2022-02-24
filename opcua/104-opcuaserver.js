@@ -599,7 +599,7 @@ module.exports = function (RED) {
                         folder = ns.addObject({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
                             nodeId: msg.topic,
-                            browseName: msg.topic.substring(7)
+                            browseName: msg.topic.substring(msg.topic.indexOf(";s=")+3)
                         })
                     }
                     break;
@@ -671,7 +671,7 @@ module.exports = function (RED) {
 
                         var ns = nsindex.toString();
                         var dimensions = valueRank <= 0 ? null : [dim1]; // Fix for conformance check TODO dim2, dim3
-                        var browseName = name.substring(7);
+                        var browseName = name.substring(name.indexOf(";s=")+3);
                         variables[ns + ":" + browseName] = 0;
                         if (valueRank == 1) {
                             arrayType = opcua.VariantArrayType.Array;
