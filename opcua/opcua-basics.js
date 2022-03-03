@@ -358,52 +358,37 @@ ALIASES for Basic types:
 <Alias Alias="HasEncoding">i=38</Alias>
 <Alias Alias="HasDescription">i=39</Alias>
 */
-module.exports.convertToString = function(dataTypeInNodeFormat) {
-    var datatype = "";
-
-    switch (dataTypeInNodeFormat) {
-        case "ns=0;i=1":
-            datatype = "Boolean";
-            break;
-        case "ns=0;i=2":
-            datatype = "SByte";
-            break;
-        case "ns=0;i=3":
-            datatype = "Byte";
-            break;
-        case "ns=0;i=4":
-            datatype = "Int16";
-            break;
-        case "ns=0;i=5":
-            datatype = "UInt16";
-            break;
-        case "ns=0;i=6":
-            datatype = "Int32";
-            break;
-        case "ns=0;i=7":
-            datatype = "UInt32";
-            break;
-        case "ns=0;i=10":
-            datatype = "Float";
-            break;
-        case "ns=0;i=11":
-            datatype = "Double";
-            break;
-        case "ns=0;i=12":
-            datatype = "String";
-            break;
-        case "ns=0;i=13":
-            datatype = "DateTime";
-            break;
-        case "ns=0;i=21":
-            datatype = "LocalizedText";
-            break;
-        default:
-            datatype = "";
-            break;
-    }
-
-    return datatype;
+module.exports.convertToString = function(inType) {
+    if (inType === "ns=0;i=1") return "Boolean";
+    if (inType === "ns=0;i=2") return "SBYte";
+    if (inType === "ns=0;i=3") return "Byte";
+    if (inType === "ns=0;i=4") return "Int16";
+    if (inType === "ns=0;i=5") return "UInt16";
+    if (inType === "ns=0;i=6") return "Int32";
+    if (inType === "ns=0;i=7") return "UInt32";
+    if (inType === "ns=0;i=8") return "Int64";
+    if (inType === "ns=0;i=9") return "UInt64";
+    if (inType === "ns=0;i=10") return "Float";
+    if (inType === "ns=0;i=11") return "Double";
+    if (inType === "ns=0;i=12") return "DateTime";
+    if (inType === "ns=0;i=13") return "String";
+    if (inType === "ns=0;i=14") return "Guid";
+    if (inType === "ns=0;i=15") return "ByteString";
+    if (inType === "ns=0;i=16") return "XmlElement";
+    if (inType === "ns=0;i=17") return "NodeId";
+    if (inType === "ns=0;i=18") return "ExpandedNodeId";
+    if (inType === "ns=0;i=19") return "StatusCode";
+    if (inType === "ns=0;i=20") return "QualifiedName";
+    if (inType === "ns=0;i=21") return "LocalizedText";
+    if (inType === "ns=0;i=22") return "Structure";
+    if (inType === "ns=0;i=26") return "Number";
+    if (inType === "ns=0;i=27") return "Integer";
+    if (inType === "ns=0;i=28") return "UInteger";
+    if (inType === "ns=0;i=884") return "EngineeringRange";
+    if (inType === "ns=0;i=887") return "EngineeringUnits";
+    
+    console.log("Cannot convert from nodeId dataType: '" + inType + "' to string!")
+    return "";
 }
 
 module.exports.buildBrowseMessage = function (topic) {
