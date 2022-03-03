@@ -200,9 +200,10 @@ module.exports = function (RED) {
         var status = await callMethod(message);
         
         if (node.session) {
-          node.session.close();
+          await node.session.close();
           verbose_log("Session closed");
           node.session = null;
+          await client.disconnect();
         }
         if (status === opcua.StatusCodes.Good) {
           node.status({
@@ -359,10 +360,10 @@ module.exports = function (RED) {
       });
     });
 
-    node.on("close", function (done) {
+    node.on("close", async function (done) {
       if (node.session) {
-        node.session.close();
-        node.session = null
+        await node.session.close();
+        node.session = null;
         done();
       } else {
         node.session = null
