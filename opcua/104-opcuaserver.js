@@ -21,6 +21,7 @@
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
+    const ObjectIds = require("node-opcua-constants");
     var dumpXml = require("node-opcua-address-space/dist/src/nodeset_tools/nodeset_to_xml").dumpXml;
     var fileTransfer = require("node-opcua-file-transfer");
     var path = require('path');
@@ -263,8 +264,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.258",
-                buildDate: "2022-02-16T19:01:00"
+                buildNumber: "0.2.259",
+                buildDate: "2022-03-03T19:53:00"
             };
             
             var hostname = os.hostname();
@@ -742,6 +743,10 @@ module.exports = function (RED) {
                             opcuaDataType = opcua.DataType.Boolean;
                             variables[ns + ":" + browseName] = true;
                         }
+                        if (opcuaDataType === null) {
+                            verbose_warn("Cannot addVariable, datatype: " + datatype + " is not valid OPC UA datatype!");
+                            break;
+                        }
                         verbose_log("Datatype: " + datatype);
                         verbose_log("OPC UA type id: "+ opcuaDataType.toString() + " dims[" + dim1 + "," + dim2 +"," + dim3 +"] == " + dimensions);
                         // Initial value for server variable
@@ -1113,8 +1118,85 @@ module.exports = function (RED) {
                             verbose_warn("Check msg object, it must contain msg.payload.filename for the address space in XML format!");
                         }
                         break;
+                    case "bindVariables":
+                        // browse address space and bind method for each variable node setter
+                        // report all existing Variables
+                        var session = new opcua.PseudoSession(addressSpace);
+                        const objectsFolder = addressSpace.findNode("ObjectsFolder");
+                        var results=[];
+                        const crawler = new opcua.NodeCrawler(session);
+                        crawler.on("browsed", (element) => {
+                            // Limit to variables and skip ns=0
+                            if (element.nodeId.toString().indexOf("ns=0;") < 0 && element.nodeClass == opcua.NodeClass.Variable) {
+                                // console.log("Element: " + element);
+                                var item = Object.assign({}, element); // Clone element
+                                results.push(item);
+                            }
+                        });
+                        crawler.read(objectsFolder.nodeId, function (err, obj) {
+                            if (!err) {
+                                // console.log("Obj: " + obj);
+                                // Nothing to do here
+                            }
+                            else {
+                                verbose_warn("Crawling variables failed: " + err);
+                            }
+                            crawler.dispose();
+                        });
+                        
+                        results.forEach(function(item) {
+                            var variableNode = addressSpace.findNode(id);
+                            console.log("NodeId:" + variableNode.nodeId + " NodeClass: " + variableNode.nodeClass);
+                            if (variableNode.nodeClass == opcua.NodeClass.Variable) {
+                                var newext = {"payload": {"messageType":"Variable", "variableName":browseName.toString(), "nodeId":id.toString()}};
+                                node.send(newext);
+                                bindCallbacks(variableNode, browseName.toString());
+                            }
+                        });
+
+                        function bindCallbacks(variable, browseName) {
+                            var options = {
+                                get: function() {
+                                    return new opcua.Variant({ dataType: opcuaBasics.convertToString(variable.dataType.toString()), value: variables[browseName]});
+                                },
+                                set: (variant) => {
+                                    // Store value
+                                    variables[browseName] = variant.value;
+                                    variable.value = new opcua.DataValue(new opcua.Variant({ dataType: variable.DataType, value: variant.value}),
+                                                                        opcua.StatusCodes.Good);
+                                    // Report new value to server node output
+                                    var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": browseName, "variableValue": variables[browseName] }};
+                                    verbose_log("msg Payload:" + JSON.stringify(SetMsg));
+                                    node.send(SetMsg);
+                                    return opcua.StatusCodes.Good;
+                                }
+                            };
+                            if (variable.nodeClass.toString() === "2") {
+                                variable.bindVariable(options, true); // overwrite
+                            }
+                        }
+                        break;
+                        case "bindMethod":
+                            // Find MethodId and bindMethod with the give function into it
+                            // Skeleton for methodFunc
+                            /*
+                            async function methodFunc(inputArguments, context) {
+                                console.log("Method Input arguments: " + JSON.stringify(inputArguments));
+                                return { statusCode: opcua.StatusCodes.Good };
+                            };
+                            */  
+                            const methodId = msg.topic;
+                            const methodFunc = msg.code;
+                            const method = addressSpace.findNode(opcua.coerceNodeId(msg.topic));
+                            if (method) {
+                                method.bindMethod(methodFunc);
+                            }
+                            else {
+                                verbose_warn("Method not found!");
+                            }
+                        break;
                 default:
-                    node_error("unknown OPC UA Command");
+                    node_error("Unknown OPC UA Command");
             }
             return returnValue;
         }
