@@ -16,13 +16,10 @@
 
  **/
 
-// const { coerceSByte } = require('node-opcua');
-
 module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
     const ObjectIds = require("node-opcua-constants");
-    var dumpXml = require("node-opcua-address-space/dist/src/nodeset_tools/nodeset_to_xml").dumpXml;
     var fileTransfer = require("node-opcua-file-transfer");
     var path = require('path');
     var os = require("os");
@@ -264,8 +261,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.259",
-                buildDate: "2022-03-03T19:53:00"
+                buildNumber: "0.2.260",
+                buildDate: "2022-03-04T08:48:00"
             };
             
             var hostname = os.hostname();
