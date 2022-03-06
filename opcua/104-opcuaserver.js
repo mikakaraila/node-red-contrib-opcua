@@ -473,7 +473,7 @@ module.exports = function (RED) {
             }
             var payload = msg.payload;
             // modify 5/03/2022
-            if (contains_necessaryProperties(payload)) {
+            if (contains_necessaryProperties(msg)) {
                 read_message(payload);
             }else {
                 node.warn('warning: properties like messageType, namespace, variableName or VariableValue is missing.');
@@ -520,23 +520,43 @@ module.exports = function (RED) {
             return payload.hasOwnProperty('messageType');
         }
         function contains_namespace(payload) {
+            if (!payload.hasOwnProperty('namespace'))
+                node.warn("Mandatory parameter 'namespace' is missing")
             return payload.hasOwnProperty('namespace');
         }
          
         function contains_variableName(payload) {
+            if (!payload.hasOwnProperty('variableName'))
+                node.warn("Mandatory parameter 'variableName' missing");
             return payload.hasOwnProperty('variableName');
         }
          
         function contains_variableValue(payload) {
+            if (!payload.hasOwnProperty('variableValue'))
+                node.warn("Optional parameter 'variableValue' missing")
             return payload.hasOwnProperty('variableValue'); 
         }
-        function contains_necessaryProperties(payload) {
-            return (
-                contains_messageType(payload) && 
-                contains_namespace(payload) && 
-                contains_variableName(payload) && 
-                contains_variableValue(payload)
-            );
+
+        function contains_necessaryProperties(msg) {
+            if (contains_messageType(msg.payload)) {
+                return(contains_namespace(msg.payload) && 
+                       contains_variableName(msg.payload) && 
+                       contains_variableValue(msg.payload));
+            }
+            else {
+                if (msg.payload.hasOwnProperty('opcuaCommand') && msg.payload.opcuaCommand === "addVariable") {
+                    // msg.topic with nodeId and datatype
+                    if (msg.topic.indexOf("ns=")>=0 && msg.topic.indexOf("datatype=")>0) {
+                        return true;
+                    }
+                    else {
+                        node.warn("msg.topic must contain nodeId and datatype!");
+                    }
+                }
+                else {
+                    return contains_opcua_command(msg.payload);
+                }
+            }
         }
 
         function read_message(payload) {
