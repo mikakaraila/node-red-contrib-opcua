@@ -472,10 +472,13 @@ module.exports = function (RED) {
                 return false;
             }
             var payload = msg.payload;
-
-            if (contains_messageType(payload)) {
+            // modify 5/03/2022
+            if (contains_necessaryProperties(payload)) {
                 read_message(payload);
+            }else {
+                node.warn('warning: properties like messageType, namespace, variableName or VariableValue is missing.');
             }
+
             if (contains_opcua_command(payload)) {
                 msg.payload = execute_opcua_command(msg);
             }
@@ -512,9 +515,28 @@ module.exports = function (RED) {
                 return r.nodeId.toString() === nodeId.toString();
             });
         }
-
+        // check json object - modify 5/03/2022
         function contains_messageType(payload) {
             return payload.hasOwnProperty('messageType');
+        }
+        function contains_namespace(payload) {
+            return payload.hasOwnProperty('namespace');
+        }
+         
+        function contains_variableName(payload) {
+            return payload.hasOwnProperty('variableName');
+        }
+         
+        function contains_variableValue(payload) {
+            return payload.hasOwnProperty('variableValue'); 
+        }
+        function contains_necessaryProperties(payload) {
+            return (
+                contains_messageType(payload) && 
+                contains_namespace(payload) && 
+                contains_variableName(payload) && 
+                contains_variableValue(payload)
+            );
         }
 
         function read_message(payload) {
