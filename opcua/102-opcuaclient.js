@@ -23,14 +23,14 @@ module.exports = function (RED) {
   var chalk = require("chalk");
   var opcua = require('node-opcua');
   var opcuaBasics = require('./opcua-basics');
-  var nodeId = require("node-opcua-nodeid");
-  var crypto_utils = opcua.crypto_utils;
+  // var nodeId = require("node-opcua-nodeid");
+  // var crypto_utils = opcua.crypto_utils;
   var UAProxyManager = require("node-opcua-client-proxy").UAProxyManager;
   var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
   var fileTransfer = require("node-opcua-file-transfer");  
   var async = require("async");
-  var treeify = require('treeify');
-  var Map = require('es6-map');
+  // var treeify = require('treeify');
+  // var Map = require('es6-map'); // es6-map 0.1.5 not needed anymore
   var path = require("path");
   var fs = require("fs");
   var os = require("os");
@@ -1330,7 +1330,7 @@ module.exports = function (RED) {
       }
     }
 
-    function monitor_action_input(msg) {
+    async function monitor_action_input(msg) {
       verbose_log("monitoring");
       if (!subscription) {
         // first build and start subscription and subscribe on its started event by callback
@@ -1340,7 +1340,7 @@ module.exports = function (RED) {
         // otherwise check if its terminated start to renew the subscription
         if (subscription.subscriptionId != "terminated") {
           set_node_status_to("active monitoring");
-          monitor_monitoredItem(subscription, msg);
+          await monitor_monitoredItem(subscription, msg);
         } else {
           subscription = null;
           // monitoredItems = new Map();
@@ -1533,7 +1533,7 @@ module.exports = function (RED) {
       return monitoredItem;
     }
 
-    function monitor_monitoredItem(subscription, msg) {
+    async function monitor_monitoredItem(subscription, msg) {
       verbose_log("Session subscriptionId: " + subscription.subscriptionId);
       var nodeStr = msg.topic;
       var dTypeIndex = nodeStr.indexOf(";datatype=");
@@ -1588,58 +1588,32 @@ module.exports = function (RED) {
           deadbandvalue = msg.deadbandValue;
         }
         verbose_log("Deadband type (a==absolute, p==percent) " + deadbandtype + " deadband value " + deadbandvalue);
-        var dataChangeFilter = new subscription_service.DataChangeFilter({
-          trigger: subscription_service.DataChangeTrigger.StatusValue,
+        var dataChangeFilter = new opcua.DataChangeFilter({
+          trigger: opcua.DataChangeTrigger.StatusValue,
           deadbandType: deadbandtype,
           deadbandValue: deadbandvalue
         });
-        /*
-        var  monitoredItemCreateRequest1 = new subscription_service.MonitoredItemCreateRequest({
-          itemToMonitor: {
-          nodeId: nodeStr,
-          attributeId: opcua.AttributeIds.Value
-          },
-          monitoringMode: subscription_service.MonitoringMode.Reporting,
-          requestedParameters: {
-            queueSize: 10,
-            samplingInterval: 100,
-            filter: new subscription_service.DataChangeFilter({
-              trigger: subscription_service.DataChangeTrigger.Status,
-              deadbandType: deadbandType,
-              deadbandValue: node.deadbandValue // from UI n.deadbandvalue
-           })
-          }
-        });
-        verbose_log("Monitoring parameters: " + monitoredItemCreateRequest1);
-        monitoredItem = subscription.createMonitoredItem(addressSpace, TimestampsToReturn.Both, monitoredItemCreateRequest1);
-        */
-
-        try {
-          monitoredItem = opcua.ClientMonitoredItem.create(subscription, {
+        const group =  await subscription.monitorItems(
+          [{
             nodeId: nodeStr,
             attributeId: opcua.AttributeIds.Value
-          }, {
+          }], 
+          {
             samplingInterval: interval,
             queueSize: queueSize,
             discardOldest: true,
             filter: dataChangeFilter
           },
-            TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
-          );
-          verbose_log("Storing monitoredItem: " + nodeStr + " ItemId: " + monitoredItem.toString());
-          monitoredItems.set(nodeStr, monitoredItem);
-        } catch (err) {
-          node_error("Check topic format for nodeId:" + msg.topic)
-          node_error('subscription.monitorItem:' + err);
-          // reset_opcua_client(connect_opcua_client); // not actually needed
-        }
+          TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
+        );
+        monitoredItems.set(nodeStr, monitoredItem);
 
-        monitoredItem.on("initialized", function () {
-          verbose_log("initialized monitoredItem on " + nodeStr);
+        group.on("err", () => {
+          console.log("err");
         });
 
-        monitoredItem.on("changed", function (dataValue) {
-          let msgToSend = JSON.parse(JSON.stringify(msg)); // clone original msg if it contains other needed properties {};
+        group.on("changed", (monitoredItem, dataValue, index) => {
+          console.log(chalk.green("Received changes: " + monitoredItem + " value: " + dataValue + " index: " + index));
           set_node_status_to("active monitoring");
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
           verbose_log(dataValue.toString());
@@ -1648,7 +1622,7 @@ module.exports = function (RED) {
           } else {
             verbose_warn("Status-Code:" + dataValue.statusCode.toString(16));
           }
-
+          var msgToSend = {};
           msgToSend.statusCode = dataValue.statusCode;
           msgToSend.topic = msg.topic;
 
@@ -1660,7 +1634,6 @@ module.exports = function (RED) {
             msgToSend.serverTimestamp = new Date().getTime();
             msgToSend.serverPicoseconds = 0;
           }
-
           if (dataValue.sourceTimestamp != null) {
             msgToSend.sourceTimestamp = dataValue.sourceTimestamp;
             msgToSend.sourcePicoseconds = dataValue.sourcePicoseconds;
@@ -1668,25 +1641,12 @@ module.exports = function (RED) {
             msgToSend.sourceTimestamp = new Date().getTime();
             msgToSend.sourcePicoseconds = 0;
           }
-
           msgToSend.payload = dataValue.value.value;
           node.send(msgToSend);
         });
-
-        monitoredItem.on("keepalive", function () {
-          verbose_log("keepalive monitoredItem on " + nodeStr);
-        });
-
-        monitoredItem.on("terminated", function () {
-          verbose_log("terminated monitoredItem on " + nodeStr);
-          if (monitoredItems.has(nodeStr)) {
-            monitoredItems.delete(nodeStr);
-          }
-        });
       }
-
-      return monitoredItem;
     }
+
     function get_monitored_items(subscription, msg) {
       node.session.getMonitoredItems(subscription.subscriptionId, function (err, monitoredItems) {
         verbose_log("Node has subscribed items: " + stringify(monitoredItems));
@@ -1737,15 +1697,15 @@ module.exports = function (RED) {
       }
     }
 
-    async function browse_action_input(msg) {
+    function browse_action_input(msg) {
       verbose_log("browsing");
       var allInOne = []; // if msg.collect and msg.collect === true then collect all items to one msg
-      var NodeCrawler = opcua.NodeCrawler;
+      // var NodeCrawler = opcua.NodeCrawler;
 
       if (node.session) {
-        const crawler = new NodeCrawler(node.session);
+        const crawler = new opcua.NodeCrawler(node.session);
         set_node_status_to("active browsing");
-
+        try {
         crawler.on("browsed", function(element) {
           if (msg.collect===undefined || (msg.collect && msg.collect === false)) {
             var item = {};
@@ -1767,67 +1727,31 @@ module.exports = function (RED) {
         });
 
         // Browse from given topic
-        const nodeId = msg.topic; // "ObjectsFolder";
-        crawler.read(nodeId, function(err, obj) {
-            if (!err) {
-              // Crawling done
-              if (msg.collect && msg.collect === true) {
-                verbose_log("Send all in one, items: " + allInOne.length);
-                var all = {};
-                all.topic = "AllInOne";
-                all.payload = allInOne;
-                set_node_status_to("browse done");
-                node.send(all);
-                return;
-              }
-              /*
-              let newMessage = opcuaBasics.buildBrowseMessage("");
-              let browseName = "";
-              // This is visual, but takes too long time
-              treeify.asLines(obj, true, true, function(line) {
-                if (line.indexOf("nodeId") > 0) {
-                  count2++;
-                  var nodeId = line.substring(line.indexOf("nodeId") + 8);
-                  // Use nodeId as topic
-                  newMessage = opcuaBasics.buildBrowseMessage(nodeId.toString());
-                  newMessage.nodeId = nodeId;
-                  newMessage.browseName = browseName;
-                }
-                if (line.indexOf("browseName:") > 0) {
-                  browseName = line.substring(line.indexOf("browseName:") + 12);
-                }
-                if (line.indexOf("dataType") > 0) {
-                  newMessage.dataType = line.substring(line.indexOf("dataType") + 10);
-                }
-                // Last item on treeify object structure is typeDefinition
-                if (line.indexOf("typeDefinition") > 0) {
-                  newMessage.typeDefinition = line.substring(line.indexOf("typeDefinition") + 16);
-                  var msg2 = newMessage;
-                  const nodesToRead = [{ nodeId: newMessage.nodeId, attributeId: opcua.AttributeIds.Description }];
-                  node.session.read(nodesToRead, function(err, dataValues) {
-                    if (!err && dataValues.length === 1) {
-                      // Should return only one, localeText
-                      if (dataValues[0] && dataValues[0].value && dataValues[0].value.value && dataValues[0].value.value.text) {
-                        // console.log("NODEID: " + newMessage.nodeId + " DESCRIPTION: " + dataValues[0].value.value.text);
-                        msg2.description = dataValues[0].value.value.text.toString();
-                      }
-                    }
-                    msg2.payload = Date.now(); // TODO check if real DataValue could be used
-                
-                    }
-                    else {
-                      node.send(msg2);
-                    }
-                  });
-                }
-                // console.log(line); // No console output
-              });
-              */
-              set_node_status_to("browse done");
-            }
-            crawler.dispose();
-        });
+        const root = msg.topic; // "ObjectsFolder";
 
+          crawler.read(opcua.coerceNodeId(root), function(err, obj) {
+              if (!err) {
+                // Crawling done
+                if (msg.collect && msg.collect === true) {
+                  verbose_log("Send all in one, items: " + allInOne.length);
+                  var all = {};
+                  all.topic = "AllInOne";
+                  all.payload = allInOne;
+                  set_node_status_to("browse done");
+                  node.send(all);
+                  // return;
+                }
+                set_node_status_to("browse done");
+              }
+              else {
+                console.log("Cannot crawl, error:" + err);
+              }
+              crawler.dispose();
+          });
+        }
+        catch(err) {
+          console.log("Crawler error: " + err);
+        }
       } else {
         node_error("Session is not active!");
         set_node_status_to("Session invalid");
