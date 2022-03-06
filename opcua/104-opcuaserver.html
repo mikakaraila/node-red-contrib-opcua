@@ -209,6 +209,11 @@ limitations under the License.
             <li><b>getNamespaces</b>      output msg.payload = { nsuri1: 1, nsuri2: 2, ... }</li>
             <li><b>setUsers</b>           msg.topic = "" msg.users JSON structure of users (username, password role)</li>
             <li><b>addFile</b>            msg.topic = "ns=1;s=test.txt" // Note parent folder is objects if not set by setFolder/addFolder</li>
+            <li><b>saveAddressSpace</b>   msg.filename ="./test.xml" // Saves current AddressSpace into the given filename.</li>
+            <li><b>loadAddressSpace</b>   msg.filename ="./test.xml" // Load AddressSpace from the given filename.</li>
+            <li><b>bindVariables</b>      Bind same node.send(msg) callbacks to get/set methods as addVariable</li>
+            <li><b>bindMethod</b>         msg.topic = nodeId, msg.code can be given in function node that contains method function</li>
+
         </ul>
 
         Examples JSON Injects: <br />
