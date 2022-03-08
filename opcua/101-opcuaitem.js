@@ -34,15 +34,16 @@ module.exports = function (RED) {
         var node = this;
 
         function verbose_warn(logMessage) {
-            if (RED.settings.verbose) {
+            //if (RED.settings.verbose) {
                 node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage);
-            }
+            //}
         }
 
         function verbose_log(logMessage) {
-            if (RED.settings.verbose) {
-                node.log(logMessage);
-            }
+            //if (RED.settings.verbose) {
+                // node.log(logMessage);
+                node.debug(logMessage);
+            //}
         }
 
         node.on("input", function (msg) {
