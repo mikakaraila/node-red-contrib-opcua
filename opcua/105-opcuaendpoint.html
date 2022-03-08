@@ -23,7 +23,11 @@ limitations under the License.
             endpoint: {value: "", required: true},
             secpol: {value: "None"},
             secmode: {value: "None"},
-            login: {value: false}
+            none: {value: true},
+            login: {value: false},
+            usercert: {value: false},
+            usercertificate: {value: ""},
+            userprivatekey: {value: ""},
         },
         credentials: {
             user: {type: "text"},
@@ -34,8 +38,21 @@ limitations under the License.
         },
         oneditprepare: function () {
             try {
+                var noneCheckbox = $("#node-config-input-none");
                 var loginCheckbox = $("#node-config-input-login");
+                var usercertCheckbox = $("#node-config-input-usercert");
                 var authRow = $(".node-input-useAuth-row");
+                var certRow = $(".node-input-userCert-row");
+
+                if (this.none) {
+                    noneCheckbox.prop('checked', true);
+                    authRow.show();
+                } else {
+                    noneCheckbox.prop('checked', false);
+                    loginCheckbox.prop('checked', false);
+                    usercertCheckbox.prop('checked', false);
+                    authRow.hide();
+                }
 
                 if (this.login) {
                     loginCheckbox.prop('checked', true);
@@ -45,13 +62,57 @@ limitations under the License.
                     authRow.hide();
                 }
 
-                loginCheckbox.change(function () {
+                if (this.usercert) {
+                    usercertCheckbox.prop('checked', true);
+                    certRow.show();
+                } else {
+                    noneCheckbox.prop('checked', false);
+                    certRow.hide();
+                }
+
+                noneCheckbox.change(function () {
                     if ($(this).is(":checked")) {
-                        authRow.show();
-                    } else {
+                        none = true;
+                        loginCheckbox.prop('checked', false);
+                        usercertCheckbox.prop('checked', false);
                         authRow.hide();
+                        certRow.hide();
+                    } else {
+                        none = false;
                         $('#node-input-user').val('');
                         $('#node-input-password').val('');
+                    }
+                });
+
+                loginCheckbox.change(function () {
+                    if ($(this).is(":checked")) {
+                        login = true;
+                        usercertCheckbox.prop('checked', false);
+                        noneCheckbox.prop('checked', false);
+                        authRow.show();
+                        certRow.hide();
+                    } else {
+                        login = false;
+                        authRow.hide();
+                        certRow.hide();
+                        $('#node-input-user').val('');
+                        $('#node-input-password').val('');
+                    }
+                });
+
+                usercertCheckbox.change(function () {
+                    if ($(this).is(":checked")) {
+                        usercert = true;
+                        loginCheckbox.prop('checked', false);
+                        noneCheckbox.prop('checked', false);
+                        certRow.show();
+                        authRow.hide();
+                    } else {
+                        usercert = false;
+                        certRow.hide();
+                        authRow.hide();
+                        $('#node-input-usercertificate').val('');
+                        $('#node-input-userprivatekey').val('');
                     }
                 });
 
@@ -96,8 +157,15 @@ limitations under the License.
         </select>
     </div>
     <div class="form-row">
+        <lable><input type="checkbox" id="node-config-input-none" > Anonymous</lable>
+    </div>
+    <div class="form-row">
         <lable><input type="checkbox" id="node-config-input-login" > use credentials</lable>
     </div>
+    <div class="form-row">
+        <lable><input type="checkbox" id="node-config-input-usercert" > user certificate</lable>
+    </div>
+
     <div class="form-row node-input-useAuth-row">
         <label for="node-config-input-user"><i class="icon-user"></i> User</label>
         <input type="text" id="node-config-input-user">
@@ -106,4 +174,14 @@ limitations under the License.
         <label for="node-config-input-password"><i class="icon-password"></i> Password</label>
         <input type="password" id="node-config-input-password">
     </div>
+
+    <div class="form-row node-input-userCert-row">
+        <label for="node-config-input-usercertificate"><i class="icon-file"></i> Certificate file</label>
+        <input type="text" id="node-config-input-usercertificate">
+    </div>
+    <div class="form-row node-input-userCert-row">
+        <label for="node-config-input-userprivatekey"><i class="icon-file"></i> Private key file</label>
+        <input type="text" id="node-config-input-userprivatekey">
+    </div>
+
 </script>

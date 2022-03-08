@@ -37,6 +37,9 @@ module.exports = function (RED) {
         this.securityPolicy = n.secpol;
         this.securityMode = security_mode_map_compat[n.secmode];
         this.login = n.login;
+        this.usercert = n.usercert;
+        this.userCertificate = n.usercertificate;
+        this.userPrivatekey = n.userprivatekey;
 
         if (this.credentials) {
 			// from node-opcua version 2.0.0 and onwards empty strings are not allowed anymore, so use null instead
