@@ -24,9 +24,9 @@ module.exports = function (RED) {
   var opcua = require('node-opcua');
   var opcuaBasics = require('./opcua-basics');
   // var nodeId = require("node-opcua-nodeid");
-  // var crypto_utils = opcua.crypto_utils;
-  var UAProxyManager = require("node-opcua-client-proxy").UAProxyManager;
-  var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
+  var crypto_utils = opcua.crypto_utils;
+  // var UAProxyManager = require("node-opcua-client-proxy").UAProxyManager;
+  // var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
   var fileTransfer = require("node-opcua-file-transfer");  
   var async = require("async");
   // var treeify = require('treeify');
@@ -36,9 +36,9 @@ module.exports = function (RED) {
   var os = require("os");
   var DataType = opcua.DataType;
   var AttributeIds = opcua.AttributeIds;
-  var read_service = require("node-opcua-service-read");
-  var TimestampsToReturn = read_service.TimestampsToReturn;
-  var subscription_service = require("node-opcua-service-subscription");
+  // var read_service = require("node-opcua-service-read");
+  var TimestampsToReturn = opcua.TimestampsToReturn;
+  // var subscription_service = require("node-opcua-service-subscription");
 
   const { createClientCertificateManager } = require("./utils");
   const { dumpCertificates } = require("./dump_certificates");
@@ -71,6 +71,8 @@ module.exports = function (RED) {
 
     connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
+    var userCertificate = opcuaEndpoint.userCertificate;
+    var userPrivatekey = opcuaEndpoint.userPrivatekey;
 
     if (node.folderName4PKI && node.folderName4PKI.length>0) {
       verbose_log("Node: " + node.name + " using own PKI folder:" + node.folderName4PKI);
@@ -86,16 +88,18 @@ module.exports = function (RED) {
       connectionOption.privateKeyFile =  keyfile;
 
       if (!fs.existsSync(certfile)) {
-        node_error("Local certificate file not found:" + certfile)
+        node_error("Local certificate file not found: " + certfile)
       }
       if (!fs.existsSync(keyfile)) {
-        node_error("Local private key file not found:" + keyfile)
+        node_error("Local private key file not found: " + keyfile)
       }
     }
+    /*
+    // Commented out as people think this is an error but it is only a log message
     if (node.certificate === "n") {
       node.log("\tLocal 'own' certificate is NOT used.");
     }
-
+    */
     // Moved needed options to client create
     connectionOption.requestedSessionTimeout = opcuaBasics.calc_milliseconds_by_time_and_unit(300, "s");
     // DO NOT USE must be NodeOPCUA-Client !! connectionOption.applicationName = node.name; // Application name
@@ -111,10 +115,32 @@ module.exports = function (RED) {
     verbose_log("Connection options:" + stringify(connectionOption));
     verbose_log("EndPoint: " + stringify(opcuaEndpoint));
 
+    if (opcuaEndpoint.login === true && opcuaEndpoint.usercert === true) {
+      node.error("Cannot use username & password & user certificate at the same time!");
+    }
+
     if (opcuaEndpoint.login === true) {
       userIdentity.userName = opcuaEndpoint.credentials.user;
       userIdentity.password = opcuaEndpoint.credentials.password;
       userIdentity.type = opcua.UserTokenType.UserName; // New TypeScript API parameter
+    }
+    else if (opcuaEndpoint.usercert === true) {
+      if (!fs.existsSync(userCertificate)) {
+        node.error("User certificate file not found: " + userCertificate);
+      }
+      const certificateData = crypto_utils.readCertificate(userCertificate);
+
+      if (!fs.existsSync(userPrivatekey)) {
+        node.error("User private key file not found: " + userPrivatekey);
+      }
+      const privateKey = crypto_utils.readPrivateKeyPEM(userPrivatekey);
+      userIdentity = {
+        certificateData,
+        privateKey,
+        type: opcua.UserTokenType.Certificate // User certificate
+      };
+      // connectionOption = {};
+      // connectionOption.endpointMustExist = false;
     }
     else {
       userIdentity.type = opcua.UserTokenType.Anonymous;
@@ -132,17 +158,18 @@ module.exports = function (RED) {
     }
 
     function verbose_warn(logMessage) {
-      if (RED.settings.verbose) {
-        console.warn(chalk.yellow((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage));
+      //if (RED.settings.verbose) {
+        // console.warn(chalk.yellow((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage));
         node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage);
-      }
+      //}
     }
 
     function verbose_log(logMessage) {
-      if (RED.settings.verbose) {
-        console.log(chalk.cyan(logMessage));
-        node.log(logMessage);
-      }
+      //if (RED.settings.verbose) {
+        // console.log(chalk.cyan(logMessage));
+        // node.log(logMessage); // settings.js log level info
+        node.debug(logMessage);
+      //}
     }
 
 
@@ -1000,7 +1027,7 @@ module.exports = function (RED) {
 
       if (node.session) {
         // TODO this could loop through all items
-        node.session.readAllAttributes(coerceNodeId(items[0]), function(err, result) {
+        node.session.readAllAttributes(opcua.coerceNodeId(items[0]), function(err, result) {
           if (!err) {
               // console.log("INFO: " + JSON.stringify(result));
               var newMsg = Object.assign(msg, result);
@@ -1040,7 +1067,7 @@ module.exports = function (RED) {
 
       if (node.session) {
         try {
-          const ExtensionNodeId = coerceNodeId(items[0]);
+          const ExtensionNodeId = opcua.coerceNodeId(items[0]);
           verbose_log("ExtensionNodeId: " + ExtensionNodeId);
           const ExtensionTypeDefinition = await node.session.read({ nodeId: ExtensionNodeId, attributeId: opcua.AttributeIds.DataTypeDefinition});
           verbose_log("ExtensionType: " + JSON.stringify(ExtensionTypeDefinition));
@@ -1113,7 +1140,7 @@ module.exports = function (RED) {
         if (msg.topic.indexOf("typeId=")) {
           var typeId = msg.topic.substring(msg.topic.indexOf("typeId=")+7);
           console.log("ExtensionObject TypeId= " + typeId);
-          extensionobject = await node.session.constructExtensionObject(coerceNodeId(typeId), {}); // Create first with default values
+          extensionobject = await node.session.constructExtensionObject(opcua.coerceNodeId(typeId), {}); // Create first with default values
           verbose_log("ExtensionObject=" + stringify(extensionobject));
           Object.assign(extensionobject, msg.payload); // MERGE payload over default values
           opcuaDataValue = {
@@ -1450,7 +1477,7 @@ module.exports = function (RED) {
 
         // Validate nodeId
         try {
-          var nodeId = coerceNodeId(nodeStr);
+          var nodeId = opcua.coerceNodeId(nodeStr);
           if (nodeId && nodeId.isEmpty()) {
             node_error(" Invalid empty node in getObject");
           }
@@ -1558,7 +1585,7 @@ module.exports = function (RED) {
         verbose_log("Monitoring " + msg.topic + " samplingInterval " + interval + "ms, queueSize " + queueSize);
         // Validate nodeId
         try {
-          var nodeId = coerceNodeId(nodeStr);
+          var nodeId = opcua.coerceNodeId(nodeStr);
           if (nodeId && nodeId.isEmpty()) {
             node_error(" Invalid empty node in getObject");
           }
@@ -1567,20 +1594,20 @@ module.exports = function (RED) {
           node_error(err);
           return;
         }
-        var deadbandtype = subscription_service.DeadbandType.Absolute;
+        var deadbandtype = opcua.DeadbandType.Absolute;
         // NOTE differs from standard subscription monitor
         if (node.deadbandType == "a") {
-          deadbandType = subscription_service.DeadbandType.Absolute;
+          deadbandType = opcua.DeadbandType.Absolute;
         }
         if (node.deadbandType == "p") {
-          deadbandType = subscription_service.DeadbandType.Percent;
+          deadbandType = opcua.DeadbandType.Percent;
         }
         // Check if msg contains deadbandtype, use it instead of value given in client node
         if (msg.deadbandType && msg.deadbandType == "a") {
-          deadbandtype = subscription_service.DeadbandType.Absolute;
+          deadbandtype = opcua.DeadbandType.Absolute;
         }
         if (msg.deadbandType && msg.deadbandType == "p") {
-          deadbandtype = subscription_service.DeadbandType.Percent;
+          deadbandtype = opcua.DeadbandType.Percent;
         }
         var deadbandvalue = node.deadbandvalue;
         // Check if msg contains deadbandValue, use it instead of value given in client node
@@ -1697,61 +1724,79 @@ module.exports = function (RED) {
       }
     }
 
-    function browse_action_input(msg) {
+    async function browse_action_input(msg) {
       verbose_log("browsing");
       var allInOne = []; // if msg.collect and msg.collect === true then collect all items to one msg
-      // var NodeCrawler = opcua.NodeCrawler;
-
+    
       if (node.session) {
         const crawler = new opcua.NodeCrawler(node.session);
         set_node_status_to("active browsing");
-        try {
+        
         crawler.on("browsed", function(element) {
-          if (msg.collect===undefined || (msg.collect && msg.collect === false)) {
-            var item = {};
-            item.payload = Object.assign({}, element); // Clone element
-            var dataType = "";
-            item.topic = element.nodeId.toString();
-            if (element && element.dataType) {
-              dataType = opcuaBasics.convertToString(element.dataType.toString());
+          try {
+            if (msg.collect===undefined || (msg.collect && msg.collect === false)) {
+              var item = {};
+              item.payload = Object.assign({}, element); // Clone element
+              var dataType = "";
+              item.topic = element.nodeId.toString();
+              if (element && element.dataType) {
+                dataType = opcuaBasics.convertToString(element.dataType.toString());
+              }
+              if (dataType && dataType.length > 0) {
+                item.datatype = dataType;
+              }
+              node.send(item); // Send immediately as browsed
             }
-            if (dataType && dataType.length > 0) {
-              item.datatype = dataType;
+            else {
+              var item = Object.assign({}, element); // Clone element
+              allInOne.push(item);
             }
-            node.send(item); // Send immediately as browsed
           }
-          else {
-            var item = Object.assign({}, element); // Clone element
-            allInOne.push(item);
+          catch(err1) {
+            console.log("Browsed error: ", err1);
           }
         });
 
         // Browse from given topic
         const root = msg.topic; // "ObjectsFolder";
-
-          crawler.read(opcua.coerceNodeId(root), function(err, obj) {
-              if (!err) {
-                // Crawling done
-                if (msg.collect && msg.collect === true) {
-                  verbose_log("Send all in one, items: " + allInOne.length);
-                  var all = {};
-                  all.topic = "AllInOne";
-                  all.payload = allInOne;
+          /*
+          try {
+            crawler.read(opcua.resolveNodeId(root), function(err, obj) {
+                if (!err) {
+                  // Crawling done
+                  if (msg.collect && msg.collect === true) {
+                    verbose_log("Send all in one, items: " + allInOne.length);
+                    var all = {};
+                    all.topic = "AllInOne";
+                    all.payload = allInOne;
+                    set_node_status_to("browse done");
+                    node.send(all);
+                    // return;
+                  }
                   set_node_status_to("browse done");
-                  node.send(all);
-                  // return;
                 }
-                set_node_status_to("browse done");
-              }
-              else {
-                console.log("Cannot crawl, error:" + err);
-              }
-              crawler.dispose();
-          });
+                else {
+                  console.log("Cannot crawl, error:" + err);
+                }
+                crawler.dispose();
+            });
+          }
+          catch(err) {
+            console.log("Crawler read error: ", err);
+          }
+          */
+        const rootObjects = await crawler.read(opcua.resolveNodeId(root));
+        console.log("Objects: " + rootObjects);
+        // crawler.dispose();
+        if (msg.collect && msg.collect === true) {
+          verbose_log("Send all in one, items: " + allInOne.length);
+          var all = {};
+          all.topic = "AllInOne";
+          all.payload = allInOne;
+          set_node_status_to("browse done");
+          node.send(all);
         }
-        catch(err) {
-          console.log("Crawler error: " + err);
-        }
+        set_node_status_to("browse done");
       } else {
         node_error("Session is not active!");
         set_node_status_to("Session invalid");
