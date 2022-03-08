@@ -224,15 +224,16 @@ module.exports = function (RED) {
     }
 
     function verbose_warn(logMessage) {
-      if (RED.settings.verbose) {
+      //if (RED.settings.verbose) {
         node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaMethodNode: ' + logMessage);
-      }
+      //}
     }
 
     function verbose_log(logMessage) {
-      if (RED.settings.verbose) {
-        node.log(logMessage);
-      }
+      //if (RED.settings.verbose) {
+        // node.log(logMessage);
+        node.debug(logMessage);
+      //}
     }
 
     async function callMethod(msg) {
