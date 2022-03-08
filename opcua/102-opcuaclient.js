@@ -1758,42 +1758,14 @@ module.exports = function (RED) {
         });
 
         // Browse from given topic
-        const root = msg.topic; // "ObjectsFolder";
-          /*
-          try {
-            crawler.read(opcua.resolveNodeId(root), function(err, obj) {
-                if (!err) {
-                  // Crawling done
-                  if (msg.collect && msg.collect === true) {
-                    verbose_log("Send all in one, items: " + allInOne.length);
-                    var all = {};
-                    all.topic = "AllInOne";
-                    all.payload = allInOne;
-                    set_node_status_to("browse done");
-                    node.send(all);
-                    // return;
-                  }
-                  set_node_status_to("browse done");
-                }
-                else {
-                  console.log("Cannot crawl, error:" + err);
-                }
-                crawler.dispose();
-            });
-          }
-          catch(err) {
-            console.log("Crawler read error: ", err);
-          }
-          */
+        const root = msg.topic; // example topic=ns=0;i=85 "ObjectsFolder";
         const rootObjects = await crawler.read(opcua.resolveNodeId(root));
-        console.log("Objects: " + rootObjects);
-        // crawler.dispose();
+        crawler.dispose();
         if (msg.collect && msg.collect === true) {
           verbose_log("Send all in one, items: " + allInOne.length);
           var all = {};
           all.topic = "AllInOne";
           all.payload = allInOne;
-          set_node_status_to("browse done");
           node.send(all);
         }
         set_node_status_to("browse done");
