@@ -155,22 +155,22 @@ module.exports = function (RED) {
         }
           
         function node_error(err) {
-            console.error(chalk.red("[Error] Server node error on: " + node.name + " error: " + JSON.stringify(err)));
+            // console.error(chalk.red("[Error] Server node error on: " + node.name + " error: " + JSON.stringify(err)));
             node.error("Server node error on: " + node.name + " error: " + JSON.stringify(err));
         }
 
         function verbose_warn(logMessage) {
-            if (RED.settings.verbose) {
-                console.warn(chalk.yellow("[Warning] "+ (node.name) ? node.name + ': ' + logMessage : 'OpcUaServerNode: ' + logMessage));
+            //if (RED.settings.verbose) {
+                // console.warn(chalk.yellow("[Warning] "+ (node.name) ? node.name + ': ' + logMessage : 'OpcUaServerNode: ' + logMessage));
                 node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaServerNode: ' + logMessage);
-            }
+            //}
         }
 
         function verbose_log(logMessage) {
-            if (RED.settings.verbose) {
-                console.log(chalk.cyan(logMessage));
-                node.log(logMessage);
-            }
+            //if (RED.settings.verbose) {
+                // console.log(chalk.cyan(logMessage));
+                node.debug(logMessage);
+            //}
         }
 
         node.status({
@@ -261,8 +261,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.261",
-                buildDate: "2022-03-06T12:23:00"
+                buildNumber: "0.2.262",
+                buildDate: "2022-03-08T19:37:00"
             };
             
             var hostname = os.hostname();
@@ -563,7 +563,9 @@ module.exports = function (RED) {
             switch (payload.messageType) {
                 case 'Variable':
                     var ns = payload.namespace.toString();
+                    verbose_log("BEFORE: " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[ns + ":" + payload.variableName]));
                     variables[ns + ":" + payload.variableName] = payload.variableValue;
+                    verbose_log("AFTER : " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[ns + ":" + payload.variableName]));
                     break;
                 default:
                     break;
@@ -1197,6 +1199,13 @@ module.exports = function (RED) {
                             var options = {
                                 get: function() {
                                     return new opcua.Variant({ dataType: opcuaBasics.convertToString(variable.dataType.toString()), value: variables[browseName]});
+                                },
+                                timestamped_get: function() {
+                                    return new opcua.DataValue({ value: opcua.Variant({dataType: opcuaBasics.convertToString(variable.dataType.toString()), value: variables[browseName]}),
+                                                                statusCode: opcua.StatusCodes.Good,
+                                                                serverTimestamp: new Date(),
+                                                                sourceTimestamp: new Date()
+                                    });
                                 },
                                 set: (variant) => {
                                     // Store value
