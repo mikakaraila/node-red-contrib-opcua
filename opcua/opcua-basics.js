@@ -952,10 +952,19 @@ module.exports.build_new_dataValue = function (datatype, value) {
             };
             break;
         case "DateTime":
-            nValue = {
-                dataType: opcua.DataType.DateTime, // was UtcTime
-                value: value // Date.parse(value)
-            };
+            if (typeof value === "string") {
+                nValue = {
+                    dataType: opcua.DataType.DateTime, // was UtcTime
+                    value: value // Date.parse(value)
+                };
+            }
+            else {
+                // injected timestamp as integer
+                nValue = {
+                    dataType: opcua.DataType.DateTime, // was UtcTime
+                    value: new Date(parseInt(value))   // Date.parse(value)
+                };
+            }
             break;
         case "Byte":
             nValue = {
