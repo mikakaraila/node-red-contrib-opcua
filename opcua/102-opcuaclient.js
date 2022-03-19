@@ -241,7 +241,7 @@ module.exports = function (RED) {
       set_node_status2_to("reconnect", "re-establised");
     };
     const backoff = function (attempt, delay) {
-      verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds. Node:  " + node.name + " " + opcuaEndpoint.endpoint);
+      // verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds. Node:  " + node.name + " " + opcuaEndpoint.endpoint);
       set_node_status2_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
     };
     const reconnection = function () {
