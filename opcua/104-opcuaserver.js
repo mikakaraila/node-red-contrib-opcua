@@ -180,6 +180,7 @@ module.exports = function (RED) {
         });
 
         var xmlFiles = [path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.NodeSet2.xml'),     // Standard & basic types
+                        path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.Di.NodeSet2.xml'), // Support for DI Device Information model
                         path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.Ua.AutoID.NodeSet2.xml'), // Support for RFID Readers
                         path.join(__dirname, 'public/vendor/opc-foundation/xml/Opc.ISA95.NodeSet2.xml')   // ISA95
         ];
@@ -261,8 +262,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.262",
-                buildDate: "2022-03-08T19:37:00"
+                buildNumber: "0.2.263",
+                buildDate: "2022-03-19T09:22:00"
             };
             
             var hostname = os.hostname();
