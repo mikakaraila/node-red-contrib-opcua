@@ -237,7 +237,7 @@ module.exports = function (RED) {
 
     // Listener functions that can be removed on reconnect
     const reestablish = function () {
-      verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!! Node: " + node.name);
+      // verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!! Node: " + node.name);
       set_node_status2_to("reconnect", "re-establised");
     };
     const backoff = function (attempt, delay) {
@@ -245,7 +245,7 @@ module.exports = function (RED) {
       set_node_status2_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
     };
     const reconnection = function () {
-      verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  Starting Reconnection !!!!!!!!!!!!!!!!!!! Node: " + node.name);
+      // verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  Starting Reconnection !!!!!!!!!!!!!!!!!!! Node: " + node.name);
       set_node_status2_to("reconnect", "starting...");
     };
 
@@ -1759,15 +1759,23 @@ module.exports = function (RED) {
 
         // Browse from given topic
         const root = msg.topic; // example topic=ns=0;i=85 "ObjectsFolder";
-        const rootObjects = await crawler.read(opcua.resolveNodeId(root));
-        crawler.dispose();
+        const rootObjects = await crawler.read(opcua.coerceNodeId(root));
+        
         if (msg.collect && msg.collect === true) {
           verbose_log("Send all in one, items: " + allInOne.length);
           var all = {};
           all.topic = "AllInOne";
-          all.payload = allInOne;
+          // all.payload = allInOne;
+          // node.send(all);
+          // TODO collect rootObjects into the allInOne array
+          all.payload = JSON.stringify(rootObjects); // Send back only objects crawled from the given nodeId
           node.send(all);
         }
+        else {
+          // "browsed" will send all objects
+          // TODO Send only collected rootObjects one by one
+        }
+        crawler.dispose();
         set_node_status_to("browse done");
       } else {
         node_error("Session is not active!");
