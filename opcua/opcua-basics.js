@@ -370,8 +370,8 @@ module.exports.convertToString = function(inType) {
     if (inType === "ns=0;i=9") return "UInt64";
     if (inType === "ns=0;i=10") return "Float";
     if (inType === "ns=0;i=11") return "Double";
-    if (inType === "ns=0;i=12") return "DateTime";
-    if (inType === "ns=0;i=13") return "String";
+    if (inType === "ns=0;i=12") return "String"; // Fixed from DateTime
+    if (inType === "ns=0;i=13") return "DateTime"; // Fixed from String
     if (inType === "ns=0;i=14") return "Guid";
     if (inType === "ns=0;i=15") return "ByteString";
     if (inType === "ns=0;i=16") return "XmlElement";
