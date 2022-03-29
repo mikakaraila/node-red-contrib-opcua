@@ -173,6 +173,38 @@ module.exports = function (RED) {
             //}
         }
 
+        // Method input / output argument types from string to opcua DataType
+        function getUaDatatype(methodArgType) {
+            if (methodArgType === "String") {
+                return opcua.DataType.String;
+            }
+            if (methodArgType === "Byte") {
+                return opcua.DataType.Byte;
+            }
+            if (methodArgType === "SByte") {
+                return opcua.DataType.SByte;
+            }
+            if (methodArgType === "UInt16") {
+                return opcua.DataType.UInt32;
+            }
+            if (methodArgType === "UInt32") {
+                return opcua.DataType.UInt32;
+            }
+            if (methodArgType === "Int16") {
+                return opcua.DataType.Int32;
+            }
+            if (methodArgType === "Int32") {
+                return opcua.DataType.Int32;
+            }
+            if (methodArgType === "Double") {
+                return opcua.DataType.Double;
+            }
+            if (methodArgType === "Float") {
+                return opcua.DataType.Float;
+            }
+            node.error("Cannot convert given argument: " + methodArgType + " to OPC UA DataType!");
+        }
+
         node.status({
             fill: "red",
             shape: "ring",
@@ -262,8 +294,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.265",
-                buildDate: "2022-03-23T23:23:00"
+                buildNumber: "0.2.266",
+                buildDate: "2022-03-29T13:24:00"
             };
             
             var hostname = os.hostname();
@@ -447,7 +479,7 @@ module.exports = function (RED) {
                 });
                 // Client disconnected
                 node.server.on("session_closed", function(session, reason) {
-                    console.log("Reason: " + reason);
+                    node.debug("Reason: " + reason);
                    var msg = {};
                    msg.topic="Client-disconnected";
                    msg.payload = session.sessionName.toString(); // session.clientDescription.applicationName.toString() + " " + session.sessionName ? session.sessionName.toString() : "<null>";
@@ -461,7 +493,7 @@ module.exports = function (RED) {
                 initialized = true;
                }
             catch (err) {
-                console.log("Error: " + err);
+                node.error("Error: " + err);
             }
         })();
 
@@ -566,6 +598,9 @@ module.exports = function (RED) {
                     var ns = payload.namespace.toString();
                     verbose_log("BEFORE: " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[ns + ":" + payload.variableName]));
                     variables[ns + ":" + payload.variableName] = payload.variableValue;
+                    // TODO to update server variable value
+                    // var node = node.server.engine.findNode("ns="+ns+";s="+ payload.variableName);
+                    // node.setValueFromSource({dataType: , value:payload.variableValue});
                     verbose_log("AFTER : " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[ns + ":" + payload.variableName]));
                     break;
                 default:
@@ -684,7 +719,7 @@ module.exports = function (RED) {
                             // valueRank = 2; // 2-dim Matrix FloatArray[5,5]
                             // valueRank = 3; // 3-dim Matrix FloatArray[5,5,5]
                             var indexes = indexStr.split(",");
-                            console.log("INDEXES[" + indexes.length + "] = " + JSON.stringify(indexes) + " from " + indexStr);
+                            node.debug("INDEXES[" + indexes.length + "] = " + JSON.stringify(indexes) + " from " + indexStr);
                             if (indexes.length === 1) {
                                 dim1 = parseInt(indexes[0]);
                                 valueRank = 1;
@@ -897,7 +932,49 @@ module.exports = function (RED) {
                             node_error("Cannot find node: " + msg.topic + " nodeId: " + nodeStr);
                         }
                     break;
-
+                
+                case "addMethod":
+                    verbose_warn("install discrete alarm for node: ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
+                    node.debug("Parameters: " + JSON.stringify(msg));
+                    const parentNode = addressSpace.getOwnNamespace().findNode(msg.topic);
+                    if (!parentNode) {
+                        node.error("Method needs parent node, wrong nodeId in the msg.topic: " + msg.topic);
+                    }
+                    const newMethod = addressSpace.getOwnNamespace().addMethod(
+                        parentNode, {
+                            nodeId: "ns=1;s=" + msg.browseName,
+                            browseName: msg.browseName,
+                            inputArguments: [{
+                                name: msg.inputArguments[0].name,
+                                description: {
+                                    text: msg.inputArguments[0].text
+                                },
+                                dataType: getUaDatatype(msg.inputArguments[0].type)
+                            }],
+                            outputArguments: [{
+                                name: msg.outputArguments[0].name,
+                                description: {
+                                    text: msg.outputArguments[0].text,
+                                },
+                                dataType: getUaDatatype(msg.outputArguments[0].type),
+                                valueRank: 1 // TODO Array, Matrix later
+                            }]
+                        });
+                    newMethod.bindMethod(async function (inputArguments, context, callback) {
+                        const status = opcua.StatusCodes.BadNotImplemented; // Current implementation does not support as setServerConfiguration is void and no return array
+                        const response = "";
+                        const callMethodResult = {
+                        statusCode: status,
+                        // TODO check if any outputArguments
+                        outputArguments: [ {
+                            dataType: getUaDatatype(msg.outputArguments[0].type),
+                            // arrayType: VariantArrayType.Array,
+                            value: response
+                            }]
+                        };
+                        callback(null, callMethodResult);
+                    });
+                    break;
                 case "deleteNode":
                     if (addressSpace === undefined) {
                         node_error("addressSpace undefined");
@@ -1006,7 +1083,7 @@ module.exports = function (RED) {
                             });
                         }
                         catch(error) {
-                            console.error("Error: " + error.toString());
+                            node.error("Error: " + error.toString());
                         }
                         
                     }
@@ -1188,7 +1265,7 @@ module.exports = function (RED) {
                         
                         results.forEach(function(item) {
                             var variableNode = addressSpace.findNode(id);
-                            console.log("NodeId:" + variableNode.nodeId + " NodeClass: " + variableNode.nodeClass);
+                            node.debug("NodeId:" + variableNode.nodeId + " NodeClass: " + variableNode.nodeClass);
                             if (variableNode.nodeClass == opcua.NodeClass.Variable) {
                                 var newext = {"payload": {"messageType":"Variable", "variableName":browseName.toString(), "nodeId":id.toString()}};
                                 node.send(newext);
@@ -1289,7 +1366,7 @@ module.exports = function (RED) {
                 });
                 // Client disconnected
                 node.server.on("session_closed", function(session, reason) {
-                    console.log("Reason: " + reason);
+                    node.debug("Reason: " + reason);
                     var msg = {};
                     msg.topic="Client-disconnected";
                     msg.payload = session.sessionName.toString(); // session.clientDescription.applicationName.toString() + " " + session.sessionName ? session.sessionName.toString() : "<null>";
