@@ -117,10 +117,10 @@ limitations under the License.
                 });
 
             } catch (err) {
-                console.log(err);
+                node.error(err);
             }
             finally {
-                console.log("finally");
+                node.debug("finally");
             }
         }
     });
