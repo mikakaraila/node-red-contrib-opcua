@@ -683,6 +683,43 @@ function getArrayValues(datatype, items) {
     return uaArray.values;
 }
 
+function getUaType(datatype) {
+    // Convert datatype from string to UA DataType
+    if (datatype == "Boolean") {
+        return opcua.DataType.Boolean;
+    }
+    if (datatype === "Byte") {
+        return opcua.DataType.Byte;
+    }
+    if (datatype === "UInt16") {
+        return opcua.DataType.UInt16;
+    }
+    if (datatype === "UInt32") {
+        return opcua.DataType.UInt32;
+    }
+    if (datatype === "SByte") {
+        return opcua.DataType.SByte;
+    }
+    if (datatype === "Int16") {
+        return opcua.DataType.Int16;
+    }
+    if (datatype === "Int32") {
+        return opcua.DataType.Int32;
+    }
+    if (datatype === "Float") {
+        return opcua.DataType.Float;
+    }
+    if (datatype === "Double") {
+        return opcua.DataType.Double;
+    }
+    if (datatype === "String") {
+        return opcua.DataType.String;
+    }
+    console.error("Unknown datatype for UA: " + datatype);
+
+    return null;
+}
+
 function getArrayType(datatype) {
     
     console.debug("getArrayType:" + datatype);
@@ -816,7 +853,16 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
             break;
         case "DateTime":
             uaType = opcua.DataType.DateTime;
-            nValue = new Date(value);  // value.toString();
+            if (typeof value === "string") {
+                nValue = new Date(Date.parse(value)); // new Date(value);  // value.toString();
+            }
+            else {
+                // injected timestamp as integer
+                nValue = {
+                    dataType: opcua.DataType.DateTime, // was UtcTime
+                    value: new Date(parseInt(value))   // Date.parse(value)
+                };
+            }
             break;
         case "ExtensionObject":
             uaType = opcua.DataType.ExtensionObject;
@@ -991,7 +1037,17 @@ module.exports.build_new_dataValue = function (datatype, value) {
     var m = datatype.indexOf("Array");
     if (m > 0) {
         var uaType = getArrayType(datatype);
-        var arrayValues = getArrayValues(datatype, Object.values(value.value));
+        var arrayValues;
+        console.log("VALUE: " + value);
+        if (value && value.value) {
+            arrayValues = getArrayValues(datatype, Object.values(value.value));
+            console.log("Value.value => ArrayValues: " + arrayValues);
+        }
+        else {
+            var items = value.split(",");
+            arrayValues = getArrayValues(datatype, Object.values(items));
+            console.log("Value => ArrayValues: " + arrayValues);
+        }
 
         nValue = {
             dataType: uaType, // maps SByte and Byte // opcua.DataType[m[1]],
