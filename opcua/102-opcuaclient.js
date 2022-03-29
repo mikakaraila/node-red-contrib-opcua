@@ -153,7 +153,7 @@ module.exports = function (RED) {
 
 
     function node_error(err) {
-      console.error(chalk.red("Client node error on: " + node.name + " error: " + stringify(err)));
+      //console.error(chalk.red("Client node error on: " + node.name + " error: " + stringify(err)));
       node.error("Client node error on: " + node.name + " error: " + stringify(err));
     }
 
@@ -195,7 +195,7 @@ module.exports = function (RED) {
       verbose_log("EventFields=" + eventFields);
       
       async.forEachOf(eventFields, function (variant, index, callback) {
-        console.log("EVENT Field: " + fields[index] + stringify(variant));
+        verbose_log("EVENT Field: " + fields[index] + stringify(variant));
         
         if (variant.dataType === DataType.Null) {
           if (--cnt === 0) node.send(msg);
@@ -336,10 +336,13 @@ module.exports = function (RED) {
       verbose_log("Client status: " + statusValue);
       var statusParameter = opcuaBasics.get_node_status(statusValue);
       currentStatus = statusValue;
+      if (!error) {
+        error = "";
+      }
       node.status({
         fill: statusParameter.fill,
         shape: statusParameter.shape,
-        text: statusParameter.status + " " + error.toString()
+        text: statusParameter.status + " " + error
       });
     }
 
@@ -612,7 +615,7 @@ module.exports = function (RED) {
     }
 
     async function read_file(msg) {
-      console.log("Read file, nodeId: " + msg.topic.toString());
+      verbose_log("Read file, nodeId: " + msg.topic.toString());
       var file_node = opcua.coerceNodeId(msg.topic);
       if (node.session) {
         try {
@@ -644,7 +647,7 @@ module.exports = function (RED) {
     }
 
     async function write_file(msg) {
-      console.log("Write file, nodeId: " + msg.topic.toString());
+      verbose_log("Write file, nodeId: " + msg.topic.toString());
       var file_node = opcua.coerceNodeId(msg.topic);
       if (node.session) {
         try {
@@ -667,7 +670,7 @@ module.exports = function (RED) {
             verbose_log("Write done!");
         }
         catch(err) {
-            console.error(chalk.red("Cannot write file, error: " + err));
+            node.error(chalk.red("Cannot write file, error: " + err));
         }
       }
       else {
@@ -1139,7 +1142,7 @@ module.exports = function (RED) {
       if (msg.datatype && msg.datatype.indexOf("ExtensionObject") >= 0 && node.session) {
         if (msg.topic.indexOf("typeId=")) {
           var typeId = msg.topic.substring(msg.topic.indexOf("typeId=")+7);
-          console.log("ExtensionObject TypeId= " + typeId);
+          verbose_log("ExtensionObject TypeId= " + typeId);
           extensionobject = await node.session.constructExtensionObject(opcua.coerceNodeId(typeId), {}); // Create first with default values
           verbose_log("ExtensionObject=" + stringify(extensionobject));
           Object.assign(extensionobject, msg.payload); // MERGE payload over default values
@@ -1165,7 +1168,7 @@ module.exports = function (RED) {
       if (msg.range) {
         verbose_log(chalk.red("Range: " + msg.range));
         range = new opcua.NumericRange(msg.range);
-        verbose_log(chalk.red("Range: " + stringify(range) + " values: " + stringify(opcuaDataValue)));
+        verbose_log(chalk.red("Range: " + JSON.stringify(range) + " values: " + JSON.stringify(opcuaDataValue)));
         // TODO write to node-red server still work to do
         // var newIndex = { "0": "2", "1": "3", "2":"4"}; // HARD CODED TEST
         // const newValues = reIndexArray(opcuaDataValue, newIndex);
@@ -1174,30 +1177,41 @@ module.exports = function (RED) {
 
       let nodeToWrite;
       if (node.session) {
+        if (range) {
+          nodeToWrite = {
+            nodeId: nodeid.toString(),
+            attributeId: opcua.AttributeIds.Value,
+            indexRange: range,
+            value: new opcua.DataValue({value: new opcua.Variant(opcuaDataValue)})
+          };
+        }
+        else {
+          nodeToWrite = {
+            nodeId: nodeid.toString(),
+            attributeId: opcua.AttributeIds.Value,
+            value: new opcua.DataValue({value: new opcua.Variant(opcuaDataValue)})
+          };
+        }
 
-        nodeToWrite = {
-          nodeId: nodeid.toString(),
-          attributeId: opcua.AttributeIds.Value,
-          indexRange: range,
-          value: new opcua.DataValue({value: new opcua.Variant(opcuaDataValue)})
-        };
-        verbose_log("VALUE TO WRITE: " + stringify(nodeToWrite.value.value));
         if (msg.timestamp) {
           nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();
         }
-
+        verbose_log("VALUE TO WRITE: " + JSON.stringify(nodeToWrite));
         set_node_status_to("writing");
         node.session.write(nodeToWrite, function (err, statusCode) {
           if (err) {
             set_node_errorstatus_to("error", err);
-            node_error(node.name + " Cannot write value (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
+            node_error(node.name + " Cannot write value (" + stringify(msg.payload) + ") to msg.topic:" + msg.topic + " error:" + err);
             // No actual error session existing, this case cause connections to server
             // reset_opcua_client(connect_opcua_client);
             msg.payload = err;
             node.send(msg);
           } else {
             set_node_status_to("value written");
-            verbose_log("Value written! Result:" + statusCode);
+            verbose_log("Value written! Result:" + statusCode + " " + statusCode.description);
+            if (statusCode != opcua.StatusCodes.Good) {
+              set_node_errorstatus_to("error", statusCode.description);
+            }
             msg.payload = statusCode;
             node.send(msg);
           }
@@ -1244,7 +1258,7 @@ module.exports = function (RED) {
             value: new opcua.DataValue({ value: opcuaDataValue })
           };
           item.value.sourceTimestamp = new Date(msg.timestamp).getTime();
-          console.log("ITEM: " + stringify(item));
+          verbose_log("ITEM: " + stringify(item));
           writeMultipleItems.push(item);
         }
 
@@ -1636,11 +1650,11 @@ module.exports = function (RED) {
         monitoredItems.set(nodeStr, monitoredItem);
 
         group.on("err", () => {
-          console.log("err");
+          node.error("Monitored items error!");
         });
 
         group.on("changed", (monitoredItem, dataValue, index) => {
-          console.log(chalk.green("Received changes: " + monitoredItem + " value: " + dataValue + " index: " + index));
+          verbose_log(chalk.green("Received changes: " + monitoredItem + " value: " + dataValue + " index: " + index));
           set_node_status_to("active monitoring");
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
           verbose_log(dataValue.toString());
