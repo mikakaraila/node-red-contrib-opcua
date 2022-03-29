@@ -181,7 +181,7 @@ module.exports = function (RED) {
       userIdentity.password = opcuaEndpoint.credentials.password;
       userIdentity.type = uaclient.UserTokenType.UserName; // New TypeScript API parameter
     }
-    console.log("Input arguments:" + JSON.stringify(node.inputArguments));
+    node.debug("Input arguments:" + JSON.stringify(node.inputArguments));
     
     async function setupClient(url, message, callback) {
 
@@ -219,7 +219,7 @@ module.exports = function (RED) {
     }
 
     function node_error(err) {
-      console.error(chalk.red("Client node error on node: " + node.name + "; error: " + stringify(err)));
+      // console.error(chalk.red("Client node error on node: " + node.name + "; error: " + stringify(err)));
       node.error("Client node error on node: " + node.name + "; error: " + stringify(err));
     }
 
