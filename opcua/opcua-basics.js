@@ -566,10 +566,18 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
             });
             break;
         case "DateTime":
-            nValue = new opcua.Variant({
-                dataType: opcua.DataType.DateTime,
-                value: new Date(value)
-            });
+            if (typeof value === "string") {
+                nValue = new opcua.Variant({
+                    dataType: opcua.DataType.DateTime,
+                    value: new Date(Date.parse(value))
+                });
+            }
+            else {    
+                nValue = new opcua.Variant({
+                    dataType: opcua.DataType.DateTime,
+                    value: new Date(value)
+                });
+            }
             break;
         case "Byte":
             nValue = new opcua.Variant({
@@ -609,7 +617,7 @@ function getArrayValues(datatype, items) {
     uaArray.values = [];
     uaArray.uaType = null;
     
-    console.debug("### getArrayValues:" + datatype + " items:" + items);
+    // console.debug("### getArrayValues:" + datatype + " items:" + items);
 
     // Check datatype string, example Byte Array, Double Array etc.
     if (datatype.indexOf("Boolean") === 0) {
@@ -651,7 +659,7 @@ function getArrayValues(datatype, items) {
     if (datatype.indexOf("String") >= 0) {
         uaArray.uaType = opcua.DataType.String;
         uaArray.values = new Array(items);
-        console.log("ITEMS:" + items.toString());
+        // console.log("ITEMS:" + items.toString());
     }
 
     if (uaArray.uaType === null) {
@@ -665,7 +673,7 @@ function getArrayValues(datatype, items) {
             uaArray.values[index] = parseFloat(item);
         }
         else if (uaArray.uaType === opcua.DataType.Boolean) {
-            console.log("Item: " + item + " index: " + index)
+            // console.log("Item: " + item + " index: " + index);
             uaArray.values[index] = false;
             if (item === 1 || item === "1" || item === "true" || item === true) {
                 uaArray.values[index] = true;
@@ -722,7 +730,7 @@ function getUaType(datatype) {
 
 function getArrayType(datatype) {
     
-    console.debug("getArrayType:" + datatype);
+    // console.debug("getArrayType:" + datatype);
 
     // Check datatype string, example Byte Array, Double Array etc.
     if (datatype.indexOf("Boolean") >= 0) {
@@ -854,7 +862,7 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
         case "DateTime":
             uaType = opcua.DataType.DateTime;
             if (typeof value === "string") {
-                nValue = new Date(Date.parse(value)); // new Date(value);  // value.toString();
+                nValue = value; // Date.parse(value); // new Date(value);  // value.toString();
             }
             else {
                 // injected timestamp as integer
@@ -1001,7 +1009,7 @@ module.exports.build_new_dataValue = function (datatype, value) {
             if (typeof value === "string") {
                 nValue = {
                     dataType: opcua.DataType.DateTime, // was UtcTime
-                    value: value // Date.parse(value)
+                    value: new Date(Date.parse(value))
                 };
             }
             else {
@@ -1038,15 +1046,12 @@ module.exports.build_new_dataValue = function (datatype, value) {
     if (m > 0) {
         var uaType = getArrayType(datatype);
         var arrayValues;
-        console.log("VALUE: " + value);
         if (value && value.value) {
             arrayValues = getArrayValues(datatype, Object.values(value.value));
-            console.log("Value.value => ArrayValues: " + arrayValues);
         }
         else {
             var items = value.split(",");
             arrayValues = getArrayValues(datatype, Object.values(items));
-            console.log("Value => ArrayValues: " + arrayValues);
         }
 
         nValue = {
