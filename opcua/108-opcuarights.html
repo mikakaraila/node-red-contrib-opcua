@@ -1,0 +1,223 @@
+<!--
+
+Copyright 2022 Valmet Automation Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-->
+
+<script type="text/javascript">
+  RED.nodes.registerType('OpcUa-Rights', {
+    category: "opcua",
+    color:"#3FADB5",
+    defaults: {
+        accessLevelCurrentRead: {value: true},
+        accessLevelCurrentWrite: {value: true},
+        accessLevelStatusWrite: {value: true},
+        accessLevelHistoryRead: {value: true},
+        accessLevelHistoryWrite: {value: true},
+        accessLevelSemanticChange: {value: true},
+        role: {value: "a"}, // User Role like Anonymous, Operator, Engineer,...
+        // Permissions
+        permissionBrowse: {value: true},
+        permissionRead: {value: true},
+        permissionWrite: {value: true},
+        permissionWriteAttribute: {value: true},
+        permissionReadRole: {value: true},
+        permissionWriteRole: {value: true},
+        permissionReadHistory: {value: true},
+        permissionWriteHistory: {value: true},
+        permissionInsertHistory: {value: true},
+        permissionModifyHistory: {value: true},
+        permissionDeleteHistory: {value: true},
+        permissionReceiveEvents: {value: true},
+        permissionCall: {value: true},
+        permissionAddReference: {value: true},
+        permissionRemoveReference: {value: true},
+        permissionDeleteNode: {value: true},
+        permissionAddNode: {value: true},
+        name: {value: ""},
+    },
+    inputs: 1,
+    outputs: 1,
+    align: "right",
+    icon: "opcuanodeLogo.png",
+    label: function () {
+      return this.name || "OPC UA Rights";
+    },
+    labelStyle: function () {
+      return this.name ? "node_label_italic" : "";
+    }
+});
+</script>
+
+<script type="text/x-red" data-template-name="OpcUa-Rights">
+    <div class="form-row">
+        <label for="node-input-accessLevelCurrentRead" style="width:72%;"><i class="icon-tasks"></i> Access level: read</label>
+        <input type="checkbox" id="node-input-accessLevelCurrentRead" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-accessLevelCurrentWrite" style="width:72%;"><i class="icon-tasks"></i> Access level: write</label>
+        <input type="checkbox" id="node-input-accessLevelCurrentWrite" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-accessLevelStatusWrite" style="width:72%;"><i class="icon-tasks"></i> Access level: status write</label>
+        <input type="checkbox" id="node-input-accessLevelStatusWrite" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-accessLevelHistoryRead" style="width:72%;"><i class="icon-tasks"></i> Access level: history read</label>
+        <input type="checkbox" id="node-input-accessLevelHistoryRead" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-accessLevelHistoryWrite" style="width:72%;"><i class="icon-tasks"></i> Access level: history write</label>
+        <input type="checkbox" id="node-input-accessLevelHistoryWrite" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-accessLevelSemanticChange" style="width:72%;"><i class="icon-tasks"></i> Access level: semantic change</label>
+        <input type="checkbox" id="node-input-accessLevelSemanticChange" style="max-width:20px">
+    </div>
+    <hr>
+    <div class="form-row">
+        <label for="node-input-role"><i class="icon-time"></i> User role</label>
+        <select type="text" id="node-input-role" style="max-width:160px">
+            <option value="a">Anonymous</option>
+            <option value="u">Authenticated user</option>
+            <option value="b">Observer</option>
+            <option value="e">Engineer</option>
+            <option value="o">Operator</option>
+            <option value="c">Configure admin</option>
+            <option value="s">Security admin</option>
+            <option value="v">Supervisor</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionBrowse" style="width:72%;"><i class="icon-tasks"></i> Permission: browse</label>
+        <input type="checkbox" id="node-input-permissionBrowse" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionRead" style="width:72%;"><i class="icon-tasks"></i> Permission: read</label>
+        <input type="checkbox" id="node-input-permissionRead" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionWrite" style="width:72%;"><i class="icon-tasks"></i> Permission: write</label>
+        <input type="checkbox" id="node-input-permissionWrite" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionWriteAttribute" style="width:72%;"><i class="icon-tasks"></i> Permission: write attribute</label>
+        <input type="checkbox" id="node-input-permissionWriteAttribute" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionReadRole" style="width:72%;"><i class="icon-tasks"></i> Permission: read role</label>
+        <input type="checkbox" id="node-input-permissionReadRole" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionWriteRole" style="width:72%;"><i class="icon-tasks"></i> Permission: write role</label>
+        <input type="checkbox" id="node-input-permissionWriteRole" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionReadHistory" style="width:72%;"><i class="icon-tasks"></i> Permission: read history</label>
+        <input type="checkbox" id="node-input-permissionReadHistory" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionWriteHistory" style="width:72%;"><i class="icon-tasks"></i> Permission: write history</label>
+        <input type="checkbox" id="node-input-permissionWriteHistory" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionInsertHistory" style="width:72%;"><i class="icon-tasks"></i> Permission: insert history</label>
+        <input type="checkbox" id="node-input-permissionInsertHistory" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionModifyHistory" style="width:72%;"><i class="icon-tasks"></i> Permission: modify history</label>
+        <input type="checkbox" id="node-input-permissionModifyHistory" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionDeleteHistory" style="width:72%;"><i class="icon-tasks"></i> Permission: delete history</label>
+        <input type="checkbox" id="node-input-permissionDeleteHistory" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionReceiveEvents" style="width:72%;"><i class="icon-tasks"></i> Permission: receive events</label>
+        <input type="checkbox" id="node-input-permissionReceiveEvents" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionCall" style="width:72%;"><i class="icon-tasks"></i> Permission: call methods</label>
+        <input type="checkbox" id="node-input-permissionCall" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionAddReference" style="width:72%;"><i class="icon-tasks"></i> Permission: add reference</label>
+        <input type="checkbox" id="node-input-permissionAddReference" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionRemoveReference" style="width:72%;"><i class="icon-tasks"></i> Permission: remove reference</label>
+        <input type="checkbox" id="node-input-permissionRemoveReference" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionDeleteNode" style="width:72%;"><i class="icon-tasks"></i> Permission: delete node</label>
+        <input type="checkbox" id="node-input-permissionDeleteNode" style="max-width:20px">
+    </div>
+    <div class="form-row">
+        <label for="node-input-permissionAddNode" style="width:72%;"><i class="icon-tasks"></i> Permission: add node</label>
+        <input type="checkbox" id="node-input-permissionAddNode" style="max-width:20px">
+    </div>
+    <hr>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i>Name</label>
+        <input type="text" id="node-input-name" placeholder="">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="OpcUa-Rights">
+    <p>Set object / variable access level, user access level and permissions</p>
+    <h2>Access rights</h2>
+    <h3>Access level parameters inside node</h3>
+        <ul>
+            <li>CurrentRead
+            <li>CurrentWrite
+            <li>StatusWrite
+            <li>HistoryRead
+            <li>HistoryWrite
+            <li>SemanticChange
+        </ul>
+    <h2>User role, only well known roles available</h2>
+    <ul>
+        <li>Anonymous
+        <li>Authenticated user; username & password
+        <li>Observer
+        <li>Engineer
+        <li>Operator
+        <li>Configure admin
+        <li>Security admin
+        <li>Supervisor
+    </ul>
+    <h3>Permissions</h3>
+    <ul>
+        <li>Browse
+        <li>Read
+        <li>Write
+        <li>Write attribute
+        <li>Read role
+        <li>Write role
+        <li>Read history
+        <li>Write history
+        <li>Insert history
+        <li>Modify history
+        <li>Delete history
+        <li>Receive events
+        <li>Call methods
+        <li>Add reference
+        <li>Remove reference
+        <li>Delete node
+        <li>Add node
+    </ul>
+    <strong>Name</strong>
+    <p>Name in the flow of Node-RED.</p>
+</script>
