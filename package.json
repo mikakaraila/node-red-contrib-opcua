@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-opcua",
-  "version": "0.2.266",
+  "version": "0.2.267",
   "description": "A Node-RED node to communicate via OPC UA based on node-opcua library.",
   "repository": {
     "type": "git",
@@ -31,7 +31,8 @@
       "OpcUa-Server": "opcua/104-opcuaserver.js",
       "OpcUa-Endpoint": "opcua/105-opcuaendpoint.js",
       "OpcUa-Event": "opcua/106-opcuaevent.js",
-      "OpcUa-Method": "opcua/107-opcuamethod.js"
+      "OpcUa-Method": "opcua/107-opcuamethod.js",
+      "OpcUa-Rights": "opcua/108-opcuarights.js"
     }
   },
   "engines": {
