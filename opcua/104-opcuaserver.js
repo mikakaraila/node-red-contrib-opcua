@@ -294,8 +294,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.266",
-                buildDate: "2022-03-29T13:24:00"
+                buildNumber: "0.2.267",
+                buildDate: "2022-03-31T21:57:00"
             };
             
             var hostname = os.hostname();
@@ -659,11 +659,33 @@ module.exports = function (RED) {
                     if (folder) {
                         parentFolder = folder; // Use previously created folder as parentFolder or setFolder() can be used to set parentFolder
                     }
+                    // Check & add from msg accessLevel userAccessLevel, role & permissions
+                    let accessLevel = opcua.makeAccessLevelFlag("CurrentRead|CurrentWrite"); // Use as default
+                    let userAccessLevel = opcua.makeAccessLevelFlag("CurrentRead|CurrentWrite"); // Use as default
+                    if (msg.accessLevel) {
+                        accessLevel = msg.accessLevel;
+                    }
+                    if (msg.userAccessLevel) {
+                        userAccessLevel = msg.userAccessLevel;
+                    }
+                    // permissions collected from multiple opcua-rights
+                    let permissions = [
+                        { roleId: opcua.WellKnownRoles.Anonymous, permissions: opcua.allPermissions },
+                        { roleId: opcua.WellKnownRoles.AuthenticatedUser, permissions: opcua.allPermissions },
+                        ];
+                    if (msg.permissions) {
+                        permissions = msg.permissions;
+                    }
+                    
                     // Own namespace
                     if (msg.topic.indexOf("ns=1;") >= 0) {
                         folder = addressSpace.getOwnNamespace().addObject({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
                             nodeId: msg.topic,
+                            accessLevel: accessLevel, // TEST more
+                            userAccessLevel: userAccessLevel, // TEST more
+                            rolePermissions: [].concat(permissions),
+                            accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
                             browseName: msg.topic.substring(7)
                         });
                     }
@@ -677,6 +699,10 @@ module.exports = function (RED) {
                         folder = ns.addObject({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
                             nodeId: msg.topic,
+                            accessLevel: accessLevel, // TEST more
+                            userAccessLevel: userAccessLevel, // TEST more
+                            rolePermissions: [].concat(permissions),
+                            accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
                             browseName: msg.topic.substring(msg.topic.indexOf(";s=")+3)
                         })
                     }
@@ -854,10 +880,30 @@ module.exports = function (RED) {
                             // TODO get/set functions and other tricks as with normal scalar
                             return opcua.StatusCodes.Good;
                         }
-
+                        // Check & add from msg accessLevel userAccessLevel, role & permissions
+                        let accessLevel = opcua.makeAccessLevelFlag("CurrentRead|CurrentWrite"); // Use as default
+                        let userAccessLevel = opcua.makeAccessLevelFlag("CurrentRead|CurrentWrite"); // Use as default
+                        if (msg.accessLevel) {
+                            accessLevel = msg.accessLevel;
+                        }
+                        if (msg.userAccessLevel) {
+                            userAccessLevel = msg.userAccessLevel;
+                        }    
+                        // permissions collected from multiple opcua-rights
+                        let permissions = [
+                            { roleId: opcua.WellKnownRoles.Anonymous, permissions: opcua.allPermissions },
+                            { roleId: opcua.WellKnownRoles.AuthenticatedUser, permissions: opcua.allPermissions },
+                            ];
+                        if (msg.permissions) {
+                            permissions = msg.permissions;
+                        }
                         var newVAR = namespace.addVariable({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
                             nodeId: name,
+                            accessLevel: accessLevel,
+                            userAccessLevel: userAccessLevel,
+                            rolePermissions: [].concat(permissions),
+                            accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
                             browseName: browseName, // or displayName
                             dataType: datatype, // opcuaDataType,
                             valueRank,
@@ -909,6 +955,7 @@ module.exports = function (RED) {
                                 }
                             }
                         });
+                  
                         var newvar = { "payload" : { "messageType" : "Variable", "variableName": ns + ":" + browseName, "nodeId": newVAR.nodeId.toString() }};
                         node.send(newvar);
 
