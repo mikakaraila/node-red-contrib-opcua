@@ -81,6 +81,7 @@ module.exports = function (RED) {
             if (fs.existsSync(node.users)) {
                 users = JSON.parse(fs.readFileSync(node.users));
                 verbose_log("Loaded users: " + JSON.stringify(users));
+                console.log(chalk.red("USERS: " + JSON.stringify(users)));
                 setUsers(users);
             }
             else {
@@ -120,33 +121,39 @@ module.exports = function (RED) {
             // User manager
             userManager = {
                 isValidUser: (username, password) => {
-                    const uIndex = users.findIndex(function(u) { return u.username === username; });                    
+                    // console.log(chalk.red("Login username: " + username + " password: " + password))
+                    const uIndex = users.findIndex(function(u) { return u.username === username; });
                     if (uIndex < 0) {
+                        // console.log(chalk.red("No such user:" + username));
                         return false;
                     }
                     if (users[uIndex].password !== password) {
+                        // console.log(chalk.red("Wrong password for username: " + username + " tried with wrong password:" + password));
                         return false;
                     }
+                    // console.log(chalk.green("Login successful for username: " + username));
                     return true;
                 },
-                getUserRole: username => {
+                getUserRoles: (username) =>  {
+                    // console.log(chalk.red("Get user role for username: " + username));
                     if (username === "Anonymous" || username === "anonymous") {
-                        return WellKnownRoles.Anonymous;
+                        return opcua.makeRoles(opcua.WellKnownRoles.Anonymous);
                     }
                     const uIndex = users.findIndex(function(x) { return x.username === username; });
                     if (uIndex < 0) {  
-                        return WellKnownRoles.Guest; // by default were guest! ( i.e anonymous), read-only access 
+                        // Check this TODO
+                        return opcua.makeRoles("AuthenticatedUser"); // opcua.WellKnownRoles.Anonymous; // by default were guest! ( i.e anonymous), read-only access 
                     }
                     const userRole = users[uIndex].role;
-
                     // Default available roles, note each variable / methods should have permissions for real use case
-                    if (userRole === "Anonymous") return WellKnownRoles.Anonymous;
-                    if (userRole === "Guest") return WellKnownRoles.AuthenticatedUser;
-                    if (userRole === "Engineer") return WellKnownRoles.Engineer;
-                    if (userRole === "Observer") return WellKnownRoles.Observer;
-                    if (userRole === "Operator") return WellKnownRoles.Operator;
-                    if (userRole === "ConfigureAdmin") return WellKnownRoles.ConfigureAdmin;
-                    if (userRole === "SecurityAdmin") return WellKnownRoles.SecurityAdmin;
+                    if (userRole === "Anonymous") return opcua.makeRoles("Anonymous"); // opcua.WellKnownRoles.Anonymous;
+                    if (userRole === "Guest") return opcua.makeRoles("AuthenticatedUser"); // opcua.WellKnownRoles.AuthenticatedUser;
+                    if (userRole === "Engineer") return opcua.makeRoles("Engineer"); // opcua.WellKnownRoles.Engineer;
+                    if (userRole === "Observer") return opcua.makeRoles("Observer"); // opcua.WellKnownRoles.Observer;
+                    if (userRole === "Operator") return opcua.makeRoles("Operator"); // return opcua.WellKnownRoles.Operator;
+                    if (userRole === "ConfigureAdmin") return opcua.makeRoles("ConfigureAdmin"); // return opcua.WellKnownRoles.ConfigureAdmin;
+                    if (userRole === "SecurityAdmin") return  pcua.makeRoles("SecurityAdmin"); // return opcua.WellKnownRoles.SecurityAdmin;
+                    if (userRole === "Supervisor") return opcua.makeRoles("Supervisor"); // return opcua.WellKnownRoles.Supervisor;
 
                     // Return configurated role
                     return userRole;
@@ -294,8 +301,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.267",
-                buildDate: "2022-03-31T21:57:00"
+                buildNumber: "0.2.268",
+                buildDate: "2022-04-02T09:50:00"
             };
             
             var hostname = os.hostname();
