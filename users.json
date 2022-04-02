@@ -10,6 +10,11 @@
       "role": "Operator"
     },
     {
+      "username": "James",
+      "password": "Bond",
+      "role": "Observer"
+    },
+    {
       "username": "Administrator",
       "password": "HardPassword!",
       "role": "ConfigureAdmin"
