@@ -567,12 +567,21 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
             break;
         case "DateTime":
             if (typeof value === "string") {
+                // String format like "2022-04-03 12:13:14"
                 nValue = new opcua.Variant({
                     dataType: opcua.DataType.DateTime,
                     value: new Date(Date.parse(value))
                 });
             }
-            else {    
+            else if (value instanceof Date) {
+                // Date object
+                nValue = new opcua.Variant({
+                    dataType: opcua.DataType.DateTime,
+                    value: value
+                });
+            }
+            else {
+                // Number
                 nValue = new opcua.Variant({
                     dataType: opcua.DataType.DateTime,
                     value: new Date(value)
@@ -864,6 +873,13 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
             if (typeof value === "string") {
                 nValue = value; // Date.parse(value); // new Date(value);  // value.toString();
             }
+            else if (value instanceof Date) {
+                // Date object
+                nValue = new opcua.Variant({
+                    dataType: opcua.DataType.DateTime,
+                    value: value
+                });
+            }
             else {
                 // injected timestamp as integer
                 nValue = {
@@ -1011,6 +1027,13 @@ module.exports.build_new_dataValue = function (datatype, value) {
                     dataType: opcua.DataType.DateTime, // was UtcTime
                     value: new Date(Date.parse(value))
                 };
+            }
+            else if (value instanceof Date) {
+                // Date object
+                nValue = new opcua.Variant({
+                    dataType: opcua.DataType.DateTime,
+                    value: value
+                });
             }
             else {
                 // injected timestamp as integer
