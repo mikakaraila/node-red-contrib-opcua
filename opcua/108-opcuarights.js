@@ -57,7 +57,9 @@ module.exports = function (RED) {
     this.permissionDeleteNode = n.permissionDeleteNode;
     this.permissionAddNode = n.permissionAddNode;
     var node = this;
-    console.log("Node parameters: " + JSON.stringify(node));
+    
+    node.debug("Node parameters: " + JSON.stringify(node));
+    
     node.on("input", function (msg) {
       // This node will extend new field to msg so addVariable can set needed access level and permissions
       // From the selected values
