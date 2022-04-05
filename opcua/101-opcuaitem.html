@@ -97,7 +97,9 @@ limitations under the License.
     <p>Item contains valid OPC UA address like ns=2;i=4 OR ns=3;s=MyVariable</p>
     <p>There are not all Types possible for now, but you can select some.</p>
     <p>Value is needed only if item will be written to OPC UA server.</p>
-    <p>If value isn't filled, OpcUa-Item sends input <strong>payload</strong>.</p>
+    <p>If value isn't filled, OpcUa-Item sends input <strong>msg.payload</strong>.</p>
     <p>Array values are delimited by , and must be given in following syntax:</p>
     <p>5,4,3,2,1</p>
+    <p><strong>NOTE:</strong> Item value can be used as initial value when msg.payload is empty.</p>
+    <p>      Otherwise msg.payload is used to set value.</p>
 </script>
