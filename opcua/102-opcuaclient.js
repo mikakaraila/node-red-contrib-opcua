@@ -251,7 +251,7 @@ module.exports = function (RED) {
 
     function create_opcua_client(callback) {
       node.client = null;
-      verbose_warn("Create Client: " + stringify(connectionOption));
+      verbose_log("Create Client: " + stringify(connectionOption));
       try {
         // Use empty 0.0.0.0 address as "no client" initial value
         if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") == 0) {
@@ -494,7 +494,7 @@ module.exports = function (RED) {
       }
 
       if (!node.action) {
-        verbose_warn("can't work without action (read, write, browse ...)");
+        verbose_warn("Can't work without action (read, write, browse ...)");
         //node.send(msg); // do not send in case of error
         return;
       }
@@ -969,9 +969,9 @@ module.exports = function (RED) {
                   }
 
                   if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
-                    verbose_log("\tStatus-Code:" + (dataValue.statusCode.toString(16)));
+                    verbose_log("StatusCode: " + (dataValue.statusCode.toString(16)));
                   } else {
-                    verbose_warn("\tStatus-Code:" + dataValue.statusCode.toString(16));
+                    verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
                   }
 
                   var serverTs = dataValue.serverTimestamp;
@@ -1176,7 +1176,7 @@ module.exports = function (RED) {
       }
 
       let nodeToWrite;
-      if (node.session) {
+      if (node.session && !node.session.isReconnecting && node.session.isChannelValid()) {
         if (range) {
           nodeToWrite = {
             nodeId: nodeid.toString(),
@@ -1273,8 +1273,7 @@ module.exports = function (RED) {
           return;
         }
       }
-      if (node.session && msg.topic === "writemultiple") {
-        //  node.session.read({timestampsToReturn: TimestampsToReturn.Both, nodesToRead: multipleItems}, function (err, dataValues, diagnostics) {
+      if (node.session && !node.session.isReconnecting && node.session.isChannelValid() && msg.topic === "writemultiple") {
         verbose_log("Writing items: " + stringify(writeMultipleItems));
         if (writeMultipleItems.length === 0) {
           node_error(node.name + " no items to write");
@@ -1294,18 +1293,13 @@ module.exports = function (RED) {
           }
         });
       }
-    
-/*
-      verbose_log("msg=" + stringify(msg));
-      verbose_log("namespace=" + ns);
-      verbose_log("string=" + s);
-      if (msg.datatype) {
-        verbose_log("type=" + msg.datatype);
+      else {
+        set_node_status_to("Session invalid");
+        node_error("Session is not active!")
       }
-      verbose_log("payload value=" + stringify(msg.payload));
-*/
+    
       // OLD original way to use payload
-      if (node.session) {
+      if (node.session && !node.session.isReconnecting && node.session.isChannelValid()) {
         if (Array.isArray(msg.payload)) {
           const nodesToWrite = msg.payload.map(function (msgToWrite) {
             var opcuaDataValue = opcuaBasics.build_new_dataValue(msgToWrite.datatype || msg.datatype, msgToWrite.value);
@@ -1336,7 +1330,6 @@ module.exports = function (RED) {
             }
           });
         }
-
       } else {
         set_node_status_to("Session invalid");
         node_error("Session is not active!")
@@ -1487,7 +1480,7 @@ module.exports = function (RED) {
         }
 
         verbose_log(msg.topic + " samplingInterval " + interval + " queueSize " + queueSize);
-        verbose_warn("Monitoring value: " + msg.topic + ' by interval of ' + interval.toString() + " ms");
+        verbose_log("Monitoring value: " + msg.topic + ' by interval of ' + interval.toString() + " ms");
 
         // Validate nodeId
         try {
@@ -1659,9 +1652,9 @@ module.exports = function (RED) {
           verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
           verbose_log(dataValue.toString());
           if (dataValue.statusCode === opcua.StatusCodes.Good) {
-            verbose_log("Status-Code:" + dataValue.statusCode.toString(16));
+            verbose_log("StatusCode: " + dataValue.statusCode.toString(16));
           } else {
-            verbose_warn("Status-Code:" + dataValue.statusCode.toString(16));
+            verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
           }
           var msgToSend = {};
           msgToSend.statusCode = dataValue.statusCode;
@@ -1863,7 +1856,7 @@ module.exports = function (RED) {
         verbose_log("Msg " + stringify(msg));
         var interval = convertAndCheckInterval(msg.payload);
         verbose_log(msg.topic + " samplingInterval " + interval);
-        verbose_warn("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
+        verbose_log("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
         // TODO read nodeId to validate it before subscription
         try {
           monitoredItem = opcua.ClientMonitoredItem.create(subscription,
@@ -1947,13 +1940,13 @@ module.exports = function (RED) {
       if (msg && msg.OpcUaEndpoint) {
         // Remove listeners if existing
         if (node.client) {
-          verbose_warn("Cleanup old listener events... before connecting to new client");
-          verbose_warn("All event names:" + node.client.eventNames());
-          verbose_warn("Connection_reestablished event count:" + node.client.listenerCount("connection_reestablished"));
+          verbose_log("Cleanup old listener events... before connecting to new client");
+          verbose_log("All event names:" + node.client.eventNames());
+          verbose_log("Connection_reestablished event count:" + node.client.listenerCount("connection_reestablished"));
           node.client.removeListener("connection_reestablished", reestablish);
-          verbose_warn("Backoff event count:" + node.client.listenerCount("backoff"));
+          verbose_log("Backoff event count:" + node.client.listenerCount("backoff"));
           node.client.removeListener("backoff", backoff);
-          verbose_warn("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
+          verbose_log("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
           node.client.removeListener("start_reconnection", reconnection);
         }
         opcuaEndpoint = {}; // Clear
@@ -1986,7 +1979,7 @@ module.exports = function (RED) {
             node_error("Session close error: " + err);
           }
           else {
-            verbose_warn("Session closed!");
+            verbose_log("Session closed!");
           }
         });
       }
