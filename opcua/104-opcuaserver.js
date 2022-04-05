@@ -234,11 +234,11 @@ module.exports = function (RED) {
                 };
             });
         }
-        verbose_warn("node set:" + xmlFiles.toString());
+        verbose_log("NodeSet:" + xmlFiles.toString());
         
         async function initNewServer() {
             initialized = false;
-            verbose_warn("create Server from XML ...");
+            verbose_log("Create Server from XML ...");
             // DO NOT USE "%FQDN%" anymore, hostname is OK
             const applicationUri =  opcua.makeApplicationUrn(os.hostname(), "node-red-contrib-opcua-server");
             const serverCertificateManager = createServerCertificateManager(node.autoAcceptUnknownCertificate, node.folderName4PKI);
@@ -301,8 +301,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.269",
-                buildDate: "2022-04-03T16:14:00"
+                buildNumber: "0.2.270",
+                buildDate: "2022-04-05T19:05:00"
             };
             
             var hostname = os.hostname();
@@ -313,7 +313,7 @@ module.exports = function (RED) {
         }
 
         function construct_my_address_space(addressSpace) {
-            verbose_warn("Server add VendorName ...");
+            verbose_log("Server: add VendorName ...");
             vendorName = addressSpace.getOwnNamespace().addObject({
                 organizedBy: addressSpace.rootFolder.objects,
                 nodeId: "ns=1;s=VendorName",
@@ -331,7 +331,7 @@ module.exports = function (RED) {
                 browseName: "Physical Assets"
             });
 
-            verbose_warn('Server add MyVariable2 ...');
+            verbose_log('Server: add MyVariable2 ...');
 
             var variable2 = 10.0;
 
@@ -355,7 +355,7 @@ module.exports = function (RED) {
                 }
             });
 
-            verbose_warn('Server add FreeMemory ...');
+            verbose_log('Server: add FreeMemory ...');
             addressSpace.getOwnNamespace().addVariable({
                 componentOf: vendorName,
                 nodeId: "ns=1;s=FreeMemory",
@@ -372,7 +372,7 @@ module.exports = function (RED) {
                 }
             });
 
-            verbose_warn('Server add Counter ...');
+            verbose_log('Server: add Counter ...');
             node.vendorName = addressSpace.getOwnNamespace().addVariable({
                 componentOf: vendorName,
                 nodeId: "ns=1;s=Counter",
@@ -539,7 +539,7 @@ module.exports = function (RED) {
                     var references = rootFolder.findReferences("Organizes", true);
 
                     if (findReference(references, equipment.nodeId)) {
-                        verbose_warn("Equipment Reference found in VendorName");
+                        verbose_log("Equipment Reference found in VendorName");
                         equipmentNotFound = false;
                     } else {
                         verbose_warn("Equipment Reference not found in VendorName");
@@ -632,7 +632,7 @@ module.exports = function (RED) {
                     break;
 
                 case "addEquipment":
-                    verbose_warn("adding Node".concat(payload.nodeName));
+                    verbose_log("Adding node: ".concat(payload.nodeName));
                     equipmentCounter++;
                     name = payload.nodeName.concat(equipmentCounter);
 
@@ -644,7 +644,7 @@ module.exports = function (RED) {
                     break;
 
                 case "addPhysicalAsset":
-                    verbose_warn("adding Node".concat(payload.nodeName));
+                    verbose_log("Adding node: ".concat(payload.nodeName));
                     physicalAssetCounter++;
                     name = payload.nodeName.concat(physicalAssetCounter);
 
@@ -656,12 +656,12 @@ module.exports = function (RED) {
                     break;
 
                 case "setFolder":
-                    verbose_warn("set Folder ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
+                    verbose_log("Set Folder: ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
                     folder = addressSpace.findNode(msg.topic);
                     break;
 
                 case "addFolder":
-                    verbose_warn("adding Folder ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
+                    verbose_log("Adding Folder: ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
                     var parentFolder = node.server.engine.addressSpace.rootFolder.objects;
                     if (folder) {
                         parentFolder = folder; // Use previously created folder as parentFolder or setFolder() can be used to set parentFolder
@@ -716,7 +716,7 @@ module.exports = function (RED) {
                     break;
 
                 case "addVariable":
-                    verbose_warn("adding Node ".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
+                    verbose_log("Adding node: ".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
                     var datatype = "";
                     var opcuaDataType = null;
                     var e = msg.topic.indexOf("datatype=");
@@ -970,7 +970,7 @@ module.exports = function (RED) {
                     break;
 
                 case "installHistorian":
-                        verbose_warn("install historian for Node ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
+                        verbose_log("Install historian for node: ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
                         var datatype = "";
                         var opcuaDataType = null;
                         var nodeStr = msg.topic.substring(0, msg.topic.indexOf(";datatype=")); 
@@ -988,8 +988,8 @@ module.exports = function (RED) {
                     break;
                 
                 case "addMethod":
-                    verbose_warn("install discrete alarm for node: ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
-                    node.debug("Parameters: " + JSON.stringify(msg));
+                    verbose_log("Add method for node: ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
+                    verbose_log("Parameters: " + JSON.stringify(msg));
                     const parentNode = addressSpace.getOwnNamespace().findNode(msg.topic);
                     if (!parentNode) {
                         node.error("Method needs parent node, wrong nodeId in the msg.topic: " + msg.topic);
@@ -1037,7 +1037,7 @@ module.exports = function (RED) {
 
                     var searchedNode = addressSpace.findNode(payload.nodeId);
                     if (searchedNode === undefined) {
-                        verbose_warn("Cannot find Node: " + payload.nodeId + " from addressSpace")
+                        verbose_warn("Cannot find node: " + payload.nodeId + " from addressSpace")
                     } else {
                         addressSpace.deleteNode(searchedNode);
                     }
@@ -1070,7 +1070,7 @@ module.exports = function (RED) {
                     break;
 
                 case "installDiscreteAlarm":
-                    verbose_warn("install discrete alarm for node: ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
+                    verbose_log("Install discrete alarm for node: ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
                     var alarmText = msg.alarmText;
                     var priority = msg.priority;
                     var nodeStr = msg.topic.substring(0, msg.topic.indexOf(";datatype=")); 
@@ -1147,7 +1147,7 @@ module.exports = function (RED) {
                     break;    
 
                 case "installLimitAlarm":
-                        verbose_warn("install limit alarm for node: ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
+                        verbose_log("install limit alarm for node: ".concat(msg.topic)); // Example topic format ns=1;s=VariableName;datatype=Double
                         var highhighLimit = msg.hh;
                         var highLimit = msg.h;
                         var lowLimit = msg.l;
@@ -1382,12 +1382,12 @@ module.exports = function (RED) {
         }
 
         async function restart_server() {
-            verbose_warn("Restart OPC UA Server");
+            verbose_log("Restarting OPC UA Server");
             if (node.server) {
                 node.server.engine.setShutdownReason("Shutdown command received");
                 // Wait 10s before shutdown
                 await node.server.shutdown(10000).then(() => {
-                    verbose_warn("Server has shutdown");
+                    verbose_log("Server has shutdown");
                     node.server.dispose();
                     node.server = null;
                     vendorName = null;
@@ -1435,20 +1435,20 @@ module.exports = function (RED) {
             } 
 
             if (node.server) {
-                verbose_warn("Restart OPC UA Server done");
+                verbose_log("Restart OPC UA Server done");
             } else {
                 node_error("Cannot restart OPC UA Server");
             }
         }
 
         node.on("close", function () {
-            verbose_warn("closing...");
+            verbose_log("Closing...");
             close_server();
         });
 
-        function close_server() {
+        async function close_server() {
             if (node.server) {
-                node.server.shutdown(0, function () {
+                await node.server.shutdown(0, function () {
                     node.server = null;
                     vendorName = null;
                 });
