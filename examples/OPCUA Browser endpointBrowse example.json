@@ -1,0 +1,101 @@
+[
+    {
+        "id": "58c0065ebdc1d89d",
+        "type": "tab",
+        "label": "OPC UA Browser endpointBrowse example",
+        "disabled": true,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "956a4221da6bda1f",
+        "type": "function",
+        "z": "58c0065ebdc1d89d",
+        "name": "browse with specific endpoint",
+        "func": "msg.payload={\"actiontype\":\"endpointBrowse\"};\nmsg.OpcUaEndpoint = {\n    credentials: {},\n    endpoint: msg.endpoint,\n    securityPolicy: 'None',\n    securityMode: 'None',\n    login: false,\n    user: undefined,\n    password: undefined \n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 200,
+        "wires": [
+            [
+                "6b17b2da2b942bb4"
+            ]
+        ]
+    },
+    {
+        "id": "3bcd718c7e713c9d",
+        "type": "inject",
+        "z": "58c0065ebdc1d89d",
+        "name": "endpointBrowse",
+        "props": [
+            {
+                "p": "endpoint",
+                "v": "opc.tcp://192.168.137.1:53530/OPCUA/SimulationServer",
+                "vt": "str"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "0",
+        "topic": "ns=3;s=85/0:Simulation",
+        "x": 200,
+        "y": 200,
+        "wires": [
+            [
+                "956a4221da6bda1f"
+            ]
+        ]
+    },
+    {
+        "id": "869acefead40215e",
+        "type": "debug",
+        "z": "58c0065ebdc1d89d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 890,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "6b17b2da2b942bb4",
+        "type": "OpcUa-Browser",
+        "z": "58c0065ebdc1d89d",
+        "endpoint": "83439742.083188",
+        "item": "",
+        "datatype": "",
+        "topic": "",
+        "items": [],
+        "name": "",
+        "x": 690,
+        "y": 200,
+        "wires": [
+            [
+                "869acefead40215e"
+            ]
+        ]
+    },
+    {
+        "id": "83439742.083188",
+        "type": "OpcUa-Endpoint",
+        "endpoint": "opc.tcp://0.0.0.0:4840/",
+        "secpol": "None",
+        "secmode": "None",
+        "login": false
+    }
+]
