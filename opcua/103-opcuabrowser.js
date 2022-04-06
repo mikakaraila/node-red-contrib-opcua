@@ -171,7 +171,13 @@ module.exports = function (RED) {
                             }
                         }
                         break;
-
+                    case 'endpointBrowse':
+                        node.warn("endpointBrowse");
+                        if (msg.hasOwnProperty('OpcUaEndpoint')) {
+                            [opcuaEndpoint,connectionOption,userIdentity]=setEndpoint(msg,opcuaEndpoint,connectionOption,userIdentity);
+                            browseTopic = msg.topic;
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -219,6 +225,24 @@ module.exports = function (RED) {
             node.warn("Browse to root Objects");
             return "ns=0;i=85"; // OPC UA Root Folder Objects
         }
+
+        function setEndpoint(msg,opcuaEndpoint,connectionOption,userIdentity) {//Used for "endpointBrowse"
+            if (msg && msg.OpcUaEndpoint) {
+              opcuaEndpoint = {}; // Clear old endpoint
+              opcuaEndpoint = msg.OpcUaEndpoint; // Check all parameters!
+              connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy]; // || opcua.SecurityPolicy.None;
+              connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode]; // || opcua.MessageSecurityMode.None;
+              //verbose_log("NEW connectionOption security parameters, policy: " + connectionOption.securityPolicy + " mode: " + connectionOption.securityMode);
+              if (opcuaEndpoint.login === true) {
+                userIdentity.userName = opcuaEndpoint.user;
+                userIdentity.password = opcuaEndpoint.password;
+                userIdentity.type = opcua.UserTokenType.UserName;
+                //verbose_log("NEW UserIdentity: " + JSON.stringify(userIdentity));
+              }
+            }
+            node.warn("setEndpoint:" + JSON.stringify(opcuaEndpoint));
+            return [opcuaEndpoint,connectionOption,userIdentity];
+          }
     }
 
     RED.nodes.registerType("OpcUa-Browser", OpcUaBrowserNode);
