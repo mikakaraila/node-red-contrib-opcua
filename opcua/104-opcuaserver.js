@@ -301,8 +301,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.270",
-                buildDate: "2022-04-05T19:05:00"
+                buildNumber: "0.2.271",
+                buildDate: "2022-04-08T07:56:00"
             };
             
             var hostname = os.hostname();
@@ -667,8 +667,8 @@ module.exports = function (RED) {
                         parentFolder = folder; // Use previously created folder as parentFolder or setFolder() can be used to set parentFolder
                     }
                     // Check & add from msg accessLevel userAccessLevel, role & permissions
-                    let accessLevel = opcua.makeAccessLevelFlag("CurrentRead|CurrentWrite"); // Use as default
-                    let userAccessLevel = opcua.makeAccessLevelFlag("CurrentRead|CurrentWrite"); // Use as default
+                    var accessLevel = opcua.makeAccessLevelFlag("CurrentRead|CurrentWrite"); // Use as default
+                    var userAccessLevel = opcua.makeAccessLevelFlag("CurrentRead|CurrentWrite"); // Use as default
                     if (msg.accessLevel) {
                         accessLevel = msg.accessLevel;
                     }
@@ -888,8 +888,8 @@ module.exports = function (RED) {
                             return opcua.StatusCodes.Good;
                         }
                         // Check & add from msg accessLevel userAccessLevel, role & permissions
-                        let accessLevel = opcua.makeAccessLevelFlag("CurrentRead|CurrentWrite"); // Use as default
-                        let userAccessLevel = opcua.makeAccessLevelFlag("CurrentRead|CurrentWrite"); // Use as default
+                        var accessLevel = opcua.makeAccessLevelFlag("CurrentRead | CurrentWrite"); // Use as default
+                        var userAccessLevel = opcua.makeAccessLevelFlag("CurrentRead | CurrentWrite"); // Use as default
                         if (msg.accessLevel) {
                             accessLevel = msg.accessLevel;
                         }
@@ -904,6 +904,7 @@ module.exports = function (RED) {
                         if (msg.permissions) {
                             permissions = msg.permissions;
                         }
+                        verbose_log("Using access level:" + accessLevel + " user access level: " + userAccessLevel + " permissions:" + JSON.stringify(permissions));
                         var newVAR = namespace.addVariable({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
                             nodeId: name,
@@ -1282,13 +1283,14 @@ module.exports = function (RED) {
                         }
                         break;
                     case "loadAddressSpace":
+                        verbose_log("Loading nodeset from file: " + msg.filename);
                         if (msg.payload && msg.filename && fs.existsSync(msg.filename)) {
                             savedAddressSpace = msg.filename;
                             node.server_options.nodeset_filename.push(msg.filename);
                             restart_server();
                         }
                         else {
-                            verbose_warn("Check msg object, it must contain msg.payload.filename for the address space in XML format!");
+                            verbose_warn("Check msg object, it must contain msg.filename for the address space in XML format!");
                         }
                         break;
                     case "bindVariables":
