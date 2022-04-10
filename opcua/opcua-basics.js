@@ -700,7 +700,7 @@ function getArrayValues(datatype, items) {
     return uaArray.values;
 }
 
-function getUaType(datatype) {
+module.exports.getUaType = function (datatype) {
     // Convert datatype from string to UA DataType
     if (datatype == "Boolean") {
         return opcua.DataType.Boolean;
