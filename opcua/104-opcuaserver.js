@@ -301,8 +301,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.271",
-                buildDate: "2022-04-08T07:56:00"
+                buildNumber: "0.2.272",
+                buildDate: "2022-04-10T17:54:00"
             };
             
             var hostname = os.hostname();
@@ -603,12 +603,34 @@ module.exports = function (RED) {
             switch (payload.messageType) {
                 case 'Variable':
                     var ns = payload.namespace.toString();
-                    verbose_log("BEFORE: " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[ns + ":" + payload.variableName]));
-                    variables[ns + ":" + payload.variableName] = payload.variableValue;
-                    // TODO to update server variable value
-                    // var node = node.server.engine.findNode("ns="+ns+";s="+ payload.variableName);
-                    // node.setValueFromSource({dataType: , value:payload.variableValue});
-                    verbose_log("AFTER : " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[ns + ":" + payload.variableName]));
+                    // Removed namespace ns usage from variables array
+                    verbose_log("BEFORE: " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[payload.variableName]));
+                    var value = payload.variableValue;
+                    if (payload.variableValue === "true") {
+                        value = true;
+                    }
+                    if (payload.variableValue === "false") {
+                        value = false;
+                    }
+                    variables[payload.variableName] = value; // ns + ":" + payload.variableName
+                    // update server variable value if needed now variables[name]=value used
+                    /*
+                    var addressSpace = node.server.engine.addressSpace;
+                    var vnode = addressSpace.findNode("ns="+ns+";s="+ payload.variableName);
+                    if (vnode) {
+                        if (payload.datatype && payload.variableValue) {
+                            var newValue = opcuaBasics.build_new_value_by_datatype(payload.datatype, payload.variableValue);
+                            vnode.setValueFromSource(newValue); // TODO Check payload need datatype
+                        }
+                        else {
+                            node.error("Payload must contain datatype like Float or Boolean nad variableValue!");
+                        }
+                    }
+                    else {
+                        node.error("Variable not found from server address space: " + payload.namespace + ":" + payload.variableName);
+                    }
+                    */
+                    verbose_log("AFTER : " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[payload.variableName]));
                     break;
                 default:
                     break;
@@ -658,6 +680,12 @@ module.exports = function (RED) {
                 case "setFolder":
                     verbose_log("Set Folder: ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
                     folder = addressSpace.findNode(msg.topic);
+                    if (folder) {
+                        verbose_log("Found folder: " + folder);
+                    }
+                    else {
+                        verbose_warn("Folder not found for topic: " + msg.topic);
+                    }
                     break;
 
                 case "addFolder":
@@ -783,29 +811,29 @@ module.exports = function (RED) {
                         var ns = nsindex.toString();
                         var dimensions = valueRank <= 0 ? null : [dim1]; // Fix for conformance check TODO dim2, dim3
                         var browseName = name.substring(name.indexOf(";s=")+3);
-                        variables[ns + ":" + browseName] = 0;
+                        variables[browseName] = 0; // Removed ns + ":" + 
                         if (valueRank == 1) {
                             arrayType = opcua.VariantArrayType.Array;
                             dimensions = [dim1];
-                            variables[ns + ":" + browseName] = new Float32Array(dim1); // [];
+                            variables[browseName] = new Float32Array(dim1); // []; removed ns + ":" + 
                             for (var i=0; i<dim1; i++) {
-                                variables[ns + ":" + browseName][i] = 0;
+                                variables[browseName][i] = 0; // Removed ns + ":" + 
                             }
                         }
                         if (valueRank == 2) {
                             arrayType = opcua.VariantArrayType.Matrix;
                             dimensions = [dim1, dim2];
-                            variables[ns + ":" + browseName] = new Float32Array(dim1*dim2); // [];
+                            variables[browseName] = new Float32Array(dim1*dim2); // []; removed ns + ":" + 
                             for (var i=0; i<dim1*dim2; i++) {
-                                variables[ns + ":" + browseName][i] = 0;
+                                variables[browseName][i] = 0; // Removed ns + ":" + 
                             }
                         }
                         if (valueRank == 3) {
                             arrayType = opcua.VariantArrayType.Matrix; // Actually no Cube => Matrix with 3 dims
                             dimensions = [dim1, dim2, dim3];
-                            variables[ns + ":" + browseName] = new Float32Array(dim1*dim2*dim3); // [];
+                            variables[browseName] = new Float32Array(dim1*dim2*dim3); // []; removed ns + ":" + 
                             for (var i=0; i<dim1*dim2*dim3; i++) {
-                                variables[ns + ":" + browseName][i] = 0;
+                                variables[browseName][i] = 0; // removed ns + ":" + 
                             }
                         }
 
@@ -835,23 +863,23 @@ module.exports = function (RED) {
                         }
                         if (datatype == "DateTime") {
                             opcuaDataType = opcua.DataType.DateTime;
-                            variables[ns + ":" + browseName] = new Date();
+                            variables[browseName] = new Date(); // Removed ns + ":" + 
                         }
                         if (datatype == "ExtensionObject") {
                             opcuaDataType = opcua.DataType.ExtensionObject;
-                            variables[ns + ":" + browseName] = {};
+                            variables[browseName] = {}; // Removed ns + ":" + 
                         }
                         if (datatype == "ByteString") {
                             opcuaDataType = opcua.DataType.ByteString;
-                            variables[ns + ":" + browseName] = Buffer.from("");
+                            variables[browseName] = Buffer.from(""); // Removed ns + ":" + 
                         }
                         if (datatype == "String") {
                             opcuaDataType = opcua.DataType.String;
-                            variables[ns + ":" + browseName] = "";
+                            variables[browseName] = ""; // Removed ns + ":" + 
                         }
                         if (datatype == "Boolean") {
                             opcuaDataType = opcua.DataType.Boolean;
-                            variables[ns + ":" + browseName] = true;
+                            variables[browseName] = true; // Removed ns + ":" + 
                         }
                         if (opcuaDataType === null) {
                             verbose_warn("Cannot addVariable, datatype: " + datatype + " is not valid OPC UA datatype!");
@@ -864,7 +892,7 @@ module.exports = function (RED) {
                         if (init > 0) {
                             var initialValue = msg.topic.substring(init+6);
                             verbose_log("BrowseName: " + ns + ":" + browseName + " initial value: " + initialValue);
-                            variables[ns + ":" + browseName] = opcuaBasics.build_new_value_by_datatype(datatype, initialValue);
+                            variables[browseName] = opcuaBasics.build_new_value_by_datatype(datatype, initialValue); // Removed ns + ":" + 
                         }
 
                         
@@ -923,19 +951,19 @@ module.exports = function (RED) {
                                             arrayType,
                                             dimensions,
                                             dataType: opcuaDataType,
-                                            value: variables[ns + ":" + browseName]
+                                            value: variables[browseName] // Removed ns + ":" + 
                                         });
                                     }
                                     else {
                                         return new opcua.Variant({
                                             arrayType,
                                             dataType: opcuaDataType,
-                                            value: variables[ns + ":" + browseName]
+                                            value: variables[browseName] // Removed ns + ":" + 
                                         });
                                     } 
                                 },
                                 set: function (variant) {
-                                    verbose_log("Server set new variable value : " + variables[ns + ":" + browseName] + " browseName: " + ns + ":" + browseName + " new:" + stringify(variant));
+                                    verbose_log("Server set new variable value : " + variables[browseName] + " browseName: " + ns + ":" + browseName + " new:" + stringify(variant)); // Removed ns + ":" + 
                                     /*
                                     // TODO Array partial write need some more studies
                                     if (msg.payload.range) {
@@ -952,11 +980,11 @@ module.exports = function (RED) {
                                     }
                                     else {
                                         */
-                                        variables[ns + ":" + browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
+                                        variables[browseName] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value); // Removed ns + ":" + 
                                     // }
                                     // variables[browseName] = Object.assign(variables[browseName], opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value));
-                                    verbose_log("Server variable: " + variables[ns + ":" + browseName] + " browseName: " + ns + ":" + browseName);
-                                    var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": ns + ":" + browseName, "variableValue": variables[ns + ":" + browseName] }};
+                                    verbose_log("Server variable: " + variables[browseName] + " browseName: " + ns + ":" + browseName); // Removed ns + ":" + 
+                                    var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": ns + ":" + browseName, "variableValue": variables[browseName] }}; // Removed ns + ":" + 
                                     verbose_log("msg Payload:" + JSON.stringify(SetMsg));
                                     node.send(SetMsg);
                                     return opcua.StatusCodes.Good;
@@ -1272,11 +1300,20 @@ module.exports = function (RED) {
                         }
                         break;
                     case "saveAddressSpace":
-                        if (msg.topic && msg.payload && msg.filename) {
+                        if (msg.payload && msg.filename) {
                             // Save current server namespace objects to file
-                            const namespace = addressSpace.getOwnNamespace(); // TODO msg.topic to select namespace?
-                            const xmlstr = namespace.toNodeset2XML();
-                            fs.writeFileSync(msg.filename, xmlstr.toString(), {encoding: "utf8"});
+                            var namespace = addressSpace.getOwnNamespace(); 
+                            // Use msg.topic to select namespace
+                            if (msg.topic) {
+                                namespace = addressSpace.getNamespace(parseInt(msg.topic));
+                            }
+                            if (namespace) {
+                                const xmlstr = namespace.toNodeset2XML();
+                                fs.writeFileSync(msg.filename, xmlstr.toString(), {encoding: "utf8"});
+                            }
+                            else {
+                                verbose_warn("No namespace to save to XML file, check namespace index: " + msg.topic);
+                            }
                         }
                         else {
                             verbose_warn("Check msg object, it must contain msg.filename for the address space in XML format!");
