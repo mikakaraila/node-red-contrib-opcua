@@ -197,7 +197,7 @@ limitations under the License.
             <li><b>addEquipment</b></li>
             <li><b>addPhysicalAsset</b></li>
             <li><b>setFolder</b>   msg.topic = "folderName"  // Example topic format ns=1;s=FolderName (note: uses this as parentFolder)</li>
-            <li><b>addFolder</b>          msg.topic = "ns=1;s=NewFolder"  // Note parent folder is objects if not set by setFolder</li>
+            <li><b>addFolder</b>          msg.topic = "ns=1;s=NewFolder"  // Note parent folder is objects if not set by setFolder, newFolder is set to parentFolder</li>
             <li><b>addVariable</b>        msg.topic = "ns=1;s=VariableName;datatype=Double" // parent folder is set above</li>
             <li><b>installHistorian</b>   msg.topic = "ns=1;s=VariableName;datatype=Double</li>
             <li><b>installDiscreteAlarm</b> msg.topic = "ns=1;s=VariableName;datatype=Double" parentObject msg.alarmText for the alarm, msg.priority for alarm severity</li>
@@ -209,7 +209,7 @@ limitations under the License.
             <li><b>getNamespaces</b>      output msg.payload = { nsuri1: 1, nsuri2: 2, ... }</li>
             <li><b>setUsers</b>           msg.topic = "" msg.users JSON structure of users (username, password role)</li>
             <li><b>addFile</b>            msg.topic = "ns=1;s=test.txt" // Note parent folder is objects if not set by setFolder/addFolder</li>
-            <li><b>saveAddressSpace</b>   msg.filename ="./test.xml" // Saves current AddressSpace into the given filename.</li>
+            <li><b>saveAddressSpace</b>   msg.filename ="./test.xml" // Saves current AddressSpace into the given filename. If msg.topic used, it should contain namespace index that will be saved. </li>
             <li><b>loadAddressSpace</b>   msg.filename ="./test.xml" // Load AddressSpace from the given filename.</li>
             <li><b>bindVariables</b>      Bind same node.send(msg) callbacks to get/set methods as addVariable</li>
             <li><b>bindMethod</b>         msg.topic = nodeId, msg.code can be given in function node that contains method function</li>
