@@ -301,8 +301,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.272",
-                buildDate: "2022-04-10T17:54:00"
+                buildNumber: "0.2.273",
+                buildDate: "2022-04-11T22:44:00"
             };
             
             var hostname = os.hostname();
@@ -606,10 +606,10 @@ module.exports = function (RED) {
                     // Removed namespace ns usage from variables array
                     verbose_log("BEFORE: " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[payload.variableName]));
                     var value = payload.variableValue;
-                    if (payload.variableValue === "true") {
+                    if (payload.variableValue === "true" || payload.variableValue === true || payload.variableValue === 1) {
                         value = true;
                     }
-                    if (payload.variableValue === "false") {
+                    if (payload.variableValue === "false" || payload.variableValue === false || payload.variableValue === 0) {
                         value = false;
                     }
                     variables[payload.variableName] = value; // ns + ":" + payload.variableName
@@ -623,7 +623,7 @@ module.exports = function (RED) {
                             vnode.setValueFromSource(newValue); // TODO Check payload need datatype
                         }
                         else {
-                            node.error("Payload must contain datatype like Float or Boolean nad variableValue!");
+                            node.error("Payload must contain datatype like Float or Boolean and variableValue!");
                         }
                     }
                     else {
