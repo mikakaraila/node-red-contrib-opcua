@@ -484,7 +484,7 @@ module.exports.get_node_status = function (statusValue) {
 };
 
 
-module.exports.build_new_variant = function (opcua, datatype, value) {
+module.exports.build_new_variant = function (datatype, value) {
 
     var nValue = new opcua.Variant({
         dataType: opcua.DataType.Float,
@@ -541,15 +541,41 @@ module.exports.build_new_variant = function (opcua, datatype, value) {
             });
             break;
         case "Boolean":
-            if (value && value !== "false") {
+            // Support for different value conversions
+            if (value && value === "false") {
+                nValue = new opcua.Variant({
+                    dataType: opcua.DataType.Boolean,
+                    value: false
+                });
+            }
+            if (value && value === false) {
+                nValue = new opcua.Variant({
+                    dataType: opcua.DataType.Boolean,
+                    value: false
+                });
+            }
+            if (value && value === 0) {
+                nValue = new opcua.Variant({
+                    dataType: opcua.DataType.Boolean,
+                    value: false
+                });
+            }
+            if (value && value === "true"){
                 nValue = new opcua.Variant({
                     dataType: opcua.DataType.Boolean,
                     value: true
                 });
-            } else {
+            }
+            if (value && value === true){
                 nValue = new opcua.Variant({
                     dataType: opcua.DataType.Boolean,
-                    value: false
+                    value: true
+                });
+            }
+            if (value && value === 1){
+                nValue = new opcua.Variant({
+                    dataType: opcua.DataType.Boolean,
+                    value: true
                 });
             }
             break;
