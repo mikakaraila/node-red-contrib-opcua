@@ -301,8 +301,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.273",
-                buildDate: "2022-04-11T22:44:00"
+                buildNumber: "0.2.274",
+                buildDate: "2022-04-18T17:43:00"
             };
             
             var hostname = os.hostname();
@@ -603,7 +603,7 @@ module.exports = function (RED) {
             switch (payload.messageType) {
                 case 'Variable':
                     var ns = payload.namespace.toString();
-                    // Removed namespace ns usage from variables array
+                    // Removed namespace ns usage from variables array TODO add when realyy needed
                     verbose_log("BEFORE: " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[payload.variableName]));
                     var value = payload.variableValue;
                     if (payload.variableValue === "true" || payload.variableValue === true || payload.variableValue === 1) {
@@ -614,22 +614,18 @@ module.exports = function (RED) {
                     }
                     variables[payload.variableName] = value; // ns + ":" + payload.variableName
                     // update server variable value if needed now variables[name]=value used
-                    /*
+                    
                     var addressSpace = node.server.engine.addressSpace;
                     var vnode = addressSpace.findNode("ns="+ns+";s="+ payload.variableName);
                     if (vnode) {
-                        if (payload.datatype && payload.variableValue) {
-                            var newValue = opcuaBasics.build_new_value_by_datatype(payload.datatype, payload.variableValue);
-                            vnode.setValueFromSource(newValue); // TODO Check payload need datatype
-                        }
-                        else {
-                            node.error("Payload must contain datatype like Float or Boolean and variableValue!");
-                        }
+                        variables[payload.variableValue] = opcuaBasics.build_new_value_by_datatype(payload.datatype, payload.variableValue);
+                        // var newValue = opcuaBasics.build_new_variant(payload.datatype, payload.variableValue);
+                        var newValue = opcuaBasics.build_new_dataValue(payload.datatype, payload.variableValue);
+                        vnode.setValueFromSource(newValue); // This fixes if variable if not bound eq. bindVariables is not called
                     }
                     else {
                         node.error("Variable not found from server address space: " + payload.namespace + ":" + payload.variableName);
                     }
-                    */
                     verbose_log("AFTER : " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[payload.variableName]));
                     break;
                 default:
@@ -1340,14 +1336,14 @@ module.exports = function (RED) {
                         crawler.on("browsed", (element) => {
                             // Limit to variables and skip ns=0
                             if (element.nodeId.toString().indexOf("ns=0;") < 0 && element.nodeClass == opcua.NodeClass.Variable) {
-                                // console.log("Element: " + element);
+                                console.log("Element: " + element);
                                 var item = Object.assign({}, element); // Clone element
                                 results.push(item);
                             }
                         });
                         crawler.read(objectsFolder.nodeId, function (err, obj) {
                             if (!err) {
-                                // console.log("Obj: " + obj);
+                                console.log("Obj: " + obj);
                                 // Nothing to do here
                             }
                             else {
