@@ -301,8 +301,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.274",
-                buildDate: "2022-04-18T17:43:00"
+                buildNumber: "0.2.275",
+                buildDate: "2022-04-25T21:01:00"
             };
             
             var hostname = os.hostname();
@@ -727,6 +727,25 @@ module.exports = function (RED) {
                         const uri = addressSpace.getNamespaceUri(index);
                         verbose_log("ns uri: " + uri);
                         const ns = addressSpace.getNamespace(uri); // Or index
+                        var name = msg.topic;
+                        var browseName = name; // Use full name by default
+                        // NodeId can be string or integer or Guid or Opaque: ns=10;i=1000 or ns=5;g=
+                        var bIndex = name.indexOf(";s="); // String
+                        if (bIndex>0) {
+                            browseName = name.substring(bIndex+3);
+                        }
+                        bIndex = name.indexOf(";i="); // Integer
+                        if (bIndex>0) {
+                            browseName = name.substring(bIndex+3);
+                        }
+                        bIndex = name.indexOf(";g="); // Guid
+                        if (bIndex>0) {
+                            browseName = name.substring(bIndex+3);
+                        }
+                        bIndex = name.indexOf(";b="); // Opaque base64
+                        if (bIndex>0) {
+                            browseName = name.substring(bIndex+3);
+                        }
                         folder = ns.addObject({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
                             nodeId: msg.topic,
@@ -734,7 +753,7 @@ module.exports = function (RED) {
                             userAccessLevel: userAccessLevel, // TEST more
                             rolePermissions: [].concat(permissions),
                             accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
-                            browseName: msg.topic.substring(msg.topic.indexOf(";s=")+3)
+                            browseName: browseName // msg.topic.substring(msg.topic.indexOf(";s=")+3)
                         })
                     }
                     break;
@@ -806,7 +825,24 @@ module.exports = function (RED) {
 
                         var ns = nsindex.toString();
                         var dimensions = valueRank <= 0 ? null : [dim1]; // Fix for conformance check TODO dim2, dim3
-                        var browseName = name.substring(name.indexOf(";s=")+3);
+                        var browseName = name; // Use full name by default
+                        // NodeId can be string or integer or Guid or Opaque: ns=10;i=1000 or ns=5;g=
+                        var bIndex = name.indexOf(";s="); // String
+                        if (bIndex>0) {
+                            browseName = name.substring(bIndex+3);
+                        }
+                        bIndex = name.indexOf(";i="); // Integer
+                        if (bIndex>0) {
+                            browseName = name.substring(bIndex+3);
+                        }
+                        bIndex = name.indexOf(";g="); // Guid
+                        if (bIndex>0) {
+                            browseName = name.substring(bIndex+3);
+                        }
+                        bIndex = name.indexOf(";b="); // Opaque base64
+                        if (bIndex>0) {
+                            browseName = name.substring(bIndex+3);
+                        }
                         variables[browseName] = 0; // Removed ns + ":" + 
                         if (valueRank == 1) {
                             arrayType = opcua.VariantArrayType.Array;
