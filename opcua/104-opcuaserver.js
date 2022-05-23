@@ -1337,6 +1337,7 @@ module.exports = function (RED) {
                             var namespace = addressSpace.getOwnNamespace(); 
                             // Use msg.topic to select namespace
                             if (msg.topic) {
+                                verbose_log("Saving namespace index: " + msg.topic);
                                 namespace = addressSpace.getNamespace(parseInt(msg.topic));
                             }
                             if (namespace) {
