@@ -194,6 +194,10 @@ module.exports = function (RED) {
 
       verbose_log("EventFields=" + eventFields);
       
+      if (eventFields.length === 0) {
+        node.send(msg);
+      }
+
       async.forEachOf(eventFields, function (variant, index, callback) {
         verbose_log("EVENT Field: " + fields[index] + stringify(variant));
         
@@ -218,7 +222,6 @@ module.exports = function (RED) {
           })
         }
       }, _callback);
-      node.send(msg);
     }
 
     var eventQueue = new async.queue(function (task, callback) {
