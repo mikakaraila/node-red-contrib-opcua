@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-opcua",
-  "version": "0.2.275",
+  "version": "0.2.276",
   "description": "A Node-RED node to communicate via OPC UA based on node-opcua library.",
   "repository": {
     "type": "git",
@@ -43,8 +43,8 @@
     "chalk": "4.1.2",
     "env-paths": "2.2.1",
     "flatted": "^3.2.2",
-    "node-opcua": "2.68.0",
-    "node-opcua-file-transfer": "2.68.0"
+    "node-opcua": "2.68.1",
+    "node-opcua-file-transfer": "2.68.1"
   },
   "directories": {
     "example": "examples"
