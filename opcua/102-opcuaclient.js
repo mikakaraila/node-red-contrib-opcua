@@ -778,10 +778,8 @@ module.exports = function (RED) {
                   msg.serverTimestamp = dataValue.serverTimestamp;
                   msg.sourceTimestamp = dataValue.sourceTimestamp;
 
-                  if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
-                    verbose_log("Status-Code:" + (dataValue.statusCode.toString(16)));
-                  } else {
-                    verbose_warn("Status-Code:" + dataValue.statusCode.toString(16));
+                  if (dataValue.statusCode && dataValue.statusCode.toString(16) !== "Good (0x00000)") {
+                    verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
                   }
 
                   node.send(msg);
@@ -971,9 +969,7 @@ module.exports = function (RED) {
                     verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
                   }
 
-                  if (dataValue.statusCode && dataValue.statusCode.toString(16) == "Good (0x00000)") {
-                    verbose_log("StatusCode: " + (dataValue.statusCode.toString(16)));
-                  } else {
+                  if (dataValue.statusCode && dataValue.statusCode.toString(16) !== "Good (0x00000)") {
                     verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
                   }
 
@@ -1426,7 +1422,8 @@ module.exports = function (RED) {
       // Simplified 
       if (msg.topic === "multiple") {
         verbose_log("Create monitored itemGroup for " + JSON.stringify(msg.payload));
-        let interval = 500; // Default interval
+        // let interval = 1000; // Default interval 
+        let interval = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
         if (msg && msg.interval) {
           interval = parseInt(msg.interval);
         }
@@ -1439,15 +1436,17 @@ module.exports = function (RED) {
           // clientHandle?: UInt32;
           samplingInterval: interval, // read from msg.interval
           // filter?: (ExtensionObject | null);
-          queueSize: 10,
+          queueSize: 1,
           discardOldest: true
         };
+        verbose_log("MONITOR ITEMS: " + JSON.stringify(monitorItems));
         const group = await subscription.monitorItems(monitorItems, monitoringParameters, TimestampsToReturn.Both);
         group.on("initialized", async () => {
           verbose_log(chalk.green("Initialized monitoredItemsGroup !"));
         });
         group.on("changed", (monitoredItem, dataValue, index) => {
-          verbose_log("Change detected: " + monitoredItem.toString() + " " + dataValue.toString() + " " + index);
+          verbose_log("Group change on item, index: " + index + " item: " + monitorItems[index].nodeId + " value: " + dataValue.value.value);
+          // verbose_log("Change detected: " + monitoredItem.toString() + " " + dataValue.toString() + " " + index);
           const nodeId = monitorItems[index].nodeId.toString();
           if (nodeId) {
             msg.topic = nodeId;
@@ -1523,12 +1522,10 @@ module.exports = function (RED) {
           let msgToSend = JSON.parse(JSON.stringify(msg)); // clone original msg if it contains other needed properties {};
 
           set_node_status_to("active subscribed");
-          verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
-          verbose_log(dataValue.toString());
-          if (dataValue.statusCode === opcua.StatusCodes.Good) {
-            verbose_log("Status-Code:" + dataValue.statusCode.toString(16));
-          } else {
-            node__warn("Status-Code:" + dataValue.statusCode.toString(16));
+          // verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
+          // verbose_log(dataValue.toString());
+          if (dataValue.statusCode !== opcua.StatusCodes.Good) {
+            verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
           }
 
           msgToSend.statusCode = dataValue.statusCode;
@@ -1652,11 +1649,9 @@ module.exports = function (RED) {
         group.on("changed", (monitoredItem, dataValue, index) => {
           verbose_log(chalk.green("Received changes: " + monitoredItem + " value: " + dataValue + " index: " + index));
           set_node_status_to("active monitoring");
-          verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
+          // verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
           verbose_log(dataValue.toString());
-          if (dataValue.statusCode === opcua.StatusCodes.Good) {
-            verbose_log("StatusCode: " + dataValue.statusCode.toString(16));
-          } else {
+          if (dataValue.statusCode !== opcua.StatusCodes.Good) {
             verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
           }
           var msgToSend = {};
