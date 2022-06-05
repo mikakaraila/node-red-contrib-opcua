@@ -30,7 +30,7 @@ limitations under the License.
             autoAcceptUnknownCertificate: {value: true},
             registerToDiscovery: {value: false},
             constructDefaultAddressSpace: {value: true},
-            allowAnonymous: {value: true},
+            allowAnonymous: {value: true, required: true},
             endpointNone: {value: true},
             endpointSign: {value: true},
             endpointSignEncrypt: {value: true},
@@ -48,7 +48,8 @@ limitations under the License.
             maxNodesPerNodeManagement: {value: 0, required: false},
             maxMonitoredItemsPerCall: {value: 0, required: false},
             maxNodesPerHistoryUpdateEvents: {value: 0, required: false},
-            maxNodesPerTranslateBrowsePathsToNodeIds: {value: 0, required: false}
+            maxNodesPerTranslateBrowsePathsToNodeIds: {value: 0, required: false},
+            maxConnectionsPerEndpoint: {value: 20, required: false}
         },
         inputs:1,
         outputs:1,
@@ -179,6 +180,10 @@ limitations under the License.
         <label for="node-input-maxNodesPerTranslateBrowsePathsToNodeIds" style="width:72%;"><i class="icon-tasks"></i> maxNodesPerTranslateBrowsePathsToNodeIds</label>
         <input type="number" id="node-input-maxNodesPerTranslateBrowsePathsToNodeIds" placeholder="number" style="max-width:100px">
     </div>
+    <div class="form-row">
+        <label for="node-input-maxConnectionsPerEndpoint" style="width:72%;"><i class="icon-tasks"></i> maxConnectionsPerEndpoint</label>
+        <input type="number" id="node-input-maxConnectionsPerEndpoint" placeholder="number" style="max-width:100px">
+    </div>
 </script>
 
 <script type="text/x-red" data-help-name="OpcUa-Server">
@@ -213,7 +218,6 @@ limitations under the License.
             <li><b>loadAddressSpace</b>   msg.filename ="./test.xml" // Load AddressSpace from the given filename.</li>
             <li><b>bindVariables</b>      Bind same node.send(msg) callbacks to get/set methods as addVariable</li>
             <li><b>bindMethod</b>         msg.topic = nodeId, msg.code can be given in function node that contains method function</li>
-
         </ul>
 
         Examples JSON Injects: <br />

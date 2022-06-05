@@ -62,8 +62,14 @@ module.exports = function (RED) {
         this.maxNodesPerTranslateBrowsePathsToNodeIds = n.maxNodesPerTranslateBrowsePathsToNodeIds;
         this.registerToDiscovery = n.registerToDiscovery;
         this.constructDefaultAddressSpace = n.constructDefaultAddressSpace;
+        var maxConnectionsPerEndpoint = 20;
+        if (n.maxConnectionsPerEndpoint > 20) {
+            maxConnectionsPerEndpoint = n.maxConnectionsPerEndpoint;
+        }
         var node = this;
         var variables = { Counter: 0 };
+        var variablesTs = { Counter: 0 };
+        var variablesStatus = { Counter: 0 };
         var equipmentCounter = 0;
         var physicalAssetCounter = 0;
         var equipment;
@@ -258,7 +264,7 @@ module.exports = function (RED) {
                 port: parseInt(n.port),
                 resourcePath: "/" + node.endpoint, // Option was missing / can be 
                 maxAllowedSessionNumber: 1000,
-                maxConnectionsPerEndpoint: 20,
+                maxConnectionsPerEndpoint: maxConnectionsPerEndpoint,
                 nodeset_filename: xmlFiles,
                 serverInfo: {
                   applicationUri,
@@ -301,8 +307,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.276",
-                buildDate: "2022-05-24T09:54:00"
+                buildNumber: "0.2.277",
+                buildDate: "2022-06-05T19:56:00"
             };
             
             var hostname = os.hostname();
@@ -617,11 +623,60 @@ module.exports = function (RED) {
                     
                     var addressSpace = node.server.engine.addressSpace;
                     var vnode = addressSpace.findNode("ns="+ns+";s="+ payload.variableName);
+                    verbose_log("Found variable, nodeId: " + vnode.nodeId);
                     if (vnode) {
-                        variables[payload.variableValue] = opcuaBasics.build_new_value_by_datatype(payload.datatype, payload.variableValue);
+                        variables[payload.variableName] = opcuaBasics.build_new_value_by_datatype(payload.datatype, payload.variableValue);
                         // var newValue = opcuaBasics.build_new_variant(payload.datatype, payload.variableValue);
                         var newValue = opcuaBasics.build_new_dataValue(payload.datatype, payload.variableValue);
                         vnode.setValueFromSource(newValue); // This fixes if variable if not bound eq. bindVariables is not called
+                        if (payload.quality && payload.sourceTimestamp) {
+                            // var statusCode = opcua.StatusCodes.BadDeviceFailure;
+                            // var statusCode = opcua.StatusCodes.BadDataLost;
+                            // Bad 0x80000000
+                            var statusCode = opcua.StatusCode.makeStatusCode(payload.quality);
+                            // var statusCode = opcua.getStatusCodeFromCode(opcua.StatusCodes.BadNoData);
+                            verbose_log("StatusCode from value: " + payload.quality + " (0x" + payload.quality.toString(16) + ") description: " + statusCode.description);
+                            var ts = new Date(payload.sourceTimestamp);
+                            verbose_log("Timestamp: " + ts.toISOString());
+                            verbose_log("Set variable, newValue:" + JSON.stringify(newValue) + " statusCode: " + statusCode.description + " sourceTimestamp: " + ts);
+                            vnode.setValueFromSource(newValue, statusCode, ts);
+                            // Dummy & quick fix for statusCode & timeStamp, look timestamped_get
+                            variablesStatus[payload.variableName] = statusCode;
+                            variablesTs[payload.variableName] = ts;
+                            console.log("Statuscode & sourceTimestamp, vnode: " + JSON.stringify(vnode));
+                            var session = new opcua.PseudoSession(addressSpace);
+                            const nodesToWrite = [
+                                {
+                                    nodeId: vnode.nodeId,
+                                    attributeId: opcua.AttributeIds.Value,
+                                    value: /*new DataValue(*/
+                                    {
+                                        value: newValue,
+                                        statusCode,
+                                        ts
+                                    }
+                                }
+                            ];
+                            verbose_log("Write: " + JSON.stringify(nodesToWrite));
+                            session.write(nodesToWrite, function (err, statusCodes) {
+                                if (err) {
+                                    node.error("Write error: " + err);
+                                }
+                                else {
+                                    verbose_log("Write succeeded, statusCode: " + JSON.stringify(statusCodes));
+                                }
+                            });
+                            
+                            /*
+                            // NOT WORKING SOLUTION EVEN IT WAS CLEAN
+                            else {
+                                verbose_log("Set variable, newValue:" + JSON.stringify(newValue) + " statusCode: " + statusCode.description);
+                                vnode.setValueFromSource(newValue, statusCode);
+                                console.log("Statuscode, vnode: " + JSON.stringify(vnode));
+                                vnode.setValueFromSource(newValue, statusCode);
+                            }
+                            */
+                        }
                     }
                     else {
                         node.error("Variable not found from server address space: " + payload.namespace + ":" + payload.variableName);
@@ -977,6 +1032,43 @@ module.exports = function (RED) {
                             valueRank,
                             arrayDimensions: dimensions,
                             value: {
+                                timestamped_get: function() {
+                                    var ts = new Date();
+                                    if (variablesTs[browseName]) {
+                                        ts = variablesTs[browseName];
+                                    }
+                                    var st = opcua.StatusCodes.Good;
+                                    if (variablesStatus[browseName]) {
+                                        st = variablesStatus[browseName];
+                                    }
+                                    let value;
+                                    if (valueRank>=2) {
+                                        value = new opcua.Variant({
+                                            arrayType,
+                                            dimensions,
+                                            dataType: opcuaDataType,
+                                            value: variables[browseName] // Removed ns + ":" + 
+                                        });
+                                    }
+                                    else {
+                                        value = new opcua.Variant({
+                                            arrayType,
+                                            dataType: opcuaDataType,
+                                            value: variables[browseName] // Removed ns + ":" + 
+                                        });
+                                    } 
+
+                                    const myDataValue = new opcua.DataValue({
+                                            serverPicoseconds: 0,
+                                            serverTimestamp: new Date(),
+                                            sourcePicoseconds: 0,
+                                            sourceTimestamp: ts,
+                                            statusCode: st,
+                                            value: value // new opcua.Variant({arrayType, dataType: opcuaDataType, value: variables[browseName]})
+                                    });
+                                    return myDataValue;
+                                },
+                                /*
                                 get: function () {
                                     if (valueRank>=2) {
                                         return new opcua.Variant({
@@ -994,6 +1086,7 @@ module.exports = function (RED) {
                                         });
                                     } 
                                 },
+                                */
                                 set: function (variant) {
                                     verbose_log("Server set new variable value : " + variables[browseName] + " browseName: " + ns + ":" + browseName + " new:" + stringify(variant)); // Removed ns + ":" + 
                                     /*
@@ -1405,11 +1498,35 @@ module.exports = function (RED) {
                                     return new opcua.Variant({ dataType: opcuaBasics.convertToString(variable.dataType.toString()), value: variables[browseName]});
                                 },
                                 timestamped_get: function() {
+                                    var ts = new Date();
+                                    if (variablesTs[browseName]) {
+                                        ts = variablesTs[browseName];
+                                    }
+                                    var st = opcua.StatusCodes.Good;
+                                    if (variablesStatus[browseName]) {
+                                        st = variablesStatus[browseName];
+                                    }
+                                    const myDataValue = new opcua.DataValue({
+                                        serverPicoseconds: 0,
+                                        serverTimestamp: new Date(),
+                                        sourcePicoseconds: 0,
+                                        sourceTimestamp: ts,
+                                        statusCode: st,
+                                        value: opcua.Variant({dataType: opcuaBasics.convertToString(variable.dataType.toString()), 
+                                                              value: variables[browseName]})
+                                        //value: new opcua.Variant({
+                                        //    arrayType,
+                                        //    dataType: opcuaDataType,
+                                        //    value: variables[browseName]})
+                                    });
+                                    return myDataValue;
+                                    /*
                                     return new opcua.DataValue({ value: opcua.Variant({dataType: opcuaBasics.convertToString(variable.dataType.toString()), value: variables[browseName]}),
                                                                 statusCode: opcua.StatusCodes.Good,
                                                                 serverTimestamp: new Date(),
                                                                 sourceTimestamp: new Date()
                                     });
+                                    */
                                 },
                                 set: (variant) => {
                                     // Store value
