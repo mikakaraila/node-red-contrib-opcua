@@ -307,8 +307,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.277",
-                buildDate: "2022-06-05T19:56:00"
+                buildNumber: "0.2.278",
+                buildDate: "2022-06-06T21:37:00"
             };
             
             var hostname = os.hostname();
@@ -622,7 +622,21 @@ module.exports = function (RED) {
                     // update server variable value if needed now variables[name]=value used
                     
                     var addressSpace = node.server.engine.addressSpace;
-                    var vnode = addressSpace.findNode("ns="+ns+";s="+ payload.variableName);
+                    // var vnode = addressSpace.findNode("ns="+ns+";s="+ payload.variableName);
+                    if(typeof(payload.variableName) === 'number') {
+                        verbose_log("findNode(ns="+ns+";i="+payload.variableName);
+                        var vnode = addressSpace.findNode("ns="+ns+";i="+payload.variableName);
+                        if(vnode === null) {
+                            verbose_warn("vnode is null, findNode did not succeeded");
+                        }
+                    } 
+                    else { 
+                        // if( typeof(payload.variableName)==='string')
+                        // this must be string - a plain variable name
+                        // TODO opaque
+                        verbose_log("findNode(ns="+ns+";s="+payload.variableName);
+                        var vnode = addressSpace.findNode("ns="+ns+";s="+payload.variableName);
+                    }
                     verbose_log("Found variable, nodeId: " + vnode.nodeId);
                     if (vnode) {
                         variables[payload.variableName] = opcuaBasics.build_new_value_by_datatype(payload.datatype, payload.variableValue);
@@ -633,8 +647,14 @@ module.exports = function (RED) {
                             // var statusCode = opcua.StatusCodes.BadDeviceFailure;
                             // var statusCode = opcua.StatusCodes.BadDataLost;
                             // Bad 0x80000000
+                            if(typeof(payload.quality)==='string') { 
+                                // a name of Quality was given -> convert it to number
+                                verbose_log("Getting numeric status code of quality: " + payload.quality);
+                                payload.quality = opcua.StatusCodes[payload.quality].value;
+                                
+                            }
+                            // else // typeof(payload.quality)==='number', e.g. 2161770496
                             var statusCode = opcua.StatusCode.makeStatusCode(payload.quality);
-                            // var statusCode = opcua.getStatusCodeFromCode(opcua.StatusCodes.BadNoData);
                             verbose_log("StatusCode from value: " + payload.quality + " (0x" + payload.quality.toString(16) + ") description: " + statusCode.description);
                             var ts = new Date(payload.sourceTimestamp);
                             verbose_log("Timestamp: " + ts.toISOString());
