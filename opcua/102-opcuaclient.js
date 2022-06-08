@@ -94,12 +94,6 @@ module.exports = function (RED) {
         node_error("Local private key file not found: " + keyfile)
       }
     }
-    /*
-    // Commented out as people think this is an error but it is only a log message
-    if (node.certificate === "n") {
-      node.log("\tLocal 'own' certificate is NOT used.");
-    }
-    */
     // Moved needed options to client create
     connectionOption.requestedSessionTimeout = opcuaBasics.calc_milliseconds_by_time_and_unit(300, "s");
     // DO NOT USE must be NodeOPCUA-Client !! connectionOption.applicationName = node.name; // Application name
@@ -754,21 +748,13 @@ module.exports = function (RED) {
               // reset_opcua_client(connect_opcua_client);
             } else {
               set_node_status_to("active reading");
-              verbose_log("\tNode : " + msg.topic);
+              verbose_log("Node : " + msg.topic);
               verbose_log(dataValue.toString());
               if (dataValue) {
                 try {
-                  verbose_log("\tValue : " + dataValue.value.value);
-                  verbose_log("\tDataType: " + dataValue.value.dataType + " (" + DataType[dataValue.value.dataType] + ")");
-                  verbose_log("\tMessage: " + msg.topic + " (" + msg.datatype + ")");
-                  /*
-                  if (msg.datatype != null &&  msg.datatype.localeCompare(DataType[dataValue.value.dataType]) != 0) {
-                    node_error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + DataType[dataValue.value.dataType]);
-                  }
-                  if (msg.datatype == null) {
-                    node.warn("msg.datatype == null, if you use inject check topic is format 'ns=2;s=MyLevel;datatype=Double'");
-                  }
-                  */
+                  verbose_log("Value : " + dataValue.value.value);
+                  verbose_log("DataType: " + dataValue.value.dataType + " (" + DataType[dataValue.value.dataType] + ")");
+                  verbose_log("Message: " + msg.topic + " (" + msg.datatype + ")");
                   if (dataValue.value.dataType === opcua.DataType.UInt16) {
                     verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
                   }
@@ -778,16 +764,16 @@ module.exports = function (RED) {
                   msg.serverTimestamp = dataValue.serverTimestamp;
                   msg.sourceTimestamp = dataValue.sourceTimestamp;
 
-                  if (dataValue.statusCode && dataValue.statusCode.toString(16) !== "Good (0x00000)") {
+                  if (dataValue.statusCode && dataValue.statusCode != opcua.StatusCodes.Good) {
                     verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
                   }
 
                   node.send(msg);
                 } catch (e) {
                   if (dataValue) {
-                    node_error("\tBad read: " + (dataValue.statusCode.toString(16)));
-                    node_error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
-                    node_error("\tData:" + stringify(dataValue));
+                    node_error("Bad read: " + (dataValue.statusCode.toString(16)));
+                    node_error("Message:" + msg.topic + " dataType:" + msg.datatype);
+                    node_error("Data:" + stringify(dataValue));
                   } else {
                     node_error(e.message);
                   }
@@ -950,26 +936,17 @@ module.exports = function (RED) {
             }
             for (var i = 0; i < dataValues.length; i++) {
               var dataValue = dataValues[i];
-              verbose_log("\tNode : " + msg.topic);
+              verbose_log("Node : " + msg.topic);
               verbose_log(dataValue.toString());
               if (dataValue) {
                 try {
-                  verbose_log("\tValue : " + dataValue.value.value);
-                  verbose_log("\tDataType: " + dataValue.value.dataType + " (" + DataType[dataValue.value.dataType] + ")");
-                  // verbose_log("\tMessage: " + msg.topic + " (" + msg.datatype + ")");
-                  /*
-                  if (msg.datatype != null && msg.datatype.localeCompare(DataType[dataValue.value.dataType] != 0) {
-                    node_error("\tMessage types are not matching: " + msg.topic + " types: " + msg.datatype + " <> " + DataType[dataValue.value.dataType];
-                  }
-                  if (msg.datatype == null) {
-                    node.warn("msg.datatype == null, if you use inject check topic is format 'ns=2;s=MyLevel;datatype=Double'");
-                  }
-                  */
+                  verbose_log("Value : " + dataValue.value.value);
+                  verbose_log("DataType: " + dataValue.value.dataType + " (" + DataType[dataValue.value.dataType] + ")");
                   if (dataValue.value.dataType === opcua.DataType.UInt16) {
                     verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
                   }
 
-                  if (dataValue.statusCode && dataValue.statusCode.toString(16) !== "Good (0x00000)") {
+                  if (dataValue.statusCode && dataValue.statusCode != opcua.StatusCodes.Good) {
                     verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
                   }
 
@@ -990,9 +967,8 @@ module.exports = function (RED) {
                   });
                 } catch (e) {
                   if (dataValue) {
-                    node_error("\tBad read: " + (dataValue.statusCode.toString(16)));
-                    // node_error("\tMessage:" + msg.topic + " dataType:" + msg.datatype);
-                    node_error("\tData:" + stringify(dataValue));
+                    node_error("Bad read, statusCode: " + (dataValue.statusCode.toString(16)));
+                    node_error("Data:" + stringify(dataValue));
                   } else {
                     node_error(e.message);
                   }
@@ -1522,9 +1498,7 @@ module.exports = function (RED) {
           let msgToSend = JSON.parse(JSON.stringify(msg)); // clone original msg if it contains other needed properties {};
 
           set_node_status_to("active subscribed");
-          // verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
-          // verbose_log(dataValue.toString());
-          if (dataValue.statusCode !== opcua.StatusCodes.Good) {
+          if (dataValue.statusCode != opcua.StatusCodes.Good) {
             verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
           }
 
@@ -1649,9 +1623,8 @@ module.exports = function (RED) {
         group.on("changed", (monitoredItem, dataValue, index) => {
           verbose_log(chalk.green("Received changes: " + monitoredItem + " value: " + dataValue + " index: " + index));
           set_node_status_to("active monitoring");
-          // verbose_log(msg.topic + " value has changed to " + dataValue.value.value);
           verbose_log(dataValue.toString());
-          if (dataValue.statusCode !== opcua.StatusCodes.Good) {
+          if (dataValue.statusCode != opcua.StatusCodes.Good) {
             verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
           }
           var msgToSend = {};
