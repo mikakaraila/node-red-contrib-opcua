@@ -1425,6 +1425,7 @@ module.exports = function (RED) {
           // verbose_log("Change detected: " + monitoredItem.toString() + " " + dataValue.toString() + " " + index);
           const nodeId = monitorItems[index].nodeId.toString();
           if (nodeId) {
+            var msg = {};
             msg.topic = nodeId;
             msg.payload = dataValue; // if users want to get dataValue.value.value example contains function node
             node.send(msg);
