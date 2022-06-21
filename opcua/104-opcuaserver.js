@@ -307,8 +307,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.280",
-                buildDate: "2022-06-15T15:58:00"
+                buildNumber: "0.2.281",
+                buildDate: "2022-06-21T10:28:00"
             };
             
             var hostname = os.hostname();
@@ -1006,7 +1006,8 @@ module.exports = function (RED) {
                         if (datatype === "ExtensionObject") {
                             var typeId = msg.topic.substring(msg.topic.indexOf("typeId=") + 7);
                             verbose_log("ExtensionObject typeId: " + typeId);
-                            var extVar = addressSpace.constructExtensionObject(opcua.coerceNodeId(typeId), {}); // build default value for extension object
+                            var DataTypeNode = addressSpace.findDataType(opcua.coerceNodeId(typeId));
+                            var extVar = addressSpace.constructExtensionObject(DataTypeNode, {}); // build default value for extension object
                             verbose_log("Server returned: " + JSON.stringify(extVar));
                             var extNode = namespace.addVariable({
                                 organizedBy: addressSpace.findNode(parentFolder.nodeId),
