@@ -133,7 +133,8 @@ module.exports.collectAlarmFields = function (field, key, value, payload, node) 
             payload.EventType = value;
             break;
         case "SourceNode":
-            payload.SourceNode = value;
+            payload.SourceNode = value;     // Fixed on __dumpEvent otherwise not send
+            // payload.ConditionId = value; // UaExpert shows value in the ConditionId field?
             break;
         case "SourceName":
             payload.SourceName = value;
@@ -151,7 +152,7 @@ module.exports.collectAlarmFields = function (field, key, value, payload, node) 
             payload.Severity = value;
             break;
 
-            // ConditionType
+        // ConditionType
         case "ConditionClassId":
             payload.ConditionClassId = value;
             break;
@@ -160,6 +161,9 @@ module.exports.collectAlarmFields = function (field, key, value, payload, node) 
             break;
         case "ConditionName":
             payload.ConditionName = value;
+            break;
+        case "ConditionId":
+            payload.ConditionId = value;
             break;
         case "BranchId":
             payload.BranchId = value;
@@ -243,6 +247,7 @@ module.exports.getBasicEventFields = function () {
         "ConditionClassId",
         "ConditionClassName",
         "ConditionName",
+        "ConditionId",
         "BranchId",
         "Retain",
         "EnabledState",
