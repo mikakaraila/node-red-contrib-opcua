@@ -187,35 +187,54 @@ module.exports = function (RED) {
       msg.payload = {};
 
       verbose_log("EventFields=" + eventFields);
-      
+      // msg.topic = payload.SourceNode; // TODO / FIX
       if (eventFields.length === 0) {
+        msg.topic="No EventFields";
         node.send(msg);
       }
 
       async.forEachOf(eventFields, function (variant, index, callback) {
         verbose_log("EVENT Field: " + fields[index] + stringify(variant));
-        
         if (variant.dataType === DataType.Null) {
+          verbose_log("Variant DataType is null");
           if (--cnt === 0) node.send(msg);
           callback("Variants dataType is Null");
         } else if (variant.dataType === DataType.NodeId) {
           getBrowseName(session, variant.value, function (err, name) {
+            verbose_log("Event for browseName: " + name + " cnt: " + cnt + " err: " + err);
             if (!err) {
               opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload, node);
               set_node_status_to("active event");
+              if (msg.payload.SourceNode) {
+                msg.topic=msg.payload.SourceNode;
+                node.send(msg);
+              }
+              else {
+                msg.topic = name.toString(); // "BrowseName";
+                // node.send(msg);
+              }
+              // if (--cnt === 1) node.send(msg);  // Fix to send msg
+              if (--cnt === 0) node.send(msg); // This is never called?
             }
-            if (--cnt === 0) node.send(msg);
-            callback(err);
+            else {
+              verbose_warn("Error on BrowseName: " + err);
+              callback(err);
+            }
           });
         } else {
           setImmediate(function () {
+            verbose_log("Immediate! cnt:" + cnt);
             opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload, node);
             set_node_status_to("active event");
-            if (--cnt === 0) node.send(msg);
+            msg.topic="Immediate"; // SourceNode not yet updated, do not send
+            // if (--cnt === 0) node.send(msg);
             callback();
           })
         }
       }, _callback);
+      // This one will duplicates msg
+      // msg.topic="Revert/TEST";
+      // node.send(msg);
     }
 
     var eventQueue = new async.queue(function (task, callback) {
