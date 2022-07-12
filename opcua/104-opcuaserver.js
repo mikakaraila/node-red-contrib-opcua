@@ -66,6 +66,14 @@ module.exports = function (RED) {
         if (n.maxConnectionsPerEndpoint > 20) {
             maxConnectionsPerEndpoint = n.maxConnectionsPerEndpoint;
         }
+        var maxMessageSize = 4096;
+        if (n.maxMessageSize > 0) {
+            maxMessageSize = n.maxMessageSize;
+        }
+        var maxBufferSize = 4096;
+        if (n.maxBufferSize > 0) {
+            maxBufferSize = n.maxBufferSize;
+        }
         var node = this;
         var variables = { Counter: 0 };
         var variablesTs = { Counter: 0 };
@@ -265,6 +273,8 @@ module.exports = function (RED) {
                 resourcePath: "/" + node.endpoint, // Option was missing / can be 
                 maxAllowedSessionNumber: 1000,
                 maxConnectionsPerEndpoint: maxConnectionsPerEndpoint,
+                maxMessageSize: maxMessageSize,
+                maxBufferSize: maxBufferSize,
                 nodeset_filename: xmlFiles,
                 serverInfo: {
                   applicationUri,
@@ -307,8 +317,8 @@ module.exports = function (RED) {
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.282",
-                buildDate: "2022-06-29T21:46:00"
+                buildNumber: "0.2.283",
+                buildDate: "2022-07-12T14:10:00"
             };
             
             var hostname = os.hostname();
