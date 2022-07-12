@@ -205,8 +205,14 @@ module.exports = function (RED) {
             if (!err) {
               opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload, node);
               set_node_status_to("active event");
-              if (msg.payload.SourceNode) {
-                msg.topic=msg.payload.SourceNode;
+              // Use ConditionId if available
+              if (msg.payload.ConditionId) {
+                msg.topic=msg.payload.ConditionId.toString();
+                node.send(msg);
+              }
+              // Otherwise SourceNode
+              else if (msg.payload.SourceNode) {
+                msg.topic=msg.payload.SourceNode.toString();
                 node.send(msg);
               }
               else {
