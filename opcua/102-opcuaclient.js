@@ -1273,7 +1273,8 @@ module.exports = function (RED) {
           return;
         }
       }
-      if (node.session && !node.session.isReconnecting && node.session.isChannelValid() && msg.topic === "writemultiple") {
+      // node.session &&
+      if (!node.session.isReconnecting && node.session.isChannelValid() && msg.topic === "writemultiple") { 
         verbose_log("Writing items: " + stringify(writeMultipleItems));
         if (writeMultipleItems.length === 0) {
           node_error(node.name + " no items to write");
@@ -1290,14 +1291,19 @@ module.exports = function (RED) {
             set_node_status_to("active writing");
             verbose_log("Values written!");
             node.send({ payload: statusCode });
+            return;
           }
         });
       }
       else {
-        set_node_status_to("Session invalid");
-        node_error("Session is not active!")
+        if (Array.isArray(msg.payload)) {
+          // Skip, special case
+        }
+        else {
+          set_node_status_to("Write multiple items session invalid");
+          node_error("Write multiple items session is not active!")
+        }
       }
-    
       // OLD original way to use payload
       if (node.session && !node.session.isReconnecting && node.session.isChannelValid()) {
         if (Array.isArray(msg.payload)) {
@@ -1331,8 +1337,8 @@ module.exports = function (RED) {
           });
         }
       } else {
-        set_node_status_to("Session invalid");
-        node_error("Session is not active!")
+        set_node_status_to("Write multiple as array session is invalid");
+        node_error("Write multiple as array session is not active!")
       }
     }
 
