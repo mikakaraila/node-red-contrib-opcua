@@ -38,8 +38,10 @@ module.exports = function (RED) {
             // All event field, perhaps selectable in UI
 
             var basicEventFields = opcuaBasic.getBasicEventFields();
-            var eventFilter = opcua.constructEventFilter(basicEventFields);
-
+            // Add special select clause entry for Condition at the end
+			var eventFilter = opcua.constructEventFilter(basicEventFields, [opcua.resolveNodeId("ConditionType")]); 
+			basicEventFields.push("ConditionId");
+			
             msg.topic = node.root; // example: ns=0;i=85;
             msg.eventFilter = eventFilter;
             msg.eventFields = basicEventFields;
