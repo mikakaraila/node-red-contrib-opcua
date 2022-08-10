@@ -166,19 +166,6 @@ module.exports = function (RED) {
       //}
     }
 
-
-   async function getBrowseName(_session, nodeId, callback) {
-    const dataValue = await _session.read({
-      attributeId: AttributeIds.BrowseName,
-      nodeId
-    });
-      if (dataValue.statusCode === opcua.StatusCodes.Good) {
-        const browseName = dataValue.value.value;
-        return callback(null, browseName);
-      } else {
-        return "???";
-      }
-    }
     // Fields selected alarm fields
     // EventFields same order returned from server array of variants (filled or empty)
     function __dumpEvent(node, session, fields, eventFields, _callback) {
@@ -187,7 +174,7 @@ module.exports = function (RED) {
       msg.payload = {};
 
       verbose_log("EventFields=" + eventFields);
-      // msg.topic = payload.SourceNode; // TODO / FIX
+      
       if (eventFields.length === 0) {
         msg.topic="No EventFields";
         node.send(msg);
@@ -196,52 +183,35 @@ module.exports = function (RED) {
       async.forEachOf(eventFields, function (variant, index, callback) {
         verbose_log("EVENT Field: " + fields[index] + stringify(variant));
         if (variant.dataType === DataType.Null) {
-          verbose_log("Variant DataType is null");
-          if (--cnt === 0) node.send(msg);
-          callback("Variants dataType is Null");
-        } else if (variant.dataType === DataType.NodeId) {
-          getBrowseName(session, variant.value, function (err, name) {
-            verbose_log("Event for browseName: " + name + " cnt: " + cnt + " err: " + err);
-            if (!err) {
-              opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload, node);
-              set_node_status_to("active event");
-              // Use ConditionId if available
-              if (msg.payload.ConditionId) {
-                msg.topic=msg.payload.ConditionId.toString();
-                node.send(msg);
-              }
-              // Otherwise SourceNode
-              else if (msg.payload.SourceNode) {
-                msg.topic=msg.payload.SourceNode.toString();
-                node.send(msg);
-              }
-              else {
-                msg.topic = name.toString(); // "BrowseName";
-                // node.send(msg);
-              }
-              // if (--cnt === 1) node.send(msg);  // Fix to send msg
-              if (--cnt === 0) node.send(msg); // This is never called?
-            }
-            else {
-              verbose_warn("Error on BrowseName: " + err);
-              callback(err);
-            }
-          });
+      cnt = cnt - 1;
+      callback("Variants dataType is Null");
         } else {
           setImmediate(function () {
-            verbose_log("Immediate! cnt:" + cnt);
+      cnt = cnt - 1;
+      // is called for each field of the event
             opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload, node);
             set_node_status_to("active event");
-            msg.topic="Immediate"; // SourceNode not yet updated, do not send
-            // if (--cnt === 0) node.send(msg);
-            callback();
-          })
+      // done collecting all the fields
+      if (cnt === 0) {
+        verbose_log("ConditionId: " + msg.payload.ConditionId + " EventType: " +  msg.payload.EventType);
+        // Use ConditionId if available
+        if (msg.payload.ConditionId) {
+          msg.topic=msg.payload.ConditionId.toString();
+        } else {
+          msg.topic=msg.payload.EventType.toString();
+        }
+        node.send(msg);
+      }
+        })
         }
       }, _callback);
-      // This one will duplicates msg
-      // msg.topic="Revert/TEST";
-      // node.send(msg);
     }
+
+    var eventQueue = new async.queue(function (task, callback) {
+      __dumpEvent(task.node, task.session, task.fields, task.eventFields, callback);
+    });
+  
+  
 
     var eventQueue = new async.queue(function (task, callback) {
       __dumpEvent(task.node, task.session, task.fields, task.eventFields, callback);
@@ -524,7 +494,7 @@ module.exports = function (RED) {
       if (!node.client || !node.session) {
         verbose_log("Not connected, current status:" + currentStatus);
         // Added statuses when msg must be put to queue
-         // Added statuses when msg must be put to queue
+        // Added statuses when msg must be put to queue
         const statuses = ['', 'create client', 'connecting', 'reconnect'];
         if (statuses.includes(currentStatus)) {
           cmdQueue.push(msg);
