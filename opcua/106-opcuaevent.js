@@ -25,28 +25,20 @@ module.exports = function (RED) {
 
         RED.nodes.createNode(this, n);
 
-        this.root = n.root; // OPC UA item nodeID
+        this.root = n.root; // OPC UA item nodeID subscription source
+        this.customeventtype = n.customeventtype;
         this.eventtype = n.eventtype; // eventType
         this.name = n.name; // Node name
 
         var node = this;
 
         node.on("input", function (msg) {
-
-            // var baseEventTypeId = "i=2041";
-            // var serverObjectId = "ns=0;i=2253";
-            // All event field, perhaps selectable in UI
-
-            var basicEventFields = opcuaBasic.getBasicEventFields();
-            // Add special select clause entry for Condition at the end
-			var eventFilter = opcua.constructEventFilter(basicEventFields, [opcua.resolveNodeId("ConditionType")]); 
-			basicEventFields.push("ConditionId");
-			
             msg.topic = node.root; // example: ns=0;i=85;
-            msg.eventFilter = eventFilter;
-            msg.eventFields = basicEventFields;
-            msg.eventTypeIds = node.eventtype; // example: ns=0;i=10751;
-
+            if (node.customeventtype) {
+                msg.eventTypeIds = node.customeventtype; // example: ns=2;i=1234
+            } else {
+                msg.eventTypeIds = node.eventtype; // example: ns=0;i=10751;
+            }
             node.send(msg);
         });
     }

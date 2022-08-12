@@ -73,7 +73,11 @@ function cloneObject(obj) {
     }
 
     throw new Error("Unable to copy obj! Its type isn't supported.");
-}
+};
+
+module.exports.clone_object = function (obj) {
+   return cloneObject(obj);
+};
 
 module.exports.get_timeUnit_name = function (unit) {
 
@@ -119,175 +123,6 @@ module.exports.calc_milliseconds_by_time_and_unit = function (time, unit) {
     }
 
     return time;
-};
-
-module.exports.collectAlarmFields = function (field, key, value, payload, node) {
-    console.log("Collect field: " + field + " key: " + key + " value:" + value + " payload:" + stringify(payload));
-    
-    switch (field) {
-        // Common fields
-        case "EventId":
-            payload.EventId = "0x" + value.toString("hex"); // As in UaExpert
-            break;
-        case "EventType":
-            payload.EventType = value;
-            break;
-        case "SourceNode":
-            payload.SourceNode = value;     
-            break;
-        case "SourceName":
-            payload.SourceName = value;
-            break;
-        case "Time":
-            payload.Time = value;
-            break;
-        case "ReceiveTime":
-            payload.ReceiveTime = value;
-            break;
-        case "Message":
-            payload.Message = value.text;
-            break;
-        case "Severity":
-            payload.Severity = value;
-            break;
-
-        // ConditionType
-        case "ConditionClassId":
-            payload.ConditionClassId = value;
-            break;
-        case "ConditionClassName":
-            payload.ConditionClassNameName = value;
-            break;
-        case "ConditionName":
-            payload.ConditionName = value;
-            break;
-        case "ConditionId":
-            payload.ConditionId = value;
-            break;
-        case "BranchId":
-            payload.BranchId = value;
-            break;
-        case "Retain":
-            payload.Retain = value;
-            break;
-        case "EnabledState":
-            payload.EnabledState = value.text;
-            break;
-        case "Quality":
-            payload.Quality = value;
-            payload.StatusText = value.toString(); // Clear text
-            break;
-        case "LastSeverity":
-            payload.LastSeverity = value;
-            break;
-        case "Comment":
-            payload.Comment = value.text;
-            break;
-        case "ClientUserId":
-            payload.ClientUserId = value;
-            break;
-
-            // AcknowledgeConditionType
-        case "AckedState":
-            payload.AckedState = value.text;
-            break;
-        case "ConfirmedState":
-            payload.ConfirmedState = value.text;
-            break;
-
-            // AlarmConditionType
-        case "ActiveState":
-            payload.ActiveState = value.text;
-            break;
-        case "InputNode":
-            payload.InputNode = value;
-            break;
-        case "SupressedState":
-            payload.SupressedState = value.text;
-            break;
-
-            // Limits
-        case "HighHighLimit":
-            payload.HighHighLimit = value;
-            break;
-        case "HighLimit":
-            payload.HighLimit = value;
-            break;
-        case "LowLimit":
-            payload.LowLimit = value;
-            break;
-        case "LowLowLimit":
-            payload.LowLowLimit = value;
-            break;
-        case "Value":
-            payload.Value = value;
-            break;
-        default:
-            payload[field] = cloneObject(value);
-            break;
-    }
-};
-
-
-module.exports.getBasicEventFields = function () {
-
-    return [
-        // Common fields
-        "EventId",
-        "EventType",
-        "SourceNode",
-        "SourceName",
-        "Time",
-        "ReceiveTime",
-        "Message",
-        "Severity",
-
-        // ConditionType
-        "ConditionClassId",
-        "ConditionClassName",
-        "ConditionName",
-        "BranchId",
-        "Retain",
-        "EnabledState",
-        "Quality",
-        "LastSeverity",
-        "Comment",
-        "ClientUserId",
-
-        // AcknowledgeConditionType
-        "AckedState",
-        "ConfirmedState",
-
-        // AlarmConditionType
-        "ActiveState",
-        "InputNode",
-        "SuppressedState",
-
-        // Limits
-        "HighLimit",
-        "LowLimit",
-        "HighHighLimit",
-        "LowLowLimit",
-
-        // AutoIdScanEventType & AutoIdDiagnosisEventType
-        "3:DeviceName",
-
-        // AutoIdScanEventType
-        "3:ScanResult",
-
-        // AutoIdDiagnosisEventType
-        "4:DeviceName",
-
-        // AutoIdLastAccessEventType
-        "4:Client",
-        "4:Command",
-        "4:LastAccessResult",
-
-        // AutoIdPresenceEventType
-        "4:Presence",
-
-        "Value"
-    ];
 };
 
 /*

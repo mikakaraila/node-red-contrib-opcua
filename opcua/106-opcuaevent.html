@@ -22,7 +22,8 @@ limitations under the License.
         color:"#3FADB5",
         defaults: {
             root: {value:"", required:true}, 	// ns=2;i=85 Server object to look through all objects under it
-            eventtype: {value:"", required:true}, 		// TODO ui should contain selectable condition types or all
+            eventtype: {value:"", required:true}, 
+            customeventtype: {value:""},
             name: {value:""}
         },
         inputs:1,
@@ -40,8 +41,12 @@ limitations under the License.
 
 <script type="text/x-red" data-template-name="OpcUa-Event">
     <div class="form-row">
-        <label for="node-input-root"><i class="icon-tasks"></i> Root node</label>
+        <label for="node-input-root"><i class="icon-tasks"></i> Source node</label>
         <input type="text" id="node-input-root" placeholder="i=2253">
+    </div>
+    <div class="form-row">
+        <label for="node-input-customeventtype"><i class="icon-tasks"></i> Custom Event Type</label>
+        <input type="text" id="node-input-customeventtype" placeholder="ns=2;i=1234">
     </div>
     <div class="form-row" id="node-input-eventtype-row">
         <label for="node-input-datatype"><i class="icon-tag"></i> Event Type</label>
