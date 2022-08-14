@@ -29,12 +29,15 @@ module.exports = function (RED) {
         this.customeventtype = n.customeventtype;
         this.eventtype = n.eventtype; // eventType
         this.name = n.name; // Node name
+        this.activatecustomevent = n.activatecustomevent;
 
         var node = this;
 
         node.on("input", function (msg) {
             msg.topic = node.root; // example: ns=0;i=85;
-            if (node.customeventtype) {
+
+            if (node.activatecustomevent)
+            {
                 msg.eventTypeIds = node.customeventtype; // example: ns=2;i=1234
             } else {
                 msg.eventTypeIds = node.eventtype; // example: ns=0;i=10751;
