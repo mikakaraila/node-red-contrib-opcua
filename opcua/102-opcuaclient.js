@@ -1106,7 +1106,7 @@ module.exports = function (RED) {
       verbose_log("NodeId= " + nodeid.toString() + " type=" + msg.datatype);
 
       var opcuaDataValue = msg.datatype && msg.datatype.indexOf("ExtensionObject") >= 0 && node.session
-        ? await build_new_extensionObject_dataValue(msg.dataType, msg.topic, msg.payload, node.session)
+        ? await build_new_extensionObject_dataValue(msg.datatype, msg.topic, msg.payload, node.session)
         : opcuaBasics.build_new_dataValue(msg.datatype, msg.payload);
 
       async function build_new_extensionObject_dataValue(datatype, topic, payload, session) {
