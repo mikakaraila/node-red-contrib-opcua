@@ -43,6 +43,7 @@
     "chalk": "4.1.2",
     "env-paths": "2.2.1",
     "flatted": "^3.2.2",
+    "lodash.clonedeep": "^4.5.0",
     "node-opcua": "2.73.0",
     "node-opcua-file-transfer": "2.73.0"
   },

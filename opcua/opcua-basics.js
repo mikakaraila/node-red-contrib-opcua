@@ -699,6 +699,10 @@ function getArrayValues(datatype, items) {
         uaArray.values = new Array(items);
         // console.log("ITEMS:" + items.toString());
     }
+    if (datatype.indexOf("ExtensionObject") >= 0) {
+        uaArray.uaType = opcua.DataType.ExtensionObject;
+        uaArray.values = items;
+    }
 
     if (uaArray.uaType === null) {
         console.warn("Array support for String nor ByteString etc. not implemented, only basic types supported!");
@@ -717,7 +721,7 @@ function getArrayValues(datatype, items) {
                 uaArray.values[index] = true;
             }
         }
-        else if (uaArray.uaType === opcua.DataType.String) {
+        else if (uaArray.uaType === opcua.DataType.String || uaArray.uaType === opcua.DataType.ExtensionObject) {
             uaArray.values[index] = item;
         }
         else {
@@ -801,6 +805,10 @@ function getArrayType(datatype) {
     if (datatype.indexOf("String") >= 0) {
         return opcua.DataType.String;
     }
+    if (datatype.indexOf("ExtensionObject") >= 0) {
+        return opcua.DataType.ExtensionObject;
+    }
+
     console.warn("Array support for String nor ByteString etc. not implemented, only basic types supported!");
     console.error("Unknown type for Array: " + datatype);
 
@@ -930,29 +938,29 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
     // var m = datatype.match(/\b(\w+) Array\b/);
     var m = datatype.indexOf("Array");
     if (m > 0) {
-        // Convert value (string) to individual array values
         var arrayValues = [];
-        if (Array.isArray(value) && value.length === 1) {
+        var items;
+
+        // Convert value (string) to individual array values
+        if (Array.isArray(value) && value.length === 1 && typeof(value[0]) === "string") {
             var payload = value[0];
-            var items = payload.split(",");
-            arrayValues = getArrayValues(datatype, items);
-            uaType = getArrayType(datatype);
+            items = payload.split(",");
         }
         else {
             if (value.hasOwnProperty("dataType")) {
                 // Already processed, return value
                 return value;
             }
-            var items;
-            if (Array.isArray(value) === true && value.length > 0) {
+            if (Array.isArray(value) && value.length > 0) {
                 items = value;
             }
             else {
                 items = value.split(",");
             }
-            arrayValues = getArrayValues(datatype, items);
-            uaType = getArrayType(datatype);
         }
+
+        arrayValues = getArrayValues(datatype, items);
+        uaType = getArrayType(datatype);
 
         nValue = {
             dataType: uaType,

@@ -34,6 +34,7 @@ module.exports = function (RED) {
   var path = require("path");
   var fs = require("fs");
   var os = require("os");
+  var cloneDeep = require('lodash.clonedeep');
   var DataType = opcua.DataType;
   var AttributeIds = opcua.AttributeIds;
   // var read_service = require("node-opcua-service-read");
@@ -1077,7 +1078,6 @@ module.exports = function (RED) {
       var ns = msg.topic.substring(3, dIndex-1); // Parse namespace, ns=2 or ns=10 TODO TEST 2 digits namespace
       var s = "";
       var range = null;
-      var extensionobject = null;
 
       if (msg.datatype == null && dIndex > 0) {
         msg.datatype = msg.topic.substring(dIndex + 9);
@@ -1107,22 +1107,49 @@ module.exports = function (RED) {
       // verbose_log("namespace=" + ns);
       // verbose_log("string=" + s);
       verbose_log("NodeId= " + nodeid.toString() + " type=" + msg.datatype);
-      var opcuaDataValue = opcuaBasics.build_new_dataValue(msg.datatype, msg.payload);
-      
-      if (msg.datatype && msg.datatype.indexOf("ExtensionObject") >= 0 && node.session) {
-        if (msg.topic.indexOf("typeId=")) {
-          var typeId = msg.topic.substring(msg.topic.indexOf("typeId=")+7);
+
+      var opcuaDataValue = msg.datatype && msg.datatype.indexOf("ExtensionObject") >= 0 && node.session
+        ? await build_new_extensionObject_dataValue(msg.dataType, msg.topic, msg.payload, node.session)
+        : opcuaBasics.build_new_dataValue(msg.datatype, msg.payload);
+
+      async function build_new_extensionObject_dataValue(datatype, topic, payload, session) {
+        var defaultExtensionObject = null;
+
+        if (topic.indexOf("typeId=")) {
+          var typeId = topic.substring(topic.indexOf("typeId=") + 7);
           verbose_log("ExtensionObject TypeId= " + typeId);
-          extensionobject = await node.session.constructExtensionObject(opcua.coerceNodeId(typeId), {}); // Create first with default values
-          verbose_log("ExtensionObject=" + stringify(extensionobject));
-          Object.assign(extensionobject, msg.payload); // MERGE payload over default values
-          opcuaDataValue = {
+          defaultExtensionObject = await session.constructExtensionObject(opcua.coerceNodeId(typeId), {}); // Create first with default values
+          verbose_log("ExtensionObject=" + stringify(defaultExtensionObject));
+        }
+
+        var nValue = null;
+
+        if (datatype.indexOf("Array")) {
+          // datatype is array of extension object
+          payload.value.forEach(function (extensionObject, index) {
+            // deep clone default extension object
+            var duplicatedDefaultExtensionObject = cloneDeep(defaultExtensionObject);
+            payload.value[index] = Object.assign(duplicatedDefaultExtensionObject, extensionObject);
+          });
+
+          nValue = {
             dataType: opcua.DataType.ExtensionObject,
-            value: extensionobject
+            value: payload.value,
+            arrayType: opcua.VariantArrayType.Array
+          };
+        } else {
+          // datatype is extension object
+          var extensionObject = Object.assign(defaultExtensionObject, payload); // MERGE payload over default values
+
+          nValue = {
+            dataType: opcua.DataType.ExtensionObject,
+            value: extensionObject
           };
         }
+
+        return nValue
       }
-      
+
       // TODO Fix object array according range
       // Added support for indexRange, payload can be just one number as string "5"  or "2:5"
 
