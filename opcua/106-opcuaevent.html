@@ -22,7 +22,9 @@ limitations under the License.
         color:"#3FADB5",
         defaults: {
             root: {value:"", required:true}, 	// ns=2;i=85 Server object to look through all objects under it
-            eventtype: {value:"", required:true}, 		// TODO ui should contain selectable condition types or all
+            activatecustomevent: {value: false, required:true},
+            eventtype: {value:"", required:true}, 
+            customeventtype: {value:""},
             name: {value:""}
         },
         inputs:1,
@@ -34,14 +36,48 @@ limitations under the License.
         },
         labelStyle: function() {
             return this.name?"node_label_italic":"";
+        },
+        oneditprepare: function () {
+
+            var node = this;
+
+            try {
+                var inputActivateCustomEvent = $('#node-input-activatecustomevent');
+                var inputCustomEventTypeRow = $('#node-input-customeventtyperow');
+                var inputEventTypeRow = $('#node-input-eventtype-row');
+                adapt_input(); // initialize
+                inputActivateCustomEvent.change(adapt_input);
+
+            } catch (err) {
+                node.error(err);
+            }
+
+            function adapt_input() {
+                if (inputActivateCustomEvent.is(':checked')) {                    
+                    inputCustomEventTypeRow.show();
+                    inputEventTypeRow.hide();
+                }
+                else {                    
+                    inputCustomEventTypeRow.hide();
+                    inputEventTypeRow.show();
+                }
+            }
         }
     });
 </script>
 
 <script type="text/x-red" data-template-name="OpcUa-Event">
     <div class="form-row">
-        <label for="node-input-root"><i class="icon-tasks"></i> Root node</label>
+        <label for="node-input-root"><i class="icon-tasks"></i> Source node</label>
         <input type="text" id="node-input-root" placeholder="i=2253">
+    </div>
+    <div class="form-row" id="node-input-activatecustomeventrow">
+        <label for="node-input-activatecustomevent"><i class="icon-tasks"></i> Custom event</label>
+        <input type="checkbox" id="node-input-activatecustomevent" style="width: auto">
+    </div>
+    <div class="form-row" id="node-input-customeventtyperow">
+        <label for="node-input-customeventtype"><i class="icon-tasks"></i> Event Type</label>
+        <input type="text" id="node-input-customeventtype" placeholder="ns=2;i=1234">
     </div>
     <div class="form-row" id="node-input-eventtype-row">
         <label for="node-input-datatype"><i class="icon-tag"></i> Event Type</label>
