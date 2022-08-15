@@ -169,42 +169,40 @@ module.exports = function (RED) {
     // Fields selected alarm fields
     // EventFields same order returned from server array of variants (filled or empty)
     function __dumpEvent(node, session, fields, eventFields, _callback) {
-      var cnt = eventFields.length;
       var msg = {};
       msg.payload = {};
-
       verbose_log("EventFields=" + eventFields);
+      set_node_status_to("active event");
       
+      for (var i = 0; i < eventFields.length; i++) {
+        var variant = eventFields[i];
+        var fieldName = fields[i];
+        verbose_log("EVENT Field: " + fieldName + stringify(variant));
+        if (variant.dataType === DataType.Null) {
+          verbose_log("Variants dataType is Null");
+        } else {
+          if (fieldName === "EventId")  {
+            msg.payload[fieldName] = "0x" + variant.value.toString("hex"); // As in UaExpert
+          } else {
+            msg.payload[fieldName] = opcuaBasics.clone_object(variant.value);
+          }          
+        }
+      }
+
+      // Set message topic
       if (eventFields.length === 0) {
         msg.topic="No EventFields";
-        node.send(msg);
+      } 
+      // if available, needed for Acknowledge function in client
+      else if (msg.payload.ConditionId) {
+        msg.topic=msg.payload.ConditionId.toString();
+      } 
+      else {
+        msg.topic=msg.payload.EventType.toString();
       }
-
-      async.forEachOf(eventFields, function (variant, index, callback) {
-        verbose_log("EVENT Field: " + fields[index] + stringify(variant));
-        if (variant.dataType === DataType.Null) {
-      cnt = cnt - 1;
-      callback("Variants dataType is Null");
-        } else {
-          setImmediate(function () {
-      cnt = cnt - 1;
-      // is called for each field of the event
-            opcuaBasics.collectAlarmFields(fields[index], variant.dataType.toString(), variant.value, msg.payload, node);
-            set_node_status_to("active event");
-      // done collecting all the fields
-      if (cnt === 0) {
-        verbose_log("ConditionId: " + msg.payload.ConditionId + " EventType: " +  msg.payload.EventType);
-        // Use ConditionId if available
-        if (msg.payload.ConditionId) {
-          msg.topic=msg.payload.ConditionId.toString();
-        } else {
-          msg.topic=msg.payload.EventType.toString();
-        }
-        node.send(msg);
-      }
-        })
-        }
-      }, _callback);
+      verbose_log("Event message topic: " +  msg.topic);
+      node.send(msg);
+      _callback();
     }
 
     var eventQueue = new async.queue(function (task, callback) {
@@ -212,7 +210,6 @@ module.exports = function (RED) {
     });
   
   
-
     var eventQueue = new async.queue(function (task, callback) {
       __dumpEvent(task.node, task.session, task.fields, task.eventFields, callback);
     });
@@ -1885,10 +1882,21 @@ module.exports = function (RED) {
       return monitoredItem;
     }
 
-    function subscribe_events_input(msg) {
-
-      verbose_log("subscribing events");
-
+    async function subscribe_events_async(msg) {
+      var fields = await opcua.extractConditionFields(node.session, msg.eventTypeIds); // works with all eventTypes
+      fields.splice(fields.indexOf("ConditionId"), 1); // remove field ConditionId
+  
+      // If field "ConditionClassId" is part of the list, it is or inherits from ConditionType
+      if (fields.includes("ConditionClassId")) {
+        msg.eventFilter = opcua.constructEventFilter(fields, [opcua.resolveNodeId(msg.eventTypeIds)]); 
+        fields.push("ConditionId");
+      } else {
+        msg.eventFilter = opcua.constructEventFilter(fields);
+      }
+      
+      msg.eventFields = fields;
+      verbose_log(msg.eventFields);
+   
       if (!subscription) {
         // first build and start subscription and subscribe on its started event by callback
         var timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
@@ -1907,6 +1915,11 @@ module.exports = function (RED) {
           // reset_opcua_client(connect_opcua_client);
         }
       }
+    }
+
+    function subscribe_events_input(msg) {
+      verbose_log("subscribing events");
+      subscribe_events_async(msg);
     }
 
     function reconnect(msg) {
