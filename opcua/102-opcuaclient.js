@@ -1112,7 +1112,7 @@ module.exports = function (RED) {
       async function build_new_extensionObject_dataValue(datatype, topic, payload, session) {
         var defaultExtensionObject = null;
 
-        if (topic.indexOf("typeId=")) {
+        if (topic.indexOf("typeId=") > 0) {
           var typeId = topic.substring(topic.indexOf("typeId=") + 7);
           verbose_log("ExtensionObject TypeId= " + typeId);
           defaultExtensionObject = await session.constructExtensionObject(opcua.coerceNodeId(typeId), {}); // Create first with default values
@@ -1121,7 +1121,7 @@ module.exports = function (RED) {
 
         var nValue = null;
 
-        if (datatype.indexOf("Array")) {
+        if (datatype.indexOf("Array") > 0) {
           // datatype is array of extension object
           payload.value.forEach(function (extensionObject, index) {
             // deep clone default extension object
