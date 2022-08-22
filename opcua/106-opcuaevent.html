@@ -99,7 +99,12 @@ limitations under the License.
 </script>
 
 <script type="text/x-red" data-help-name="OpcUa-Event">
-    <p>Defines OPC UA events that will be subscribed from the server.</p>
-	<p>Server root node will used to look selected events under it.</p>
-	<p>Condition type can be left empty then all alarm / event objects will be taken into account.</p>
+    <p>Defines the OPC UA events that will be subscribed from the server.</p>
+	<p>The Source node defines the node where events are subscribed for. 
+       The root Server node id is used, if all events of the server shall be processed. 
+       If available, other specific node ids can be used for a subset of events.
+       Not using the root Server node might for example make sense in case of an aggregating server.</p>
+    <p>The Event Type defines what kind of events are subscribed. Events of the given Event Type and all subtypes are returned.
+       An event type can be selected in the dropdown field, or manually entered when marking the checkbox.
+    </p>
 </script>
