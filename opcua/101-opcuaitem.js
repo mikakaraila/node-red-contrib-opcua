@@ -27,7 +27,7 @@ module.exports = function (RED) {
         RED.nodes.createNode(this, n);
 
         this.item = n.item; // OPC UA address: ns=2;i=4 OR ns=3;s=MyVariable
-        this.datatype = n.datatype; // String;
+        this.datatype = n.datatype.replace(/\s/g, ""); // String; need to remove white space from node datatype to be consistent with inputs, i.e. ExtensionObject
         this.value = n.value; // 66.6
         this.name = n.name; // browseName shall be put here
 
