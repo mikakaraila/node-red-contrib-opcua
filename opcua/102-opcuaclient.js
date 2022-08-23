@@ -50,6 +50,7 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, n);
     this.name = n.name;
     this.action = n.action;
+    var originalAction = n.action;
     this.time = n.time;
     this.timeUnit = n.timeUnit;
     this.deadbandtype = n.deadbandtype;
@@ -467,18 +468,30 @@ module.exports = function (RED) {
     }
 
     function processInputMsg(msg) {
-      if (msg.action == "reconnect") {
+      if (msg.action === "reconnect") {
         cmdQueue = [];
         // msg.endpoint can be used to change endpoint
+        msg.action = "";
         reconnect(msg);
         return;
       }
-      if (msg.action) {
-        verbose_log("Override node action by msg.action:" + msg.action);
+      if (msg.action === "connect") {
+        cmdQueue = [];
+        // msg.endpoint can be used to change endpoint
+        msg.action = "";
+        connect_action_input(msg);
+        return;
+      }
+      if (msg.action && msg.action.length > 0) {
+        verbose_log("Override node action by msg.action: " + msg.action);
         node.action = msg.action;
       }
+      else {
+        verbose_log("Using node action: " + originalAction);
+        node.action = originalAction; // Use original action from the node
+      }
       // With new node-red easier to set action into payload
-      if (msg.payload && msg.payload.action) {
+      if (msg.payload && msg.payload.action && msg.payload.action.length > 0) {
         verbose_log("Override node action by msg.payload.action:" + msg.payload.action);
         node.action = msg.payload.action;
       }
@@ -508,20 +521,35 @@ module.exports = function (RED) {
       if (!node.session.sessionId == "terminated") {
         verbose_warn("terminated OPC UA Session");
         reset_opcua_client(connect_opcua_client);
-        //node.send(msg); // do not send in case of error
+        // node.send(msg); // do not send in case of error
         return;
       }
 
-      if (!msg || !msg.topic) {
-        verbose_warn("can't work without OPC UA NodeId - msg.topic empty");
-        //node.send(msg); // do not send in case of error
-        return;
+      if (msg.action && (msg.action === "connect" || msg.action === "disconnect")) {
+        // OK
+        msg.action = "";
+      }
+      else {
+        if (!msg.topic) {
+          verbose_warn("can't work without OPC UA NodeId - msg.topic empty");
+          // node.send(msg); // do not send in case of error
+          return;
+        }
       }
 
       verbose_log("Action on input:" + node.action +
         " Item from Topic: " + msg.topic + " session Id: " + node.session.sessionId);
 
       switch (node.action) {
+        case "connect":
+          connect_action_input(msg);
+          break;
+        case "disconnect":
+          disconnect_action_input(msg);
+          break;
+        case "reconnect":
+          reconnect(msg);
+          break;
         case "register":
           register_action_input(msg);
           break;
@@ -665,6 +693,65 @@ module.exports = function (RED) {
       }
       else {
         verbose_warn("No open session to write file!");
+      }
+    }
+
+    async function connect_action_input(msg) {
+      verbose_log("Connecting...");
+      if (msg && msg.OpcUaEndpoint) {
+        // Remove listeners if existing
+        if (node.client) {
+          verbose_log("Cleanup old listener events... before connecting to new client");
+          verbose_log("All event names:" + node.client.eventNames());
+          verbose_log("Connection_reestablished event count:" + node.client.listenerCount("connection_reestablished"));
+          node.client.removeListener("connection_reestablished", reestablish);
+          verbose_log("Backoff event count:" + node.client.listenerCount("backoff"));
+          node.client.removeListener("backoff", backoff);
+          verbose_log("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
+          node.client.removeListener("start_reconnection", reconnection);
+        }
+        opcuaEndpoint = {}; // Clear
+        opcuaEndpoint = msg.OpcUaEndpoint; // Check all parameters!
+        connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy]; // || opcua.SecurityPolicy.None;
+        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode]; // || opcua.MessageSecurityMode.None;
+        verbose_log("NEW connectionOption security parameters, policy: " + connectionOption.securityPolicy + " mode: " + connectionOption.securityMode);
+        if (opcuaEndpoint.login === true) {
+          userIdentity.userName = opcuaEndpoint.user;
+          userIdentity.password = opcuaEndpoint.password;
+          userIdentity.type = opcua.UserTokenType.UserName;
+          verbose_log("NEW UserIdentity: " + JSON.stringify(userIdentity));
+        }
+        verbose_log("Using new endpoint:" + stringify(opcuaEndpoint));
+      } else {
+        verbose_log("Using endpoint:" + stringify(opcuaEndpoint));
+      }
+      if (!node.client) {
+        create_opcua_client(connect_opcua_client);
+      }
+    }
+
+    function disconnect_action_input(msg) {
+      verbose_log("Closing session...");
+      if (node.session) {
+        node.session.close(function(err) {
+          if (err) {
+            node_error("Session close error: " + err);
+          }
+          else {
+            verbose_log("Session closed!");
+          }
+        });
+      }
+      else {
+        verbose_warn("No session to close!");
+      }
+      verbose_log("Disconnecting...");
+      if (node.client) {
+        node.client.disconnect(function () {
+          verbose_log("Client disconnected!");
+          set_node_status_to("disconnected");
+        });
+        node.client = null;
       }
     }
 
