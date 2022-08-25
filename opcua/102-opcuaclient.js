@@ -2000,22 +2000,12 @@ module.exports = function (RED) {
       verbose_log("subscribing events for " + msg.eventTypeIds);
       var eventTypeId = opcua.resolveNodeId(msg.eventTypeIds);
       var fields = await opcua.extractConditionFields(node.session, eventTypeId); // works with all eventTypes
-      fields.splice(fields.indexOf("ConditionId"), 1); // remove field ConditionId
-
-      // If field "ConditionClassId" is part of the list, it is or inherits from ConditionType
-      if (fields.includes("ConditionClassId")) {
-        msg.eventFilter = opcua.constructEventFilter(fields, [eventTypeId]); 
-        fields.push("ConditionId");
-      } else {
-        msg.eventFilter = opcua.constructEventFilter(fields);
-      }
-
-      // Create special whereClause if not BaseEventType
-      var baseEventType = opcua.resolveNodeId("BaseEventType");
-      if (eventTypeId.toString() != baseEventType.toString()) {
-        msg.eventFilter.whereClause = await create_where_clause_from_eventtype(eventTypeId);
-      }
       
+      // If field "ConditionClassId" is part of the list, it is or inherits from ConditionType
+      if (!fields.includes("ConditionClassId")) {
+        fields.splice(fields.indexOf("ConditionId"), 1); // remove field ConditionId
+      }
+      msg.eventFilter = opcua.constructEventFilter(fields, opcua.ofType(eventTypeId));
       msg.eventFields = fields;
       verbose_log("EventFields: " + msg.eventFields);
       
@@ -2041,57 +2031,6 @@ module.exports = function (RED) {
 
     function subscribe_events_input(msg) {
       subscribe_events_async(msg);
-    }
-
-    async function create_where_clause_from_eventtype(eventTypeId) {
-      var eventTypeIdList = await get_type_and_subtypes_of_eventype(eventTypeId);
-      verbose_log("whereClause EventTypes: " + eventTypeIdList);
-
-      // First operand defines the field of each incoming event which is compared against the given list
-      var operands = [new opcua.SimpleAttributeOperand({
-                                  attributeId: AttributeIds.Value,
-                                  browsePath: [opcua.coerceQualifiedName("EventType")],                                
-                                  typeDefinitionId: new opcua.NodeId()})];
-      
-      // Further operands define the given list of EventTypes to compare against
-      for (var i = 0; i < eventTypeIdList.length; i++) {
-        var typeId = eventTypeIdList[i];
-        var opValue = new opcua.Variant({dataType: opcua.DataType.NodeId, value: opcua.resolveNodeId(typeId)});
-        operands.push(new opcua.LiteralOperand({value: opValue}));
-      }
-      
-      // Operator is "InList"
-      var contentFilterElement = new opcua.ContentFilterElement({filterOperator: opcua.FilterOperator.InList,  
-                                                                 filterOperands: operands});
-      var whereClause = new opcua.ContentFilter({elements: [contentFilterElement]});
-      return whereClause;
-    }
-
-    async function get_type_and_subtypes_of_eventype(eventTypeId, eventTypeIdList=null) {
-      if (!eventTypeIdList) {
-        eventTypeIdList = [eventTypeId];
-      }
-      var children = await get_subtype_children_of_node(node.session, eventTypeId);
-      verbose_log("SubType Children: " + children.map((e) => {return e.browseName}));
-      
-      for (var i = 0; i < children.length; i++) {
-        var childNodeId = children[i].nodeId;
-        eventTypeIdList.push(childNodeId);
-        await get_type_and_subtypes_of_eventype(childNodeId, eventTypeIdList);
-      }
-      return eventTypeIdList;
-    }
-
-    async function get_subtype_children_of_node(session, nodeId) {
-      const browseResult = await session.browse({
-          browseDirection:opcua.BrowseDirection.Forward,
-          includeSubtypes: true,
-          nodeClassMask: 0, // 0 = all nodes
-          nodeId: opcua.resolveNodeId(nodeId),
-          referenceTypeId: opcua.resolveNodeId("HasSubtype"), 
-          resultMask: 0x3f // All
-      });
-      return browseResult.references || []; 
     }
 
     function reconnect(msg) {
