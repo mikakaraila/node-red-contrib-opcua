@@ -1145,7 +1145,7 @@ module.exports = function (RED) {
           }
           // Simplified
           newmsg.topic = msg.topic;
-          newmsg.payload = ExtensionData; //  JSON.stringify(ExtensionData); // New value with default values
+          newmsg.payload = JSON.parse(JSON.stringify(ExtensionData)); //  JSON.stringify(ExtensionData); // New value with default values
           verbose_log("Extension Object msg: " + stringify(newmsg))
           node.send(newmsg);
         }
