@@ -839,7 +839,11 @@ module.exports = function (RED) {
                     verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
                   }
 
-                  msg.payload = dataValue.value.value;
+                  // clone payload via JSON stringify/parse only if datavalue is an ExtensionObject or an array of ExtensionObjects
+                  msg.payload = dataValue.value.dataType === opcua.DataType.ExtensionObject
+                    ? JSON.parse(JSON.stringify((dataValue.value.value)))
+                    : dataValue.value.value;
+
                   msg.statusCode = dataValue.statusCode;
                   msg.serverTimestamp = dataValue.serverTimestamp;
                   msg.sourceTimestamp = dataValue.sourceTimestamp;
@@ -1038,10 +1042,15 @@ module.exports = function (RED) {
                   if (sourceTs === null) {
                     sourceTs = new Date();
                   }
+
+                  var value = dataValue.value.dataType === opcua.DataType.ExtensionObject
+                    ? JSON.parse(JSON.stringify(dataValue.value.value))
+                    : dataValue.value.value;
+
                   // Use nodeId in topic, arrays are same length
                   node.send({
                     topic: multipleItems[i],
-                    payload: dataValue.value.value,
+                    payload: value,
                     serverTimestamp: serverTs,
                     sourceTimestamp: sourceTs
                   });
@@ -1136,7 +1145,7 @@ module.exports = function (RED) {
           }
           // Simplified
           newmsg.topic = msg.topic;
-          newmsg.payload = ExtensionData; //  JSON.stringify(ExtensionData); // New value with default values
+          newmsg.payload = JSON.parse(JSON.stringify(ExtensionData)); //  JSON.stringify(ExtensionData); // New value with default values
           verbose_log("Extension Object msg: " + stringify(newmsg))
           node.send(newmsg);
         }
@@ -1536,10 +1545,15 @@ module.exports = function (RED) {
           verbose_log("Group change on item, index: " + index + " item: " + monitorItems[index].nodeId + " value: " + dataValue.value.value);
           // verbose_log("Change detected: " + monitoredItem.toString() + " " + dataValue.toString() + " " + index);
           const nodeId = monitorItems[index].nodeId.toString();
+
+          var value = dataValue.value.dataType === opcua.DataType.ExtensionObject
+            ? JSON.parse(JSON.stringify(dataValue))
+            : dataValue;
+
           if (nodeId) {
             var msg = {};
             msg.topic = nodeId;
-            msg.payload = dataValue; // if users want to get dataValue.value.value example contains function node
+            msg.payload = value; // if users want to get dataValue.value.value example contains function node
             node.send(msg);
           }
         });
