@@ -65,14 +65,14 @@ module.exports = function (RED) {
             }
             // Input msg is dynamic and will overwrite node.value
             if (msg.payload && msg.payload.length > 0) {
-                verbose_warn("Second set value by Input " + msg.payload);
+                // verbose_warn("Second set value by Input " + msg.payload);
                 if (node.datatype) {
                    msg.payload = opcuaBasics.build_new_value_by_datatype(node.datatype, msg.payload);
                 }
                 if (msg.datatype) {
                     msg.payload = opcuaBasics.build_new_value_by_datatype(msg.datatype, msg.payload);
                 }
-                verbose_warn("Payload value, setting value to " + stringify(msg));
+                // verbose_warn("Payload value, setting value to " + stringify(msg));
             }
             node.send(msg);
         });
