@@ -605,6 +605,9 @@ module.exports = function (RED) {
         case "writefile":
           write_file(msg);
           break;
+        case "method":
+          method_action_input(msg);
+          break;
         default:
           verbose_warn("Unknown action: " + node.action + " with msg " + stringify(msg));
           break;
@@ -693,6 +696,116 @@ module.exports = function (RED) {
       }
       else {
         verbose_warn("No open session to write file!");
+      }
+    }
+
+    async function method_action_input(msg) {
+      verbose_log("Calling method: " + JSON.stringify(msg));
+      if (node.session) {
+        try {
+          var status = await callMethod(msg);
+          if (status === opcua.StatusCodes.Good) {
+            node.status({
+              fill: "green",
+              shape: "dot",
+              text: "Method executed"
+            });
+          }
+  
+        }
+        catch(err) {
+            node.error(chalk.red("Cannot call method, error: " + err));
+        }
+      }
+      else {
+        verbose_warn("No open session to call method!");
+      }
+    }
+
+    async function callMethod(msg) {
+      if (msg.methodId && msg.inputArguments) {
+        verbose_log("Calling method: " + JSON.stringify(msg.methodId));
+        verbose_log("InputArguments: " + JSON.stringify(msg.inputArguments));
+        verbose_log("OutputArguments: " + JSON.stringify(msg.outputArguments));
+
+        try {
+          var i = 0;
+          var arg;
+          while (i < msg.inputArguments.length) {
+            arg = msg.inputArguments[i];
+            if (arg.dataType === "NodeId") {
+              arg.value = opcua.coerceNodeId(arg.value);
+            }
+            if (arg.dataType === "ExtensionObject") {
+              var extensionobject = null;
+              if (arg.typeid) {
+                extensionObject = await node.session.constructExtensionObject(opcua.coerceNodeId(arg.typeid), {}); // TODO make while loop to enable await
+              }
+              verbose_log("ExtensionObject=" + stringify(extensionobject));
+              Object.assign(extensionobject, arg.value);
+              arg.value = new opcua.Variant({
+                dataType: opcua.DataType.ExtensionObject,
+                value: extensionobject
+              });
+            }
+            i++;
+          }
+        } catch (err) {
+          node.error("Invalid NodeId: " + err);
+          return opcua.StatusCodes.BadNodeIdUnknown;
+        }
+        verbose_log("Updated InputArguments: " + JSON.stringify(msg.inputArguments));
+        var callMethodRequest;
+        var diagInfo;
+        try {
+          callMethodRequest = new opcua.CallMethodRequest({
+            objectId: opcua.coerceNodeId(msg.objectId),
+            methodId: opcua.coerceNodeId(msg.methodId),
+            inputArgumentDiagnosticInfos: diagInfo,
+            inputArguments: msg.inputArguments,
+            outputArguments: msg.outputArguments
+          });
+        } catch (err) {
+          set_node_status_to("error: " + err)
+          node.error("Build method request failed, error:" + err);
+        }
+
+        verbose_log("Call request: " + callMethodRequest.toString());
+        verbose_log("Calling: " + callMethodRequest);
+        try {
+          const result = await node.session.call(callMethodRequest);
+          if (diagInfo) {
+            verbose_log("Diagn. info: " + JSON.stringify(diagInfo));
+          }
+          verbose_log("Output args: " + JSON.stringify(msg.outputArguments));
+          verbose_log("Results:     " + JSON.stringify(result));
+          msg.result = result;
+          if (result && result.statusCode === opcua.StatusCodes.Good) {
+            var i = 0;
+            msg.output = result.outputArguments; // Original outputArguments
+            msg.payload = []; // Store values back to array
+            if (result.outputArguments.length == 1) {
+              verbose_log("Value: " + result.outputArguments[i].value);
+              msg.payload = result.outputArguments[0].value; // Return only if one output argument
+            } else {
+              while (result.outputArguments.length > i) {
+                verbose_log("Value[" + i + "]:" + result.outputArguments[i].toString());
+                msg.payload.push(result.outputArguments[i].value); // Just copy result value to payload[] array, actual value needed mostly
+                i++;
+              }
+            }
+          } else {
+            set_node_status_to("error: " + result.statusCode.description)
+            node.error("Execute method result, error:" + result.statusCode.description);
+            return result.statusCode;
+          }
+          node.send(msg);
+          return opcua.StatusCodes.Good;
+        } catch (err) {
+          set_node_status_to("Method execution error: " + err)
+          node.error("Method execution error: " + err);
+          return opcua.StatusCodes.BadMethodInvalid;
+        }
       }
     }
 
