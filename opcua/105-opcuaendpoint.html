@@ -37,24 +37,40 @@ limitations under the License.
             return this.endpoint || "OPC UA Endpoint";
         },
         oneditprepare: function () {
+            var node = this;
             try {
                 var noneCheckbox = $("#node-config-input-none");
                 var loginCheckbox = $("#node-config-input-login");
                 var usercertCheckbox = $("#node-config-input-usercert");
                 var authRow = $(".node-input-useAuth-row");
                 var certRow = $(".node-input-userCert-row");
+                noneCheckbox.prop('checked', node.none);
+                loginCheckbox.prop('checked', node.login);
+                usercertCheckbox.prop('checked', node.usercert);
 
-                if (this.none) {
+                if (node.none === true) {
                     noneCheckbox.prop('checked', true);
-                    authRow.show();
+                    // authRow.show();
                 } else {
                     noneCheckbox.prop('checked', false);
-                    loginCheckbox.prop('checked', false);
-                    usercertCheckbox.prop('checked', false);
-                    authRow.hide();
+                    // loginCheckbox.prop('checked', false);
+                    // usercertCheckbox.prop('checked', false);
+                    // authRow.hide();
+                    if (node.login === true) {
+                        authRow.show();
+                    }
+                    else {
+                        authRow.hide();
+                    }
+                    if (node.usercert === true) {
+                        certRow.show();
+                    }
+                    else {
+                        certRow.hide();
+                    }
                 }
 
-                if (this.login) {
+                if (node.login === true) {
                     loginCheckbox.prop('checked', true);
                     authRow.show();
                 } else {
@@ -62,25 +78,28 @@ limitations under the License.
                     authRow.hide();
                 }
 
-                if (this.usercert) {
+                if (node.usercert === true) {
                     usercertCheckbox.prop('checked', true);
                     certRow.show();
                 } else {
-                    noneCheckbox.prop('checked', false);
+                    usercertCheckbox.prop('checked', false);
                     certRow.hide();
                 }
-
                 noneCheckbox.change(function () {
                     if ($(this).is(":checked")) {
-                        none = true;
+                        console.log("Changed Anonymous: TRUE");
+                        node.none = true;
+                        noneCheckbox.prop('checked', true);
                         loginCheckbox.prop('checked', false);
                         usercertCheckbox.prop('checked', false);
                         authRow.hide();
                         certRow.hide();
                     } else {
-                        none = false;
+                        console.log("Changed Anonymous: FALSE");
+                        node.none = false;
                         $('#node-input-user').val('');
                         $('#node-input-password').val('');
+                        
                     }
                 });
 
@@ -117,10 +136,10 @@ limitations under the License.
                 });
 
             } catch (err) {
-                node.error(err);
+                console.error(err);
             }
             finally {
-                node.debug("finally");
+                // console.debug("finally"); // Nothing to do
             }
         }
     });
