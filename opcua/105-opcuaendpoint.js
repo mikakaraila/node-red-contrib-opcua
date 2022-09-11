@@ -37,6 +37,7 @@ module.exports = function (RED) {
         this.securityPolicy = n.secpol;
         this.securityMode = security_mode_map_compat[n.secmode];
         this.login = n.login;
+        this.none = n.none;
         this.usercert = n.usercert;
         this.userCertificate = n.usercertificate;
         this.userPrivatekey = n.userprivatekey;

@@ -111,6 +111,13 @@ module.exports = function (RED) {
     verbose_log("Connection options:" + stringify(connectionOption));
     verbose_log("EndPoint: " + stringify(opcuaEndpoint));
 
+    // Ensure Anonymous login
+    if (opcuaEndpoint.none === true) {
+      userIdentity.type = opcua.UserTokenType.Anonymous;
+    }
+    if (opcuaEndpoint.login === true && opcuaEndpoint.usercert === true) {
+      userIdentity.type = opcua.UserTokenType.Anonymous;
+    }
     if (opcuaEndpoint.login === true && opcuaEndpoint.usercert === true) {
       node.error("Cannot use username & password & user certificate at the same time!");
     }
