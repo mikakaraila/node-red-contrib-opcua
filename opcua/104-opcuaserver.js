@@ -647,8 +647,9 @@ module.exports = function (RED) {
                         verbose_log("findNode(ns="+ns+";s="+payload.variableName);
                         var vnode = addressSpace.findNode("ns="+ns+";s="+payload.variableName);
                     }
-                    verbose_log("Found variable, nodeId: " + vnode.nodeId);
                     if (vnode) {
+                        verbose_log("Found variable, nodeId: " + vnode.nodeId);
+
                         variables[payload.variableName] = opcuaBasics.build_new_value_by_datatype(payload.datatype, payload.variableValue);
                         // var newValue = opcuaBasics.build_new_variant(payload.datatype, payload.variableValue);
                         var newValue = opcuaBasics.build_new_dataValue(payload.datatype, payload.variableValue);
