@@ -75,8 +75,8 @@ Input message
 |                    | readmultiple              | [nodeId + datatype]
 |                    | writemultiple             | [nodeId + datatype + value]
 
-readmultiple to readmultiple items
-writemultiple to write multiple items
+readmultiple to readmultiple items\
+writemultiple to write multiple items\
 clearitems to empty multiple items (readmultiple / writemultiple)
 
 NOTE: With datatype=xxxArray msg.payload.range = "2:4" can used as indexRange to read/write partial array
