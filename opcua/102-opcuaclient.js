@@ -22,6 +22,7 @@ module.exports = function (RED) {
   "use strict";
   var chalk = require("chalk");
   var opcua = require('node-opcua');
+  const { NodeCrawler  } = require("node-opcua-client-crawler"); // Legacy support
   var opcuaBasics = require('./opcua-basics');
   // var nodeId = require("node-opcua-nodeid");
   var crypto_utils = opcua.crypto_utils;
@@ -2016,7 +2017,7 @@ module.exports = function (RED) {
     async function browse_action_input(msg) {
       verbose_log("browsing");
       var allInOne = []; // if msg.collect and msg.collect === true then collect all items to one msg
-      var NodeCrawler = opcua.NodeCrawler;
+      // var NodeCrawler = opcua.NodeCrawler;
       if (node.session) {
         const crawler = new NodeCrawler(node.session);
         set_node_status_to("active browsing");
