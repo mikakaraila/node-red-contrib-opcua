@@ -21,6 +21,7 @@
     var opcua = require('node-opcua');
     const ObjectIds = require("node-opcua-constants");
     var fileTransfer = require("node-opcua-file-transfer");
+    const { NodeCrawler  } = require("node-opcua-client-crawler");
     var path = require('path');
     var os = require("os");
     var fs = require("fs");
@@ -317,8 +318,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.289",
-                buildDate: "2022-09-11T21:04:00"
+                buildNumber: "0.2.290",
+                buildDate: "2022-11-06T13:48:00"
             };
             
             var hostname = os.hostname();
@@ -1501,7 +1502,7 @@
                         var session = new opcua.PseudoSession(addressSpace);
                         const objectsFolder = addressSpace.findNode("ObjectsFolder");
                         var results=[];
-                        const crawler = new opcua.NodeCrawler(session);
+                        const crawler = new NodeCrawler(session); // Legacy support
                         crawler.on("browsed", (element) => {
                             // Limit to variables and skip ns=0
                             if (element.nodeId.toString().indexOf("ns=0;") < 0 && element.nodeClass == opcua.NodeClass.Variable) {
