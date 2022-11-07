@@ -88,7 +88,7 @@
         var initialized = false;
         var folder = null;
         let userManager; // users with username, password and role
-        let users = [{ username: "", password: "", role: "" }]; // Empty as default
+        let users = [{ username: "", password: "", roles: "" }]; // Empty as default
         let savedAddressSpace = "";
 
         if (node.users && node.users.length > 0) {
