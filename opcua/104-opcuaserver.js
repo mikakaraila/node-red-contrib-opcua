@@ -88,7 +88,7 @@
         var initialized = false;
         var folder = null;
         let userManager; // users with username, password and role
-        let users = [{ username: "", password: "", role: "" }]; // Empty as default
+        let users = [{ username: "", password: "", roles: "" }]; // Empty as default
         let savedAddressSpace = "";
 
         if (node.users && node.users.length > 0) {
@@ -159,19 +159,8 @@
                         // Check this TODO
                         return opcua.makeRoles("AuthenticatedUser"); // opcua.WellKnownRoles.Anonymous; // by default were guest! ( i.e anonymous), read-only access 
                     }
-                    const userRole = users[uIndex].role;
-                    // Default available roles, note each variable / methods should have permissions for real use case
-                    if (userRole === "Anonymous") return opcua.makeRoles("Anonymous"); // opcua.WellKnownRoles.Anonymous;
-                    if (userRole === "Guest") return opcua.makeRoles("AuthenticatedUser"); // opcua.WellKnownRoles.AuthenticatedUser;
-                    if (userRole === "Engineer") return opcua.makeRoles("Engineer"); // opcua.WellKnownRoles.Engineer;
-                    if (userRole === "Observer") return opcua.makeRoles("Observer"); // opcua.WellKnownRoles.Observer;
-                    if (userRole === "Operator") return opcua.makeRoles("Operator"); // return opcua.WellKnownRoles.Operator;
-                    if (userRole === "ConfigureAdmin") return opcua.makeRoles("ConfigureAdmin"); // return opcua.WellKnownRoles.ConfigureAdmin;
-                    if (userRole === "SecurityAdmin") return  pcua.makeRoles("SecurityAdmin"); // return opcua.WellKnownRoles.SecurityAdmin;
-                    if (userRole === "Supervisor") return opcua.makeRoles("Supervisor"); // return opcua.WellKnownRoles.Supervisor;
-
-                    // Return configurated role
-                    return userRole;
+                    const userRoles = users[uIndex].roles;
+                    return opcua.makeRoles(userRoles);
                 }
             };
         }
