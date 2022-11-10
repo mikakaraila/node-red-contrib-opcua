@@ -17,6 +17,7 @@
  **/
 
 const { promoteToMultiStateValueDiscrete } = require("node-opcua");
+const { parseArgs } = require("util");
 
 module.exports = function (RED) {
   "use strict";
@@ -1113,6 +1114,15 @@ module.exports = function (RED) {
       if (msg.topic !== "readmultiple") {
         set_node_status_to("nodeId stored");
         return;
+      }
+      // Read multiple, payload contains all nodeIds that will be read
+      if (node.session && msg.topic === "readmultiple" && Array.isArray(msg.payload)) {
+        multipleItems = []; // Clear as payload contains always nodeIds that we want to read
+        var i = 0;
+        while (i < msg.payload.length) {
+          multipleItems.push({ nodeId: msg.payload[i], attributeId: AttributeIds.Value, TimestampsToReturn: opcua.TimestampsToReturn.Both });
+          i = i + 1;
+        }
       }
 
       if (node.session && msg.topic === "readmultiple") {
