@@ -307,8 +307,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.292",
-                buildDate: "2022-11-10T19:04:00"
+                buildNumber: "0.2.293",
+                buildDate: "2022-12-04T09:48:00"
             };
             
             var hostname = os.hostname();
@@ -762,7 +762,17 @@
                     break;
 
                 case "addFolder":
-                    verbose_log("Adding Folder: ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
+                    var nodeId = msg.topic;
+                    var description = "";
+                    var d = msg.topic.indexOf("description=");
+                    if (d > 0) {
+                        nodeId = nodeId.substring(0, d - 1); // format is msg.topic="ns=1;s=TEST;description=MyTestFolder"
+                        description = msg.topic.substring(d + 12);
+                        if (description.indexOf(";") >= 0) {
+                            description = description.substring(0, description.indexOf(";"));
+                        }
+                    }
+                    verbose_log("Adding Folder: ".concat(nodeId)); // Example topic format ns=4;s=FolderName
                     var parentFolder = node.server.engine.addressSpace.rootFolder.objects;
                     if (folder) {
                         parentFolder = folder; // Use previously created folder as parentFolder or setFolder() can be used to set parentFolder
@@ -786,25 +796,26 @@
                     }
                     
                     // Own namespace
-                    if (msg.topic.indexOf("ns=1;") >= 0) {
+                    if (nodeId.indexOf("ns=1;") >= 0) {
                         folder = addressSpace.getOwnNamespace().addObject({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
-                            nodeId: msg.topic,
+                            nodeId: nodeId, // msg.topic,
+                            description: description,
                             accessLevel: accessLevel, // TEST more
                             userAccessLevel: userAccessLevel, // TEST more
                             rolePermissions: [].concat(permissions),
                             accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
-                            browseName: msg.topic.substring(7)
+                            browseName: nodeId.substring(7)
                         });
                     }
                     else {
-                        verbose_log("Topic: " + msg.topic + " index: " + msg.topic.substring(3));
-                        const index = parseInt(msg.topic.substring(3));
+                        verbose_log("Topic: " + nodeId + " index: " + nodeId.substring(3));
+                        const index = parseInt(nodeId.substring(3));
                         verbose_log("ns index: " + index);
                         const uri = addressSpace.getNamespaceUri(index);
                         verbose_log("ns uri: " + uri);
                         const ns = addressSpace.getNamespace(uri); // Or index
-                        var name = msg.topic;
+                        var name = nodeId; // msg.topic;
                         var browseName = name; // Use full name by default
                         // NodeId can be string or integer or Guid or Opaque: ns=10;i=1000 or ns=5;g=
                         var bIndex = name.indexOf(";s="); // String
@@ -825,7 +836,8 @@
                         }
                         folder = ns.addObject({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
-                            nodeId: msg.topic,
+                            nodeId: nodeId, // msg.topic,
+                            description: description,
                             accessLevel: accessLevel, // TEST more
                             userAccessLevel: userAccessLevel, // TEST more
                             rolePermissions: [].concat(permissions),
@@ -838,6 +850,7 @@
                 case "addVariable":
                     verbose_log("Adding node: ".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
                     var datatype = "";
+                    var description = "";
                     var opcuaDataType = null;
                     var e = msg.topic.indexOf("datatype=");
                     if (e<0) {
@@ -847,7 +860,13 @@
                     if (folder != null) {
                         parentFolder = folder; // Use previous folder as parent or setFolder() can be use to set parent
                     }
-
+                    var d = msg.topic.indexOf("description=");
+                    if (d > 0) {
+                        description = msg.topic.substring(d + 12);
+                        if (description.indexOf(";") >= 0) {
+                            description = description.substring(0, description.indexOf(";"));
+                        }
+                    }
                     if (e > 0) {
                         name = msg.topic.substring(0, e - 1);
                         datatype = msg.topic.substring(e + 9);
@@ -1021,6 +1040,7 @@
                                 organizedBy: addressSpace.findNode(parentFolder.nodeId),
                                 nodeId: name,
                                 browseName: browseName,
+                                description: description,
                                 dataType: opcua.coerceNodeId(typeId), // "ExtensionObject", // "StructureDefinition", // typeId,
                                 valueRank,
                                 value: { dataType: opcua.DataType.ExtensionObject, value: extVar },
@@ -1057,6 +1077,7 @@
                             rolePermissions: [].concat(permissions),
                             accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
                             browseName: browseName, // or displayName
+                            description: description,
                             dataType: datatype, // opcuaDataType,
                             valueRank,
                             arrayDimensions: dimensions,
