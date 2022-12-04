@@ -1268,7 +1268,13 @@ module.exports = function (RED) {
           const ExtensionNodeId = opcua.coerceNodeId(items[0]);
           verbose_log("ExtensionNodeId: " + ExtensionNodeId);
           const ExtensionTypeDefinition = await node.session.read({ nodeId: ExtensionNodeId, attributeId: opcua.AttributeIds.DataTypeDefinition});
-          verbose_log("ExtensionType: " + JSON.stringify(ExtensionTypeDefinition));
+          if (ExtensionTypeDefinition.statusCode != opcua.StatusCodes.Good) {
+            node_error("Failed to find extension type for nodeId: " + ExtensionNodeId + " error: " + ExtensionTypeDefinition.statusCode.description);
+            return;
+          }
+          else {
+            verbose_log("ExtensionType: " + JSON.stringify(ExtensionTypeDefinition));
+          }
           var newmsg = {};
           const ExtensionData = await node.session.constructExtensionObject(ExtensionNodeId, {});
           if (ExtensionData) {
