@@ -307,7 +307,7 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.294",
+                buildNumber: "0.2.295",
                 buildDate: "2023-01-24T19:11:00"
             };
             
