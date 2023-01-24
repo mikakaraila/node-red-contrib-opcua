@@ -307,8 +307,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.293",
-                buildDate: "2022-12-04T09:48:00"
+                buildNumber: "0.2.294",
+                buildDate: "2023-01-24T19:11:00"
             };
             
             var hostname = os.hostname();
@@ -493,10 +493,10 @@
                 // Client disconnected
                 node.server.on("session_closed", function(session, reason) {
                     node.debug("Reason: " + reason);
-                   var msg = {};
-                   msg.topic="Client-disconnected";
-                   msg.payload = session.sessionName.toString(); // session.clientDescription.applicationName.toString() + " " + session.sessionName ? session.sessionName.toString() : "<null>";
-                   node.send(msg);
+                    var msg = {};
+                    msg.topic="Client-disconnected";
+                    msg.payload = session.sessionName.toString(); // session.clientDescription.applicationName.toString() + " " + session.sessionName ? session.sessionName.toString() : "<null>";
+                    node.send(msg);
                  });
                  node.status({
                     fill: "green",
@@ -506,7 +506,11 @@
                 initialized = true;
                }
             catch (err) {
-                node.error("Error: " + err);
+                var msg = {};
+                msg.error = {};
+                msg.error.message = "Disconnect error: " + err;
+                msg.error.source = this;
+                node.error("Disconnect error: ", msg);
             }
         })();
 
@@ -1196,7 +1200,7 @@
                     verbose_log("Parameters: " + JSON.stringify(msg));
                     const parentNode = addressSpace.getOwnNamespace().findNode(msg.topic);
                     if (!parentNode) {
-                        node.error("Method needs parent node, wrong nodeId in the msg.topic: " + msg.topic);
+                        node.error("Method needs parent node, wrong nodeId in the msg.topic: ", msg);
                     }
                     const newMethod = addressSpace.getOwnNamespace().addMethod(
                         parentNode, {

@@ -242,6 +242,11 @@ module.exports = function (RED) {
     };
     const backoff = function (attempt, delay) {
       // verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds. Node:  " + node.name + " " + opcuaEndpoint.endpoint);
+      var msg = {};
+      msg.error = {};
+      msg.error.message = "reconnect";
+      msg.error.source = this;
+      node.error("reconnect", msg);
       set_node_status2_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
     };
     const reconnection = function () {
@@ -379,6 +384,11 @@ module.exports = function (RED) {
         verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt securityMode:" + stringify(connectionOption.securityMode) + " securityPolicy:" + stringify(connectionOption.securityPolicy));
         verbose_warn("Case B: UserName & password does not match to server (needed by Sign): " + userIdentity.userName + " " + userIdentity.password);
         set_node_errorstatus_to("invalid endpoint", err);
+        var msg = {};
+        msg.error = {};
+        msg.error.message = "Invalid endpoint";
+        msg.error.source = this;
+        node.error("Invalid endpoint", msg);
         return;
       }
       verbose_log("Connected to " + opcuaEndpoint.endpoint);
@@ -481,6 +491,11 @@ module.exports = function (RED) {
         cmdQueue = [];
         // msg.endpoint can be used to change endpoint
         msg.action = "";
+        var msg = {};
+        msg.error = {};
+        msg.error.message = "reconnect";
+        msg.error.source = this;
+        node.error("reconnect", msg);
         reconnect(msg);
         return;
       }
@@ -760,7 +775,11 @@ module.exports = function (RED) {
             i++;
           }
         } catch (err) {
-          node.error("Invalid NodeId: " + err);
+          var msg = {};
+          msg.error = {};
+          msg.error.message = "Invalid NodeId: " + err;
+          msg.error.source = this;
+          node.error("Invalid NodeId: ", msg);
           return opcua.StatusCodes.BadNodeIdUnknown;
         }
         verbose_log("Updated InputArguments: " + JSON.stringify(msg.inputArguments));

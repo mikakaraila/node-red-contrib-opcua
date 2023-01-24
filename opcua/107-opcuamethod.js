@@ -213,14 +213,22 @@ module.exports = function (RED) {
           });
         }
       } catch (err) {
-        node.error("Cannot connect to " + JSON.stringify(opcuaEndpoint));
+        var msg = {};
+        msg.error = {};
+        msg.error.message = "Cannot connect to " + JSON.stringify(opcuaEndpoint);
+        msg.error.source = this;
+        node.error("Cannot connect to ", msg);
         callback(err);
       }
     }
 
     function node_error(err) {
       // console.error(chalk.red("Client node error on node: " + node.name + "; error: " + stringify(err)));
-      node.error("Client node error on node: " + node.name + "; error: " + stringify(err));
+      var msg = {};
+      msg.error = {};
+      msg.error.message = "Client node error: " + stringify(err);
+      msg.error.source = this;
+      node.error("Client node error on node: ", msg);
     }
 
     function verbose_warn(logMessage) {
@@ -265,7 +273,11 @@ module.exports = function (RED) {
             i++;
           }
         } catch (err) {
-          node.error("Invalid NodeId: " + err);
+          var msg = {};
+          msg.error = {};
+          msg.error.message = "Invalid NodeId: " + err;
+          msg.error.source = this;
+          node.error("Invalid NodeId: ", msg);
           return opcua.StatusCodes.BadNodeIdUnknown;
         }
         verbose_log("Updated InputArguments: " + JSON.stringify(msg.inputArguments));
@@ -280,8 +292,12 @@ module.exports = function (RED) {
             outputArguments: msg.outputArguments
           });
         } catch (err) {
-          set_node_status_to("error: " + err)
-          node.error("Build method request failed, error:" + err);
+          set_node_status_to("error: " + err);
+          var msg = {};
+          msg.error = {};
+          msg.error.message = "Build method request failed, error: " + err;
+          msg.error.source = this;
+          node.error("Build method request failed, error: ", msg);
         }
 
         verbose_log("Call request: " + callMethodRequest.toString());
@@ -316,8 +332,12 @@ module.exports = function (RED) {
           node.send(msg);
           return opcua.StatusCodes.Good;
         } catch (err) {
-          set_node_status_to("Method execution error: " + err)
-          node.error("Method execution error: " + err);
+          set_node_status_to("Method execution error: " + err);
+          var msg = {};
+          msg.error = {};
+          msg.error.message = "Method execution error: " + err;
+          msg.error.source = this;
+          node.error("Method execution error: ", msg);
           return opcua.StatusCodes.BadMethodInvalid;
         }
       }
