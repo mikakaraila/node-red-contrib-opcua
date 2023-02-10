@@ -307,12 +307,12 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.295",
-                buildDate: "2023-01-24T19:11:00"
+                buildNumber: "0.2.296",
+                buildDate: "2023-02-10T10:47:00"
             };
             
             var hostname = os.hostname();
-            var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840/UADiscovery";
+            var discovery_server_endpointUrl = "opc.tcp://" + hostname + ":4840"; // /UADiscovery"; // Do not use resource path
             if (node.registerToDiscovery === true) {
                 verbose_log("Registering server to :" + discovery_server_endpointUrl);
             }
