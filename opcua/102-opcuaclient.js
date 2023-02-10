@@ -194,16 +194,21 @@ module.exports = function (RED) {
         } else {
           if (fieldName === "EventId")  {
             msg.payload[fieldName] = "0x" + variant.value.toString("hex"); // As in UaExpert
+            msg.payload["_" + fieldName] = variant; // Keep as ByteString
           } else {
             msg.payload[fieldName] = opcuaBasics.clone_object(variant.value);
-          }          
+          }
+          // if available, needed for Acknowledge function in client
+          if (fieldName === "ConditionId")  {
+            msg.topic = variant.value.toString();
+          }
         }
       }
 
       // Set message topic
       if (eventFields.length === 0) {
         msg.topic="No EventFields";
-      } 
+      }
       // if available, needed for Acknowledge function in client
       else if (msg.payload.ConditionId) {
         msg.topic=msg.payload.ConditionId.toString();
@@ -644,14 +649,46 @@ module.exports = function (RED) {
       // msg.topic is nodeId of the alarm object like Prosys ns=6;s=MyLevel.Alarm
       // msg.conditionId is actual conditionObejct that contains ns=6;s=MyLevel.Alarm/0:EventId current/latest eventId will be read
       // msg.comment will be used as comment in the acknowledge
-      const dataValue = await node.session.read({ nodeId: msg.conditionId, attributeId: AttributeIds.Value });
-      const eventId = dataValue.value.value;
-      verbose_log("Acknowledge (alarm object == topic): " + msg.topic + " conditionObject (nodeId of eventId): " + msg.conditionId + " value of eventId: 0x" + eventId.toString("hex") + " comment: " + msg.comment);
+      var eventId;
+      if (msg.conditionId) {
+        const dataValue = await node.session.read({ nodeId: msg.conditionId, attributeId: AttributeIds.Value });
+        
+        eventId = dataValue.value.value;
+        verbose_log("Acknowledge (alarm object == topic): " + msg.topic + " conditionObject (nodeId of eventId): " + msg.conditionId + " value of eventId: 0x" + eventId.toString("hex") + " comment: " + msg.comment);
+      }
+      // If actual eventId provided use it
+      if (msg.eventId) {
+        eventId = msg.eventId;
+      }
       if (eventId) {
-        const status = await node.session.acknowledgeCondition(msg.topic, eventId, msg.comment);
-        if (status !== opcua.StatusCodes.Good) {
-          node_error(node.name + " error at acknowledge, status: " + status.toString());
-          set_node_errorstatus_to("error", status.toString());  
+        try {
+          const ackedState = await node.session.read({ nodeId: msg.topic + "/0:AckedState/0:Id", attributeId: AttributeIds.Value });
+          node.debug("EVENT ACKED STATE: " + ackedState);
+          if (ackedState && ackedState.statusCode === opcua.StatusCodes.Good && ackedState.value.value === true) {
+            node.status({
+              fill: "yellow",
+              shape: "dot",
+              text: "Event: " + msg.topic + " already acknowledged"
+            });
+          }
+          else {
+            const status = await node.session.acknowledgeCondition(msg.topic, eventId, msg.comment);
+            if (status !== opcua.StatusCodes.Good) {
+              node_error(node.name + "Error at acknowledge, status: " + status.toString());
+              set_node_errorstatus_to("error", status.toString());  
+            }
+            else {
+              node.status({
+                fill: "green",
+                shape: "dot",
+                text: "Event: " + msg.topic + " acknowledged"
+              });
+            }
+          }
+        }
+        catch(err) {
+          node_error(node.name + "Error at acknowledge: " + msg.topic + " eventId: " + eventId + " error: " + err);
+          set_node_errorstatus_to("error", err);  
         }
       }
       else {
@@ -2173,7 +2210,7 @@ module.exports = function (RED) {
       
       // If field "ConditionClassId" is part of the list, it is or inherits from ConditionType
       if (!fields.includes("ConditionClassId")) {
-        fields.splice(fields.indexOf("ConditionId"), 1); // remove field ConditionId
+//        fields.splice(fields.indexOf("ConditionId"), 1); // remove field ConditionId ??? Needed for Acknowledge
       }
       msg.eventFilter = opcua.constructEventFilter(fields, opcua.ofType(eventTypeId));
       msg.eventFields = fields;
