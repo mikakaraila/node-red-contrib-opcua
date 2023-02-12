@@ -387,7 +387,7 @@ module.exports = function (RED) {
 
         // console.log(err);
         verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt securityMode:" + stringify(connectionOption.securityMode) + " securityPolicy:" + stringify(connectionOption.securityPolicy));
-        verbose_warn("Case B: UserName & password does not match to server (needed by Sign): " + userIdentity.userName + " " + userIdentity.password);
+        verbose_warn("Case B: UserName & password does not match to server (needed by Sign): " + userIdentity.userName + " check password!!"); // + userIdentity.password);
         set_node_errorstatus_to("invalid endpoint", err);
         var msg = {};
         msg.error = {};
