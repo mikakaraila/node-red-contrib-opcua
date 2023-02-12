@@ -69,8 +69,8 @@ module.exports = function (RED) {
     };
 
     server_options.buildInfo = {
-      buildNumber: "0.2.296",
-      buildDate: "2023-02-10T09:11:00"
+      buildNumber: "0.2.297",
+      buildDate: "2023-02-12T13:17:00"
     };
     const server = new opcua.OPCUADiscoveryServer(server_options);
     const hostname = os.hostname();
@@ -149,13 +149,14 @@ module.exports = function (RED) {
             node.debug("      discoveryUrls:");
             for (const discoveryUrl of server.discoveryUrls) {
               node.debug("                    " + chalk.cyan.bold(discoveryUrl));
+              allservers.push(discoveryUrl);
             }
             node.debug("--------------------------------------------------------------");
           }
           // Registered server endpoints
           for (const endpoint of endpoints) {
             node.debug(endpoint.endpointUrl.toString(), endpoint.securityLevel, endpoint.securityPolicyUri, endpoint.securityMode);
-            allservers.push(endpoint);
+            // allservers.push(endpoint);
           }
           // node.debug("Registered servers: " + JSON.stringify(allservers));
           msg.payload = allservers;
