@@ -56,6 +56,17 @@ module.exports = function (RED) {
       });
     }
 
+    function set_node_status2_to(statusValue, message) {
+      verbose_log("Client status: " + statusValue);
+      var statusParameter = opcuaBasics.get_node_status(statusValue);
+      currentStatus = statusValue;
+      node.status({
+        fill: statusParameter.fill,
+        shape: statusParameter.shape,
+        text: statusParameter.status + " " + message
+      });
+    }
+
     if (n.arg0type === undefined || n.arg0type === "" || n.arg0value === "") {
       // Do nothing
     } else if (n.arg0type === "Boolean") {
@@ -183,9 +194,14 @@ module.exports = function (RED) {
     }
     node.debug("Input arguments:" + JSON.stringify(node.inputArguments));
     
+    set_node_status_to("initialized")
+
     async function setupClient(url, message, callback) {
 
       const client = opcua.OPCUAClient.create(connectionOption);
+      client.on("connection_reestablished", reestablish);
+      client.on("backoff", backoff);
+      client.on("start_reconnection", reconnection);
       try {
         // step 1 : connect to
         await client.connect(url);
@@ -221,6 +237,23 @@ module.exports = function (RED) {
         callback(err);
       }
     }
+
+    const reestablish = function () {
+      set_node_status2_to("reconnect", "re-establised");
+    };
+    
+    const backoff = function (attempt, delay) {
+      var msg = {};
+      msg.error = {};
+      msg.error.message = "reconnect";
+      msg.error.source = this;
+      node.error("reconnect", msg);
+      set_node_status2_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
+    };
+
+    const reconnection = function () {
+      set_node_status2_to("reconnect", "starting...");
+    };
 
     function node_error(err) {
       // console.error(chalk.red("Client node error on node: " + node.name + "; error: " + stringify(err)));
