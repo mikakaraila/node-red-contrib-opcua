@@ -69,8 +69,8 @@ module.exports = function (RED) {
     };
 
     server_options.buildInfo = {
-      buildNumber: "0.2.297",
-      buildDate: "2023-02-12T13:17:00"
+      buildNumber: "0.2.29",
+      buildDate: "2023-02-28T15:40:00"
     };
     const server = new opcua.OPCUADiscoveryServer(server_options);
     const hostname = os.hostname();
