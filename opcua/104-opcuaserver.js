@@ -307,8 +307,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.297",
-                buildDate: "2023-02-12T13:16:00"
+                buildNumber: "0.2.298",
+                buildDate: "2023-02-28T15:40:00"
             };
             
             var hostname = os.hostname();
@@ -346,7 +346,7 @@
                 nodeId: "ns=1;s=MyVariable2",
                 browseName: "MyVariable2",
                 dataType: "Double",
-
+                minimumSamplingInterval: 500,
                 value: {
                     get: function () {
                         return new opcua.Variant({
@@ -367,7 +367,7 @@
                 nodeId: "ns=1;s=FreeMemory",
                 browseName: "FreeMemory",
                 dataType: "Double",
-
+                minimumSamplingInterval: 500,
                 value: {
                     get: function () {
                         return new opcua.Variant({
@@ -385,7 +385,7 @@
                 browseName: "Variables Counter",
                 displayName: "Variables Counter",
                 dataType: "UInt16",
-
+                minimumSamplingInterval: 500,
                 value: {
                     get: function () {
                         return new opcua.Variant({
@@ -1046,6 +1046,7 @@
                                 browseName: browseName,
                                 description: description,
                                 dataType: opcua.coerceNodeId(typeId), // "ExtensionObject", // "StructureDefinition", // typeId,
+                                minimumSamplingInterval: 500,
                                 valueRank,
                                 value: { dataType: opcua.DataType.ExtensionObject, value: extVar },
                                 // value: { dataType: DataType.StructureDefinition, value: extVar },
@@ -1083,6 +1084,7 @@
                             browseName: browseName, // or displayName
                             description: description,
                             dataType: datatype, // opcuaDataType,
+                            minimumSamplingInterval: 500,
                             valueRank,
                             arrayDimensions: dimensions,
                             value: {
@@ -1292,6 +1294,7 @@
                             displayName: nodeStr.substring(7) + "-" + "AlarmState",
                             propertyOf: nodeId,
                             dataType: "Boolean",
+                            // minimumSamplingInterval: 500, // NOTE alarm is event based DO NOT USE THIS!
                             eventSourceOf: "i=2253", // Use server as default event source
                             value: {
                                 get: function () {
@@ -1372,6 +1375,7 @@
                                 displayName: nodeStr.substring(7) + "-" + "LimitState",
                                 propertyOf: nodeId,
                                 dataType: "Float",
+                                minimumSamplingInterval: 500,
                                 eventSourceOf: "i=2253", // nodeId, // Use server!
                                 value: {
                                     get: function () {
