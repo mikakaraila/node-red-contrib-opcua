@@ -707,15 +707,33 @@ module.exports = function (RED) {
           await clientFile.open(fileTransfer.OpenFileMode.Read);
 
           // Read file size
-          const dataValue = await node.session.read({nodeId: file_node.toString() + "-Size"});
-          // Size is UInt64
-          const size = dataValue.value.value[1] + dataValue.value.value[0] * 0x100000000;
-          const buf = await clientFile.read(size);
-          await clientFile.close();
-          msg.payload = buf;
-
-          // Debug purpose, show content
-          verbose_log("File content: " + buf.toString());
+          // const dataValue = await node.session.read({nodeId: file_node.toString() + "-Size"}); // node-opcua specific way to name nodeId
+          let dataValue;
+          const browsePath = opcua.makeBrowsePath(file_node, ".Size");
+          const results = await node.session.translateBrowsePath(browsePath);
+          if (results && results.statusCode === opcua.StatusCodes.Good &&
+              results.targets && results.targets[0].targetId) {
+              var sizeNodeId = results.targets[0].targetId;
+              dataValue = await node.session.read({nodeId: sizeNodeId});
+          }
+          else {
+            verbose_warn("Cannot translate browse path for file node: size");
+          }
+          if (dataValue && dataValue.statusCode === opcua.StatusCodes.Good) {
+            // Size is UInt64
+            const size = dataValue.value.value[1] + dataValue.value.value[0] * 0x100000000;
+            const buf = await clientFile.read(size);
+            await clientFile.close();
+            msg.payload = buf;
+            // Debug purpose, show content
+            verbose_log("File content: " + buf.toString());
+          }
+          else {
+            // File size not available
+            msg.payload = ""; 
+            node_error(node.name + " failed get file size, nodeId: " + msg.topic + " error: " + err);
+            set_node_errorstatus_to("error", "Cannot read file size");  
+          }
           node.send(msg);
         }
         catch(err) {
