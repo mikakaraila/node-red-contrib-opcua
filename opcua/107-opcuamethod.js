@@ -45,25 +45,14 @@ module.exports = function (RED) {
     var currentStatus = '';
     node.outputArguments = [];
 
-    function set_node_status_to(statusValue) {
+    function set_node_status_to(statusValue, message = "") {
       verbose_log("Client status: " + statusValue);
       var statusParameter = opcuaBasics.get_node_status(statusValue);
       currentStatus = statusValue;
       node.status({
         fill: statusParameter.fill,
         shape: statusParameter.shape,
-        text: statusParameter.status
-      });
-    }
-
-    function set_node_status2_to(statusValue, message) {
-      verbose_log("Client status: " + statusValue);
-      var statusParameter = opcuaBasics.get_node_status(statusValue);
-      currentStatus = statusValue;
-      node.status({
-        fill: statusParameter.fill,
-        shape: statusParameter.shape,
-        text: statusParameter.status + " " + message
+        text: (statusParameter.status + " " + message).trim()
       });
     }
 
@@ -239,7 +228,7 @@ module.exports = function (RED) {
     }
 
     const reestablish = function () {
-      set_node_status2_to("reconnect", "re-established");
+      set_node_status_to("reconnect", "re-established");
     };
     
     const backoff = function (attempt, delay) {
@@ -248,11 +237,11 @@ module.exports = function (RED) {
       msg.error.message = "reconnect";
       msg.error.source = this;
       node.error("reconnect", msg);
-      set_node_status2_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
+      set_node_status_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
     };
 
     const reconnection = function () {
-      set_node_status2_to("reconnect", "starting...");
+      set_node_status_to("reconnect", "starting...");
     };
 
     function node_error(err) {
