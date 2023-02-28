@@ -243,7 +243,7 @@ module.exports = function (RED) {
     // Listener functions that can be removed on reconnect
     const reestablish = function () {
       // verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!! Node: " + node.name);
-      set_node_status2_to("reconnect", "re-establised");
+      set_node_status2_to("reconnect", "re-established");
     };
     const backoff = function (attempt, delay) {
       // verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds. Node:  " + node.name + " " + opcuaEndpoint.endpoint);
