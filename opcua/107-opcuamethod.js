@@ -239,7 +239,7 @@ module.exports = function (RED) {
     }
 
     const reestablish = function () {
-      set_node_status2_to("reconnect", "re-establised");
+      set_node_status2_to("reconnect", "re-established");
     };
     
     const backoff = function (attempt, delay) {
