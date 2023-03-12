@@ -24,12 +24,12 @@ module.exports = function (RED) {
   var chalk = require("chalk");
   var opcua = require('node-opcua');
   const { NodeCrawler  } = require("node-opcua-client-crawler"); // Legacy support
-  var opcuaBasics = require('./opcua-basics');
   // var nodeId = require("node-opcua-nodeid");
   var crypto_utils = opcua.crypto_utils;
   // var UAProxyManager = require("node-opcua-client-proxy").UAProxyManager;
   // var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
   var fileTransfer = require("node-opcua-file-transfer");  
+  var basicTypes = require("node-opcua-basic-types");
   var async = require("async");
   // var treeify = require('treeify');
   // var Map = require('es6-map'); // es6-map 0.1.5 not needed anymore
@@ -721,8 +721,17 @@ module.exports = function (RED) {
           }
           if (dataValue && dataValue.statusCode === opcua.StatusCodes.Good) {
             // Size is UInt64
-            const size = dataValue.value.value[1] + dataValue.value.value[0] * 0x100000000;
-            const buf = await clientFile.read(size);
+            // const size = dataValue.value.value[1] + dataValue.value.value[0] * 0x100000000;
+            const size = await clientFile.size();
+            let buf = await clientFile.read(size);
+            // if the whole file is not read continue reading
+            /*
+            // Workaround if needed
+            while (buf.byteLength < size) {
+              await clientFile.setPosition(buf.byteLength);
+              buf += await clientFile.read(size);
+            }
+            */
             await clientFile.close();
             msg.payload = buf;
             // Debug purpose, show content
