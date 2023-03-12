@@ -51,6 +51,8 @@ limitations under the License.
                 if (node.none === true) {
                     noneCheckbox.prop('checked', true);
                     // authRow.show();
+                    $('#node-input-user').val('');
+                    $('#node-input-password').val('');
                 } else {
                     noneCheckbox.prop('checked', false);
                     // loginCheckbox.prop('checked', false);
@@ -81,6 +83,8 @@ limitations under the License.
                 if (node.usercert === true) {
                     usercertCheckbox.prop('checked', true);
                     certRow.show();
+                    $('#node-input-user').val('');
+                    $('#node-input-password').val('');
                 } else {
                     usercertCheckbox.prop('checked', false);
                     certRow.hide();
@@ -92,14 +96,15 @@ limitations under the License.
                         noneCheckbox.prop('checked', true);
                         loginCheckbox.prop('checked', false);
                         usercertCheckbox.prop('checked', false);
+                        $('#node-input-user').val('');
+                        $('#node-input-password').val('');
                         authRow.hide();
                         certRow.hide();
                     } else {
                         console.log("Changed Anonymous: FALSE");
                         node.none = false;
-                        $('#node-input-user').val('');
-                        $('#node-input-password').val('');
-                        
+                        // $('#node-input-user').val('');
+                        // $('#node-input-password').val('');
                     }
                 });
 
@@ -114,8 +119,9 @@ limitations under the License.
                         login = false;
                         authRow.hide();
                         certRow.hide();
-                        $('#node-input-user').val('');
-                        $('#node-input-password').val('');
+                        // DO NOT CLEAR
+                        // $('#node-input-user').val('');
+                        // $('#node-input-password').val('');
                     }
                 });
 
