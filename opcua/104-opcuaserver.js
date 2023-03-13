@@ -261,7 +261,7 @@
                 allowAnonymous: n.allowAnonymous,
                 port: parseInt(n.port),
                 resourcePath: "/" + node.endpoint, // Option was missing / can be 
-                maxAllowedSessionNumber: 1000,
+                // maxAllowedSessionNumber: 1000,
                 maxConnectionsPerEndpoint: maxConnectionsPerEndpoint,
                 maxMessageSize: maxMessageSize,
                 maxBufferSize: maxBufferSize,
@@ -281,6 +281,7 @@
                 serverCapabilities: {
                   maxBrowseContinuationPoints: 10,
                   maxHistoryContinuationPoints: 10,
+                  maxSessions: 20,
                   // maxInactiveLockTime,
                   // Get these from the node parameters
                   operationLimits: {
@@ -307,8 +308,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.299",
-                buildDate: "2023-03-12T10:37:00"
+                buildNumber: "0.2.300",
+                buildDate: "2023-03-13T16:30:00"
             };
             
             var hostname = os.hostname();
