@@ -53,7 +53,7 @@ module.exports = function (RED) {
       serverCapabilities: {
         maxBrowseContinuationPoints: 10,
         maxHistoryContinuationPoints: 10,
-        maxSession: 20
+        maxSessions: 20
       },
       serverInfo: {
         applicationUri: opcua.makeApplicationUrn(os.hostname(), "Node-Red-OPCUA-Discovery"),
@@ -69,8 +69,8 @@ module.exports = function (RED) {
     };
 
     server_options.buildInfo = {
-      buildNumber: "0.2.29",
-      buildDate: "2023-02-28T15:40:00"
+      buildNumber: "0.2.300",
+      buildDate: "2023-03-13T16:30:00"
     };
     const server = new opcua.OPCUADiscoveryServer(server_options);
     const hostname = os.hostname();
