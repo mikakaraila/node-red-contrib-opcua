@@ -25,6 +25,7 @@ module.exports = function (RED) {
   var opcua = require('node-opcua');
   const { NodeCrawler  } = require("node-opcua-client-crawler"); // Legacy support
   // var nodeId = require("node-opcua-nodeid");
+  var opcuaBasics = require('./opcua-basics');
   var crypto_utils = opcua.crypto_utils;
   // var UAProxyManager = require("node-opcua-client-proxy").UAProxyManager;
   // var coerceNodeId = require("node-opcua-nodeid").coerceNodeId;
