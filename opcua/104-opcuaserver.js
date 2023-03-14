@@ -96,7 +96,6 @@
             if (fs.existsSync(node.users)) {
                 users = JSON.parse(fs.readFileSync(node.users));
                 verbose_log("Loaded users: " + JSON.stringify(users));
-                console.log(chalk.red("USERS: " + JSON.stringify(users)));
                 setUsers(users);
             }
             else {
@@ -136,7 +135,6 @@
             // User manager
             userManager = {
                 isValidUser: (username, password) => {
-                    // console.log(chalk.red("Login username: " + username + " password: " + password))
                     const uIndex = users.findIndex(function(u) { return u.username === username; });
                     if (uIndex < 0) {
                         // console.log(chalk.red("No such user:" + username));
@@ -150,7 +148,6 @@
                     return true;
                 },
                 getUserRoles: (username) =>  {
-                    // console.log(chalk.red("Get user role for username: " + username));
                     if (username === "Anonymous" || username === "anonymous") {
                         return opcua.makeRoles(opcua.WellKnownRoles.Anonymous);
                     }
@@ -159,7 +156,14 @@
                         // Check this TODO
                         return opcua.makeRoles("AuthenticatedUser"); // opcua.WellKnownRoles.Anonymous; // by default were guest! ( i.e anonymous), read-only access 
                     }
-                    const userRoles = users[uIndex].roles;
+                    let userRoles;
+                    if (users[uIndex].hasOwnProperty("roles")) {
+                        userRoles = users[uIndex].roles; // user can have multiple roles Observer;Engineer
+                    }
+                    else {
+                        console.error("Your users.json is missing roles field for user role! Using Anonymous as default role.");
+                        return opcua.makeRoles(opcua.WellKnownRoles.Anonymous); // By default use Anonymous
+                    }
                     return opcua.makeRoles(userRoles);
                 }
             };
@@ -308,8 +312,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.300",
-                buildDate: "2023-03-13T16:30:00"
+                buildNumber: "0.2.301",
+                buildDate: "2023-03-14T18:25:00"
             };
             
             var hostname = os.hostname();
@@ -1525,7 +1529,7 @@
                         crawler.on("browsed", (element) => {
                             // Limit to variables and skip ns=0
                             if (element.nodeId.toString().indexOf("ns=0;") < 0 && element.nodeClass == opcua.NodeClass.Variable) {
-                                console.log("Element: " + element);
+                                // console.log("Element: " + element);
                                 var item = Object.assign({}, element); // Clone element
                                 results.push(item);
                             }
