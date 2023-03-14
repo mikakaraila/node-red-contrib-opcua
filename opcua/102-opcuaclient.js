@@ -116,19 +116,22 @@ module.exports = function (RED) {
 
     // Ensure Anonymous login
     if (opcuaEndpoint.none === true) {
-      userIdentity.type = opcua.UserTokenType.Anonymous;
+      userIdentity = { type: opcua.UserTokenType.Anonymous };
     }
     if (opcuaEndpoint.login === true && opcuaEndpoint.usercert === true) {
-      userIdentity.type = opcua.UserTokenType.Anonymous;
+      userIdentity = { type: opcua.UserTokenType.Anonymous };
     }
     if (opcuaEndpoint.login === true && opcuaEndpoint.usercert === true) {
       node.error("Cannot use username & password & user certificate at the same time!");
     }
 
     if (opcuaEndpoint.login === true) {
-      userIdentity.userName = opcuaEndpoint.credentials.user;
-      userIdentity.password = opcuaEndpoint.credentials.password;
-      userIdentity.type = opcua.UserTokenType.UserName; // New TypeScript API parameter
+      userIdentity = {"type": opcua.UserTokenType.UserName,
+                      "userName": opcuaEndpoint.credentials.user.toString(),
+                      "password": opcuaEndpoint.credentials.password.toString()
+                     };
+      // console.log("CASE Login: " + JSON.stringify(userIdentity));
+      // console.log("connection: " + JSON.stringify(connectionOption).substring(0,75) + "...");
     }
     else if (opcuaEndpoint.usercert === true) {
       if (!fs.existsSync(userCertificate)) {
@@ -145,11 +148,14 @@ module.exports = function (RED) {
         privateKey,
         type: opcua.UserTokenType.Certificate // User certificate
       };
+      // console.log("CASE User certificate UserIdentity: " + JSON.stringify(userIdentity));
       // connectionOption = {};
       // connectionOption.endpointMustExist = false;
     }
     else {
       userIdentity.type = opcua.UserTokenType.Anonymous;
+      // console.log("CASE Anonymous UserIdentity: " + JSON.stringify(userIdentity));
+      // console.log("         connection options: " + JSON.stringify(connectionOption).substring(0,75) + "...");
     }
     verbose_log("UserIdentity: " + JSON.stringify(userIdentity));
     var items = [];
@@ -160,7 +166,7 @@ module.exports = function (RED) {
 
     function node_error(err) {
       //console.error(chalk.red("Client node error on: " + node.name + " error: " + stringify(err)));
-      node.error("Client node error on: " + node.name + " error: " + stringify(err));
+      node.error(chalk.red("Client node error on: " + node.name + " error: " + stringify(err)));
     }
 
     function verbose_warn(logMessage) {
@@ -262,7 +268,7 @@ module.exports = function (RED) {
 
     function create_opcua_client(callback) {
       node.client = null;
-      verbose_log("Create Client: " + stringify(connectionOption));
+      // verbose_log("Create Client: " + stringify(connectionOption).substring(0,75) + "...");
       try {
         // Use empty 0.0.0.0 address as "no client" initial value
         if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") == 0) {
@@ -275,6 +281,7 @@ module.exports = function (RED) {
           return;
         }
         // Normal client
+        verbose_log(chalk.green("1) CREATE CLIENT: ") + chalk.cyan(JSON.stringify(connectionOption).substring(0,75) + "..."));
         node.client = opcua.OPCUAClient.create(connectionOption);
         node.client.on("connection_reestablished", reestablish);
         node.client.on("backoff", backoff);
@@ -303,17 +310,19 @@ module.exports = function (RED) {
     function close_opcua_client(message, error) {
       if (node.client) {
         try {
-          node.client.disconnect(function () {
-            node.client = null;
-            verbose_log("Client disconnected!");
-            if (error === 0) {
-              set_node_status_to("closed");
-            }
-            else {
-              set_node_errorstatus_to(message, error)
-              node.error("Client disconnected & closed: " + message + " error: " + error.toString());
-            }
-          });
+          if(!node.client.isReconnecting){
+            node.client.disconnect(function () {
+              node.client = null;
+              verbose_log("Client disconnected!");
+              if (error === 0) {
+                set_node_status_to("closed");
+              }
+              else {
+                set_node_errorstatus_to(message, error)
+                node.error("Client disconnected & closed: " + message + " error: " + error.toString());
+              }
+            });
+          }
         }
         catch (err) {
           node_error("Error on disconnect: " + stringify(err));
@@ -369,37 +378,50 @@ module.exports = function (RED) {
         node_error("No client endpoint listed! Waiting...");
         return;
       }
+      
+      if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") === 0) {
+        set_node_status_to("no client")
+      }
+      else {
+        set_node_status_to("connecting");
+      }
+      if (!node.client) {
+        verbose_log("No client to connect...");
+        return;
+      }
+      verbose_log("Exact endpointUrl: " + opcuaEndpoint.endpoint + " hostname: " + os.hostname());
       try {
-        if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") === 0) {
-          set_node_status_to("no client")
-        }
-        else {
-          set_node_status_to("connecting");
-        }
-        if (!node.client) {
-          verbose_log("No client to connect...");
-          return;
-        }
-        verbose_log("Exact endpointUrl: " + opcuaEndpoint.endpoint + " hostname: " + os.hostname());
-
         await node.client.clientCertificateManager.initialize();
-        await node.client.connect(opcuaEndpoint.endpoint);
-      } catch (err) {
-
-        // console.log(err);
-        verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt securityMode:" + stringify(connectionOption.securityMode) + " securityPolicy:" + stringify(connectionOption.securityPolicy));
-        verbose_warn("Case B: UserName & password does not match to server (needed by Sign): " + userIdentity.userName + " check password!!"); // + userIdentity.password);
-        set_node_errorstatus_to("invalid endpoint", err);
+      }
+      catch (error1) {
+        console.log(chalk.red("Certificate manager error: ") + chalk.cyan(error1));
+        set_node_status_to("invalid certificate");
         var msg = {};
         msg.error = {};
-        msg.error.message = "Invalid endpoint";
+        msg.error.message = "Certificate error: " + error1;
+        msg.error.source = this;
+        node.error("Certificate error", msg);
+      }
+      try {
+        verbose_log(chalk.green("2) Connect using ENDPOINT: ") + chalk.cyan(opcuaEndpoint.endpoint));
+        await node.client.connect(opcuaEndpoint.endpoint);
+      } catch (err) {
+        // console.log("Client connect error: " + err);
+        verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt, using securityMode: " + stringify(connectionOption.securityMode));
+        verbose_warn("        using securityPolicy: " + stringify(connectionOption.securityPolicy));
+        verbose_warn("Case B: UserName & password does not match to server (needed by Sign), check username: " + userIdentity.userName + " and password: XXX"); // + userIdentity.password);
+        verbose_warn("Invalid endpoint parameters: ", err);
+        set_node_status_to("Invalid endpoint, has server security policy: " + stringify(connectionOption.securityPolicy));
+        var msg = {};
+        msg.error = {};
+        msg.error.message = "Invalid endpoint: " + err;
         msg.error.source = this;
         node.error("Invalid endpoint", msg);
         return;
       }
       verbose_log("Connected to " + opcuaEndpoint.endpoint);
       verbose_log("Endpoint parameters: " + JSON.stringify(opcuaEndpoint)); 
-      verbose_log("Connection options: " + stringify(connectionOption));
+      // verbose_log("Connection options: " + stringify(connectionOption));
       // STEP 2
       // This will succeed first time only if security policy and mode are None
       // Later user can use path and local file to access server certificate file
@@ -412,9 +434,9 @@ module.exports = function (RED) {
       // dumpCertificates(node.client); // TODO Wrong folder or something to solve
 
       // STEP 3
-      verbose_log("Create session ...");
+      // verbose_log("Create session...");
       try {
-        verbose_log("Create session with userIdentity: " + JSON.stringify(userIdentity));
+        verbose_log(chalk.green("3) Create session with userIdentity: ") + chalk.cyan(JSON.stringify(userIdentity)));
         //  {"clientName": "Node-red OPC UA Client node " + node.name},
         // sessionName = "Node-red OPC UA Client node " + node.name;
         if (!node.client) {
@@ -430,7 +452,7 @@ module.exports = function (RED) {
         }
         node.session = session;
 
-        verbose_log("session active");
+        // verbose_log("session active");
         set_node_status_to("session active");
         for (var i in cmdQueue) {
           processInputMsg(cmdQueue[i]);
@@ -1054,10 +1076,12 @@ module.exports = function (RED) {
                   msg.serverTimestamp = dataValue.serverTimestamp;
                   msg.sourceTimestamp = dataValue.sourceTimestamp;
 
-                  if (dataValue.statusCode && dataValue.statusCode != opcua.StatusCodes.Good) {
-                    verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
+                  // if (dataValue.statusCode && dataValue.statusCode != opcua.StatusCodes.Good) {
+                  //   verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
+                  // }
+                  if (dataValue.statusCode && dataValue.statusCode.isGoodish() === false) {
+                    verbose_warn("StatusCode: " + dataValue.statusCode.toString(16) + " " + dataValue.statusCode.description);
                   }
-
                   node.send(msg);
                 } catch (e) {
                   if (dataValue) {
@@ -1245,10 +1269,12 @@ module.exports = function (RED) {
                     verbose_log("UInt16:" + dataValue.value.value + " -> Int32:" + opcuaBasics.toInt32(dataValue.value.value));
                   }
 
-                  if (dataValue.statusCode && dataValue.statusCode != opcua.StatusCodes.Good) {
-                    verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
+                  // if (dataValue.statusCode && dataValue.statusCode != opcua.StatusCodes.Good) {
+                  //   verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
+                  // }
+                  if (dataValue.statusCode && dataValue.statusCode.isGoodish() === false) {
+                    verbose_warn("StatusCode: " + dataValue.statusCode.toString(16) + " " + dataValue.statusCode.description);
                   }
-
                   var serverTs = dataValue.serverTimestamp;
                   var sourceTs = dataValue.sourceTimestamp;
                   if (serverTs === null) {
@@ -1520,7 +1546,11 @@ module.exports = function (RED) {
           } else {
             set_node_status_to("value written");
             verbose_log("Value written! Result:" + statusCode + " " + statusCode.description);
-            if (statusCode != opcua.StatusCodes.Good) {
+            // if (statusCode != opcua.StatusCodes.Good) {
+            //   set_node_errorstatus_to("error", statusCode.description);
+            // }
+            if (statusCode.isGoodish() === false) {
+              verbose_warn("StatusCode: " + statusCode.toString(16) + " " + statusCode.description);
               set_node_errorstatus_to("error", statusCode.description);
             }
             msg.payload = statusCode;
@@ -1846,8 +1876,10 @@ module.exports = function (RED) {
           let msgToSend = JSON.parse(JSON.stringify(msg)); // clone original msg if it contains other needed properties {};
 
           set_node_status_to("active subscribed");
-          if (dataValue.statusCode != opcua.StatusCodes.Good) {
-            verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
+          // if (dataValue.statusCode != opcua.StatusCodes.Good) {
+          // Skip Overflow and limitLow, limitHigh and constant bits
+          if (dataValue.statusCode.isGoodish() === false) {
+            verbose_warn("StatusCode: " + dataValue.statusCode.toString(16) + " " + dataValue.statusCode.description);
           }
 
           msgToSend.statusCode = dataValue.statusCode;
@@ -1972,8 +2004,11 @@ module.exports = function (RED) {
           verbose_log(chalk.green("Received changes: " + monitoredItem + " value: " + dataValue + " index: " + index));
           set_node_status_to("active monitoring");
           verbose_log(dataValue.toString());
-          if (dataValue.statusCode != opcua.StatusCodes.Good) {
-            verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
+          // if (dataValue.statusCode != opcua.StatusCodes.Good) {
+          //   verbose_warn("StatusCode: " + dataValue.statusCode.toString(16));
+          // }
+          if (dataValue.statusCode.isGoodish() === false) {
+            verbose_warn("StatusCode: " + dataValue.statusCode.toString(16) + " " + dataValue.statusCode.description);
           }
           var msgToSend = {};
           msgToSend.statusCode = dataValue.statusCode;
