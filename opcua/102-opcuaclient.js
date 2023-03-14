@@ -303,17 +303,19 @@ module.exports = function (RED) {
     function close_opcua_client(message, error) {
       if (node.client) {
         try {
-          node.client.disconnect(function () {
-            node.client = null;
-            verbose_log("Client disconnected!");
-            if (error === 0) {
-              set_node_status_to("closed");
-            }
-            else {
-              set_node_errorstatus_to(message, error)
-              node.error("Client disconnected & closed: " + message + " error: " + error.toString());
-            }
-          });
+          if(!node.client.isReconnecting){
+            node.client.disconnect(function () {
+              node.client = null;
+              verbose_log("Client disconnected!");
+              if (error === 0) {
+                set_node_status_to("closed");
+              }
+              else {
+                set_node_errorstatus_to(message, error)
+                node.error("Client disconnected & closed: " + message + " error: " + error.toString());
+              }
+            });
+          }
         }
         catch (err) {
           node_error("Error on disconnect: " + stringify(err));
