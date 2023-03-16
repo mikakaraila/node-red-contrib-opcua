@@ -731,6 +731,7 @@ module.exports = function (RED) {
 
           // Read file size
           // const dataValue = await node.session.read({nodeId: file_node.toString() + "-Size"}); // node-opcua specific way to name nodeId
+          /*
           let dataValue;
           const browsePath = opcua.makeBrowsePath(file_node, ".Size");
           const results = await node.session.translateBrowsePath(browsePath);
@@ -745,20 +746,22 @@ module.exports = function (RED) {
           if (dataValue && dataValue.statusCode === opcua.StatusCodes.Good) {
             // Size is UInt64
             // const size = dataValue.value.value[1] + dataValue.value.value[0] * 0x100000000;
-            const size = await clientFile.size();
-            let buf = await clientFile.read(size);
-            // if the whole file is not read continue reading
-            /*
-            // Workaround if needed
-            while (buf.byteLength < size) {
-              await clientFile.setPosition(buf.byteLength);
-              buf += await clientFile.read(size);
-            }
             */
+          try {
+            const size = await clientFile.size(); // This should read size from the file itself
+            let buf = await clientFile.read(size);
+            // node-opcua-file-transfer takes care of the whole file reading from v2.94.0
             await clientFile.close();
             msg.payload = buf;
             // Debug purpose, show content
             verbose_log("File content: " + buf.toString());
+          }
+          catch(err) {
+            msg.payload = ""; 
+            node_error(node.name + " failed to read file, nodeId: " + msg.topic + " error: " + err);
+            set_node_errorstatus_to("error", "Cannot read file!");
+          }
+          /*
           }
           else {
             // File size not available
@@ -766,6 +769,7 @@ module.exports = function (RED) {
             node_error(node.name + " failed get file size, nodeId: " + msg.topic + " error: " + err);
             set_node_errorstatus_to("error", "Cannot read file size");  
           }
+          */
           node.send(msg);
         }
         catch(err) {
