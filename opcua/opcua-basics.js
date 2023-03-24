@@ -293,6 +293,7 @@ module.exports.get_node_status = function (statusValue) {
         case "subscribed":
         case "browse done":
         case "changed":
+        case "method executed":
             fillValue = "green";
             shapeValue = "dot";
             break;
