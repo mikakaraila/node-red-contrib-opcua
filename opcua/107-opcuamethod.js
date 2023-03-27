@@ -42,7 +42,7 @@ module.exports = function (RED) {
 
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
-    var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
+    const cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
     var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
     node.outputArguments = [];
 
@@ -199,24 +199,15 @@ module.exports = function (RED) {
     
     const reestablish = function () {
       set_node_status_to("connected", "re-established");
-      node.client.removeListener("connection_reestablished", reestablish);
-      node.client.removeListener("backoff", backoff);
-      node.client.removeListener("start_reconnection", reconnection);
-      node.client.on("connection_reestablished", reestablish);
-      node.client.on("backoff", backoff);
-      node.client.on("start_reconnection", reconnection);
     };
 
-    function create_opcua_client(callback) {
+    function create_opcua_client() {
       if (node.client) {
         node.client = null;
       }
       try {
         if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") == 0) {
           set_node_status_to("no client");
-          if (callback) {
-            callback();
-          }
           return;
         }
         // Normal client
@@ -230,21 +221,9 @@ module.exports = function (RED) {
         node_error("Cannot create client, check connection options: " + stringify(connectionOption));
       }
       set_node_status_to("create client");
-      if (callback) {
-        callback("");
-      }
     }
 
-    create_opcua_client(function (err) {
-        if (err) {
-          node_error(err);
-          node.status({
-            fill: "red",
-            shape: "dot",
-            text: "Error: " + err.toString()
-          });
-        }
-      });
+    create_opcua_client();
 
     set_node_status_to("initialized");
 
@@ -275,15 +254,16 @@ module.exports = function (RED) {
           set_node_status_to("session active");
 
           // step 3: call method
-          for (var i in cmdQueue) {
-            verbose_log("Call method: " + JSON.stringify(cmdQueue[i]));
-            var status = await callMethod(cmdQueue[i]);  
-          }
-          if (status === opcua.StatusCodes.Good) {
-            set_node_status_to("method executed");
+          for (const cmd of cmdQueue) {
+            verbose_log("Call method: " + JSON.stringify(cmd));
+            var status = await callMethod(cmd);  
+            if (status !== opcua.StatusCodes.Good) {
+              node.error("Could not run method: ", cmd);
+            }
           }
 
-          cmdQueue = [];
+          cmdQueue.length = 0;
+          set_node_status_to("method executed");
 
           // step 4: close session & disconnect client
           if (node.session) {
