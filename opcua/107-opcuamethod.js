@@ -264,7 +264,7 @@ module.exports = function (RED) {
           });
           // if Node Re-connecting or busy, methods should only be queued
           // If it's ready:
-          cmdQueue.push(message);
+
           // step 1 : connect client
           await connect_opcua_client(url);
           node.log("start method client on " + opcuaEndpoint.endpoint);
