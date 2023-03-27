@@ -250,7 +250,7 @@ module.exports = function (RED) {
     // Listener functions that can be removed on reconnect
     const reestablish = function () {
       // verbose_warn(" !!!!!!!!!!!!!!!!!!!!!!!!  CONNECTION RE-ESTABLISHED !!!!!!!!!!!!!!!!!!! Node: " + node.name);
-      set_node_status2_to("reconnect", "re-established");
+      set_node_status2_to("connected", "re-established");
     };
     const backoff = function (attempt, delay) {
       // verbose_warn("backoff  attempt #" + attempt + " retrying in " + delay / 1000.0 + " seconds. Node:  " + node.name + " " + opcuaEndpoint.endpoint);
@@ -309,6 +309,9 @@ module.exports = function (RED) {
 
     function close_opcua_client(message, error) {
       if (node.client) {
+        node.client.removeListener("connection_reestablished", reestablish);
+        node.client.removeListener("backoff", backoff);
+        node.client.removeListener("start_reconnection", reconnection);
         try {
           if(!node.client.isReconnecting){
             node.client.disconnect(function () {
@@ -322,6 +325,10 @@ module.exports = function (RED) {
                 node.error("Client disconnected & closed: " + message + " error: " + error.toString());
               }
             });
+          }
+          else {
+            node.client = null;
+            set_node_status_to("closed");
           }
         }
         catch (err) {
