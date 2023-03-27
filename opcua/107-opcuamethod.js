@@ -207,6 +207,7 @@ module.exports = function (RED) {
       }
       try {
         if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") == 0) {
+          node_error("No client");
           set_node_status_to("no client");
           return;
         }
@@ -216,11 +217,12 @@ module.exports = function (RED) {
         node.client.on("connection_reestablished", reestablish);
         node.client.on("backoff", backoff);
         node.client.on("start_reconnection", reconnection);
+        set_node_status_to("create client");
       }
       catch(err) {
         node_error("Cannot create client, check connection options: " + stringify(connectionOption));
+        set_node_status_to("error", "Cannot create client, check connection options: " + stringify(connectionOption));
       }
-      set_node_status_to("create client");
     }
 
     create_opcua_client();
@@ -236,11 +238,7 @@ module.exports = function (RED) {
         cmdQueue.push(message);
 
         if (statuses.includes(currentStatus)) {
-          node.status({
-            fill: "green",
-            shape: "dot",
-            text: "Executing method"
-          });
+          set_node_status_to("executing method")
           // if Node Re-connecting or busy, methods should only be queued
           // If it's ready:
 

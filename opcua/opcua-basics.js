@@ -267,6 +267,7 @@ module.exports.get_node_status = function (statusValue) {
         case "keepalive":
         case "nodeId stored":
         case "clear items":
+        case "executing method":
             fillValue = "green";
             shapeValue = "ring";
             break;
@@ -303,6 +304,7 @@ module.exports.get_node_status = function (statusValue) {
         case "connection error":
         case "node error":
         case "terminated":
+        case "no client":
             fillValue = "red";
             shapeValue = "ring";
             break;
