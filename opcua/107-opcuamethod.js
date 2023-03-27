@@ -42,7 +42,8 @@ module.exports = function (RED) {
 
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
-    var currentStatus = '';
+    const cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
+    var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
     node.outputArguments = [];
 
     function set_node_status_to(statusValue, message = "") {
@@ -183,54 +184,6 @@ module.exports = function (RED) {
     }
     node.debug("Input arguments:" + JSON.stringify(node.inputArguments));
     
-    set_node_status_to("initialized")
-
-    async function setupClient(url, message, callback) {
-
-      const client = opcua.OPCUAClient.create(connectionOption);
-      client.on("connection_reestablished", reestablish);
-      client.on("backoff", backoff);
-      client.on("start_reconnection", reconnection);
-      try {
-        // step 1 : connect to
-        await client.connect(url);
-        node.log("start method client on " + opcuaEndpoint.endpoint);
-
-        // step 2 : createSession
-        const session = await client.createSession(userIdentity);
-        verbose_log("start session on " + opcuaEndpoint.endpoint);
-        set_node_status_to("session active");
-        node.session = session;
-        verbose_log("Call method: " + JSON.stringify(message));
-        var status = await callMethod(message);
-        
-        if (node.session) {
-          await node.session.close();
-          verbose_log("Session closed");
-          node.session = null;
-          await client.disconnect();
-        }
-        if (status === opcua.StatusCodes.Good) {
-          node.status({
-            fill: "green",
-            shape: "dot",
-            text: "Method executed"
-          });
-        }
-      } catch (err) {
-        var msg = {};
-        msg.error = {};
-        msg.error.message = "Cannot connect to " + JSON.stringify(opcuaEndpoint);
-        msg.error.source = this;
-        node.error("Cannot connect to ", msg);
-        callback(err);
-      }
-    }
-
-    const reestablish = function () {
-      set_node_status_to("reconnect", "re-established");
-    };
-    
     const backoff = function (attempt, delay) {
       var msg = {};
       msg.error = {};
@@ -243,6 +196,125 @@ module.exports = function (RED) {
     const reconnection = function () {
       set_node_status_to("reconnect", "starting...");
     };
+    
+    const reestablish = function () {
+      set_node_status_to("connected", "re-established");
+    };
+
+    function create_opcua_client() {
+      if (node.client) {
+        node.client = null;
+      }
+      try {
+        if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") == 0) {
+          node_error("No client");
+          set_node_status_to("no client");
+          return;
+        }
+        // Normal client
+        verbose_log(chalk.green("1) CREATE CLIENT: ") + chalk.cyan(JSON.stringify(connectionOption).substring(0,75) + "..."));
+        node.client = opcua.OPCUAClient.create(connectionOption);
+        node.client.on("connection_reestablished", reestablish);
+        node.client.on("backoff", backoff);
+        node.client.on("start_reconnection", reconnection);
+        set_node_status_to("create client");
+      }
+      catch(err) {
+        node_error("Cannot create client, check connection options: " + stringify(connectionOption));
+        set_node_status_to("error", "Cannot create client, check connection options: " + stringify(connectionOption));
+      }
+    }
+
+    create_opcua_client();
+
+    set_node_status_to("initialized");
+
+    async function methodNodeProcess(url, message, callback) {
+      try {
+
+        const statuses = ['initialized', 'method executed'];
+
+        verbose_log("Queued Message: " + JSON.stringify(message));
+        cmdQueue.push(message);
+
+        if (statuses.includes(currentStatus)) {
+          set_node_status_to("executing method")
+          // if Node Re-connecting or busy, methods should only be queued
+          // If it's ready:
+
+          // step 1 : connect client
+          await connect_opcua_client(url);
+          node.log("start method client on " + opcuaEndpoint.endpoint);
+
+          // step 2 : createSession
+          node.session = await node.client.createSession(userIdentity);
+          verbose_log("start session on " + opcuaEndpoint.endpoint);
+          set_node_status_to("session active");
+
+          // step 3: call method
+          for (const cmd of cmdQueue) {
+            verbose_log("Call method: " + JSON.stringify(cmd));
+            var status = await callMethod(cmd);  
+            if (status !== opcua.StatusCodes.Good) {
+              node.error("Could not run method: ", cmd);
+            }
+          }
+
+          cmdQueue.length = 0;
+          set_node_status_to("method executed");
+
+          // step 4: close session & disconnect client
+          if (node.session) {
+            await node.session.close();
+            verbose_log("Session closed");
+            node.session = null;
+            await node.client.disconnect();
+          }
+        }
+      } catch (err) {
+        var msg = {};
+        msg.error = {};
+        msg.error.message = "Cannot connect to " + JSON.stringify(opcuaEndpoint);
+        msg.error.source = this;
+        node.error("Cannot connect to ", msg);
+        callback(err);
+      }
+    }
+
+    async function connect_opcua_client(url) {
+        set_node_status_to("connecting")
+        await node.client.connect(url);
+    }
+
+    function close_opcua_client(message, error) {
+      if (node.client) {
+        node.client.removeListener("connection_reestablished", reestablish);
+        node.client.removeListener("backoff", backoff);
+        node.client.removeListener("start_reconnection", reconnection);
+        try {
+          if(!node.client.isReconnecting){
+            node.client.disconnect(function () {
+              node.client = null;
+              verbose_log("Client disconnected!");
+              if (error === 0) {
+                set_node_status_to("closed");
+              }
+              else {
+                set_node_errorstatus_to(message, error)
+                node.error("Client disconnected & closed: " + message + " error: " + error.toString());
+              }
+            });
+          }
+          else {
+            node.client = null;
+            set_node_status_to("closed");
+          }
+        }
+        catch (err) {
+          node_error("Error on disconnect: " + stringify(err));
+        }
+      }
+    }
 
     function node_error(err) {
       // console.error(chalk.red("Client node error on node: " + node.name + "; error: " + stringify(err)));
@@ -250,7 +322,7 @@ module.exports = function (RED) {
       msg.error = {};
       msg.error.message = "Client node error: " + stringify(err);
       msg.error.source = this;
-      node.error("Client node error on node: ", msg);
+      node.error("Method node error on node: ", msg);
     }
 
     function verbose_warn(logMessage) {
@@ -367,11 +439,7 @@ module.exports = function (RED) {
 
     node.on("input", function (msg) {
       var message = {}
-      node.status({
-        fill: "green",
-        shape: "dot",
-        text: "Executing method"
-      });
+      
       message.objectId = msg.objectId || node.objectId;
       message.methodId = msg.methodId || node.methodId;
       message.methodType = msg.methodType || node.methodType;
@@ -391,7 +459,7 @@ module.exports = function (RED) {
         return
       }
 
-      setupClient(opcuaEndpoint.endpoint, message, function (err) {
+      methodNodeProcess(opcuaEndpoint.endpoint, message, function (err) {
         if (err) {
           node_error(err);
           node.status({
@@ -407,9 +475,11 @@ module.exports = function (RED) {
       if (node.session) {
         await node.session.close();
         node.session = null;
+        close_opcua_client("closed", 0);
         done();
       } else {
         node.session = null
+        close_opcua_client("closed", 0);
         done();
       }
     });
