@@ -1537,7 +1537,11 @@ module.exports = function (RED) {
           nodeToWrite = {
             nodeId: nodeid.toString(),
             attributeId: opcua.AttributeIds.Value,
-            value: new opcua.DataValue({value: new opcua.Variant(opcuaDataValue)})
+            value: new opcua.DataValue({
+                value: new opcua.Variant(opcuaDataValue),
+                // sourceTimestamp: new Date(),            // NOTE: Some servers do NOT accept time writing
+                // statusCode: opcua.StatusCodes.Good      // NOTE: Same with status writing, NOT accepted always
+              })
           };
         }
 
@@ -1823,11 +1827,12 @@ module.exports = function (RED) {
       }
 
       var nodeStr = msg.topic;
-      var dTypeIndex = nodeStr.indexOf(";datatype=");
-      if (dTypeIndex > 0) {
-        nodeStr = nodeStr.substring(0, dTypeIndex);
+      if (msg && msg.topic) {
+        var dTypeIndex = nodeStr.indexOf(";datatype=");
+        if (dTypeIndex > 0) {
+          nodeStr = nodeStr.substring(0, dTypeIndex);
+        }
       }
-
       var monitoredItem = monitoredItems.get(msg.topic);
 
       if (!monitoredItem) {
@@ -1935,9 +1940,11 @@ module.exports = function (RED) {
     async function monitor_monitoredItem(subscription, msg) {
       verbose_log("Session subscriptionId: " + subscription.subscriptionId);
       var nodeStr = msg.topic;
-      var dTypeIndex = nodeStr.indexOf(";datatype=");
-      if (dTypeIndex > 0) {
-        nodeStr = nodeStr.substring(0, dTypeIndex);
+      if (msg && msg.topic) {
+        var dTypeIndex = nodeStr.indexOf(";datatype=");
+        if (dTypeIndex > 0) {
+          nodeStr = nodeStr.substring(0, dTypeIndex);
+        }
       }
       var monitoredItem = monitoredItems.get(msg.topic);
       if (!monitoredItem) {
@@ -2056,9 +2063,11 @@ module.exports = function (RED) {
     function unsubscribe_monitoredItem(subscription, msg) {
       verbose_log("Session subscriptionId: " + subscription.subscriptionId);
       var nodeStr = msg.topic; // nodeId needed as topic
-      var dTypeIndex = nodeStr.indexOf(";datatype=");
-      if (dTypeIndex > 0) {
-        nodeStr = nodeStr.substring(0, dTypeIndex);
+      if (msg && msg.topic) {
+        var dTypeIndex = nodeStr.indexOf(";datatype=");
+        if (dTypeIndex > 0) {
+          nodeStr = nodeStr.substring(0, dTypeIndex);
+        }
       }
       var items = get_monitored_items(subscription, msg); // TEST
       var monitoredItem = monitoredItems.get(msg.topic);
@@ -2243,6 +2252,7 @@ module.exports = function (RED) {
         }
         monitoredItems.set(msg.topic, monitoredItem.monitoredItemId);
         monitoredItem.on("initialized", function () {
+          opcua.callConditionRefresh(subscription);
           verbose_log("monitored Event initialized");
           set_node_status_to("initialized");
         });
