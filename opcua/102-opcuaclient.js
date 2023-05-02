@@ -62,6 +62,10 @@ module.exports = function (RED) {
     this.localfile = n.localfile; // Local certificate file
     this.localkeyfile = n.localkeyfile; // Local private key file
     this.folderName4PKI = n.folderName4PKI; // Storage folder for PKI and certificates
+    this.maxChunkCount = n.maxChunkCount;
+    this.maxMessageSize = n.maxMessageSize
+    this.receiveBufferSize = n.receiveBufferSize;
+    this.sendBufferSize = n.sendBufferSize;
     // this.upload = n.upload; // Upload
     // this.certificate_filename = n.certificate_filename;
     // this.certificate_data = n.certificate_data;
@@ -105,14 +109,34 @@ module.exports = function (RED) {
     connectionOption.clientName = node.name; // This is used for the session names
     connectionOption.endpointMustExist = false;
     connectionOption.defaultSecureTokenLifetime = 40000 * 5;
+    // From the node UI, keep min values!
+    /*
+    // Needed or not?
+    if (node.maxChunkCount < 1) node.maxChunkCount = 1;
+    if (node.maxMessageSize < 8192) node.maxMessageSize = 8192;
+    if (node.receiveBufferSize < 8 * 1024) node.receiveBufferSize = 8 * 1024;
+    if (node.sendBufferSize < 8 * 1024) node.sendBufferSize = 8 * 1024;
+    */
+    var transportSettings = {
+      maxChunkCount: node.maxChunkCount,         // Default 1
+      maxMessageSize: node.maxMessageSize,       // should be at least 8192
+      receiveBufferSize: node.receiveBufferSize, // 8 * 1024,
+      sendBufferSize: node.sendBufferSize        // 8 * 1024
+    };
+    console.log(chalk.yellow("Connection options, transport settings: ") + chalk.cyan(JSON.stringify(transportSettings)));
+    connectionOption.transportSettings = transportSettings;
+    // connectionOption.transportSettings.maxChunkCount = transportSettings.maxChunkCount;
+    // connectionOption.transportSettings.maxMessageSize = transportSettings.maxMessageSize;
+    // connectionOption.transportSettings.receiveBufferSize = transportSettings.receiveBufferSize;
+    // connectionOption.transportSettings.sendBufferSize = transportSettings.sendBufferSize;
     connectionOption.connectionStrategy = {
       maxRetry: 10512000, // Limited to max 10 ~5min // 10512000, // 10 years should be enough. No infinite parameter for backoff.
       initialDelay: 5000, // 5s
       maxDelay: 30 * 1000 // 30s
     };
     connectionOption.keepSessionAlive = true;
-    verbose_log("Connection options:" + stringify(connectionOption));
-    verbose_log("EndPoint: " + stringify(opcuaEndpoint));
+    // verbose_log("Connection options:" + JSON.stringify(connectionOption));
+    verbose_log("EndPoint: " + JSON.stringify(opcuaEndpoint));
 
     // Ensure Anonymous login
     if (opcuaEndpoint.none === true) {
@@ -281,7 +305,7 @@ module.exports = function (RED) {
           return;
         }
         // Normal client
-        verbose_log(chalk.green("1) CREATE CLIENT: ") + chalk.cyan(JSON.stringify(connectionOption).substring(0,75) + "..."));
+        verbose_log(chalk.green("1) CREATE CLIENT: ") + chalk.cyan(stringify(connectionOption).substring(0,75) + "..."));
         node.client = opcua.OPCUAClient.create(connectionOption);
         node.client.on("connection_reestablished", reestablish);
         node.client.on("backoff", backoff);
@@ -1828,9 +1852,11 @@ module.exports = function (RED) {
 
       var nodeStr = msg.topic;
       if (msg && msg.topic) {
-        var dTypeIndex = nodeStr.indexOf(";datatype=");
-        if (dTypeIndex > 0) {
-          nodeStr = nodeStr.substring(0, dTypeIndex);
+        if (nodeStr && nodeStr.length > 1) {
+          var dTypeIndex = nodeStr.indexOf(";datatype=");
+          if (dTypeIndex > 0) {
+            nodeStr = nodeStr.substring(0, dTypeIndex);
+          }
         }
       }
       var monitoredItem = monitoredItems.get(msg.topic);
