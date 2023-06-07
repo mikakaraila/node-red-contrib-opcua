@@ -1327,7 +1327,7 @@ module.exports = function (RED) {
                   node.send({
                     topic: multipleItems[i],
                     payload: value,
-                    status: dataValue.statusCode,
+                    statusCode: dataValue.statusCode,
                     serverTimestamp: serverTs,
                     sourceTimestamp: sourceTs
                   });
