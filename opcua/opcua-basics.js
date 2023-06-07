@@ -198,7 +198,7 @@ ALIASES for Basic types:
 */
 module.exports.convertToString = function(inType) {
     if (inType === "ns=0;i=1") return "Boolean";
-    if (inType === "ns=0;i=2") return "SBYte";
+    if (inType === "ns=0;i=2") return "SByte";
     if (inType === "ns=0;i=3") return "Byte";
     if (inType === "ns=0;i=4") return "Int16";
     if (inType === "ns=0;i=5") return "UInt16";
