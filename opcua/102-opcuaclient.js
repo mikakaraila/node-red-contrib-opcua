@@ -62,6 +62,7 @@ module.exports = function (RED) {
     this.localfile = n.localfile; // Local certificate file
     this.localkeyfile = n.localkeyfile; // Local private key file
     this.folderName4PKI = n.folderName4PKI; // Storage folder for PKI and certificates
+    this.useTransport = n.useTransport;
     this.maxChunkCount = n.maxChunkCount;
     this.maxMessageSize = n.maxMessageSize
     this.receiveBufferSize = n.receiveBufferSize;
@@ -123,8 +124,11 @@ module.exports = function (RED) {
       receiveBufferSize: node.receiveBufferSize, // 8 * 1024,
       sendBufferSize: node.sendBufferSize        // 8 * 1024
     };
-    console.log(chalk.yellow("Connection options, transport settings: ") + chalk.cyan(JSON.stringify(transportSettings)));
+    if (node.useTransport) {
+      verbose_log(chalk.yellow("Using, transport settings: ") + chalk.cyan(JSON.stringify(transportSettings)));
+    }
     connectionOption.transportSettings = transportSettings;
+
     // connectionOption.transportSettings.maxChunkCount = transportSettings.maxChunkCount;
     // connectionOption.transportSettings.maxMessageSize = transportSettings.maxMessageSize;
     // connectionOption.transportSettings.receiveBufferSize = transportSettings.receiveBufferSize;
@@ -136,10 +140,10 @@ module.exports = function (RED) {
     };
     connectionOption.keepSessionAlive = true;
     // verbose_log("Connection options:" + JSON.stringify(connectionOption));
-    verbose_log("EndPoint: " + JSON.stringify(opcuaEndpoint));
+    // verbose_log("EndPoint: " + JSON.stringify(opcuaEndpoint));
 
     // Ensure Anonymous login
-    if (opcuaEndpoint.none === true) {
+    if (connectionOption.securityMode === opcua.SecurityPolicy.None || opcuaEndpoint.none === true) {
       userIdentity = { type: opcua.UserTokenType.Anonymous };
     }
     if (opcuaEndpoint.login === true && opcuaEndpoint.usercert === true) {
@@ -149,13 +153,13 @@ module.exports = function (RED) {
       node.error("Cannot use username & password & user certificate at the same time!");
     }
 
-    if (opcuaEndpoint.login === true) {
+    if (opcuaEndpoint.login === true && connectionOption.securityMode != opcua.SecurityPolicy.None) {
       userIdentity = {"type": opcua.UserTokenType.UserName,
                       "userName": opcuaEndpoint.credentials.user.toString(),
                       "password": opcuaEndpoint.credentials.password.toString()
                      };
-      // console.log("CASE Login: " + JSON.stringify(userIdentity));
-      // console.log("connection: " + JSON.stringify(connectionOption).substring(0,75) + "...");
+      verbose_log(chalk.green("Using UserName & password: ") + chalk.cyan(stringify(userIdentity)));
+      // verbose_log(chalk.green("Connection options: ") + chalk.cyan(JSON.stringify(connectionOption))); // .substring(0,75) + "...");
     }
     else if (opcuaEndpoint.usercert === true) {
       if (!fs.existsSync(userCertificate)) {
@@ -181,7 +185,8 @@ module.exports = function (RED) {
       // console.log("CASE Anonymous UserIdentity: " + JSON.stringify(userIdentity));
       // console.log("         connection options: " + JSON.stringify(connectionOption).substring(0,75) + "...");
     }
-    verbose_log("UserIdentity: " + JSON.stringify(userIdentity));
+    
+    verbose_log(chalk.green("UserIdentity: ") + chalk.cyan(JSON.stringify(userIdentity)));
     var items = [];
     var subscription; // only one subscription needed to hold multiple monitored Items
 
@@ -305,14 +310,29 @@ module.exports = function (RED) {
           return;
         }
         // Normal client
-        verbose_log(chalk.green("1) CREATE CLIENT: ") + chalk.cyan(stringify(connectionOption).substring(0,75) + "..."));
-        node.client = opcua.OPCUAClient.create(connectionOption);
+        // verbose_log(chalk.green("1) CREATE CLIENT: ") + chalk.cyan(stringify(connectionOption))); // .substring(0,75) + "..."));
+        let options = { 
+          securityMode: connectionOption.securityMode,
+          securityPolicy: connectionOption.securityPolicy,
+          defaultSecureTokenLifetime: connectionOption.defaultSecureTokenLifetime,
+          endpointMustExist: connectionOption.endpointMustExist,
+          connectionStrategy: connectionOption.connectionStrategy,
+          keepSessionAlive: true, // TODO later make it possible to disable
+          requestedSessionTimeout: 60000 * 5, // 5min, default 1min
+          // transportSettings: transportSettings // Some 
+        };
+        if (node.useTransport === true) {
+          options.transportSettings = transportSettings;
+        }
+        verbose_log(chalk.green("1) CREATE CLIENT: ") + chalk.cyan(stringify(options)));
+        // node.client = opcua.OPCUAClient.create(connectionOption); // Something extra?
+        node.client = opcua.OPCUAClient.create(options);
         node.client.on("connection_reestablished", reestablish);
         node.client.on("backoff", backoff);
         node.client.on("start_reconnection", reconnection);
       }
       catch(err) {
-        node_error("Cannot create client, check connection options: " + stringify(connectionOption));
+        node_error("Cannot create client, check connection options: " + stringify(options)); // connectionOption
       }
       items = [];
       node.items = items;
@@ -362,7 +382,7 @@ module.exports = function (RED) {
     }
 
     function set_node_status_to(statusValue) {
-      verbose_log("Client status: " + statusValue);
+      verbose_log(chalk.yellow("Client status: ") + chalk.cyan(statusValue));
       var statusParameter = opcuaBasics.get_node_status(statusValue);
       currentStatus = statusValue;
       node.status({
@@ -373,7 +393,7 @@ module.exports = function (RED) {
     }
 
     function set_node_status2_to(statusValue, message) {
-      verbose_log("Client status: " + statusValue);
+      verbose_log(chalk.yellow("Client status: ") + chalk.cyan(statusValue));
       var statusParameter = opcuaBasics.get_node_status(statusValue);
       currentStatus = statusValue;
       node.status({
@@ -403,7 +423,7 @@ module.exports = function (RED) {
       // STEP 1
       // First connect to server´s endpoint
       if (opcuaEndpoint && opcuaEndpoint.endpoint) {
-        verbose_log("Connecting to " + opcuaEndpoint.endpoint);
+        verbose_log(chalk.yellow("Connecting to endpoint: ") + chalk.cyan(opcuaEndpoint.endpoint));
       }
       else {
         node_error("No client endpoint listed! Waiting...");
@@ -420,29 +440,34 @@ module.exports = function (RED) {
         verbose_log("No client to connect...");
         return;
       }
-      verbose_log("Exact endpointUrl: " + opcuaEndpoint.endpoint + " hostname: " + os.hostname());
+      verbose_log(chalk.yellow("Exact endpointUrl: ") + chalk.cyan(opcuaEndpoint.endpoint) + chalk.yellow(" hostname: ") + chalk.cyan(os.hostname()));
       try {
         await node.client.clientCertificateManager.initialize();
       }
       catch (error1) {
-        console.log(chalk.red("Certificate manager error: ") + chalk.cyan(error1));
+        console.log(chalk.red("Certificate manager error: ") + chalk.cyan(error1.message));
         set_node_status_to("invalid certificate");
         var msg = {};
         msg.error = {};
-        msg.error.message = "Certificate error: " + error1;
+        msg.error.message = "Certificate error: " + error1.message;
         msg.error.source = this;
         node.error("Certificate error", msg);
       }
       try {
-        verbose_log(chalk.green("2) Connect using ENDPOINT: ") + chalk.cyan(opcuaEndpoint.endpoint));
+        // verbose_log(chalk.green("Client node parameters: ") + chalk.cyan(JSON.stringify(opcuaEndpoint)));
+        verbose_log(chalk.green("2) Connecting using endpoint: ") + chalk.cyan(opcuaEndpoint.endpoint) +
+        chalk.green(" securityMode: ") + chalk.cyan(connectionOption.securityMode) +
+        chalk.green(" securityPolicy: ") + chalk.cyan(connectionOption.securityPolicy));
         await node.client.connect(opcuaEndpoint.endpoint);
       } catch (err) {
-        // console.log("Client connect error: " + err);
+        console.log(chalk.red("Client connect error: ") + chalk.cyan(err.message));
         verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt, using securityMode: " + stringify(connectionOption.securityMode));
         verbose_warn("        using securityPolicy: " + stringify(connectionOption.securityPolicy));
-        verbose_warn("Case B: UserName & password does not match to server (needed by Sign), check username: " + userIdentity.userName + " and password: XXX"); // + userIdentity.password);
+        verbose_warn("Case B: UserName & password does not match to server (needed by Sign or SignAndEncrypt), check username: " + userIdentity.userName +  " and password: " + userIdentity.password);
+        verbose_warn("Case C: With Sign you cannot use SecurityPolicy None!!");
         verbose_warn("Invalid endpoint parameters: ", err);
-        set_node_status_to("Invalid endpoint, has server security policy: " + stringify(connectionOption.securityPolicy));
+        node_error("Wrong endpoint parameters: " + JSON.stringify(opcuaEndpoint)); 
+        set_node_status_to("Invalid endpoint, check that server has security policy: " + stringify(connectionOption.securityPolicy));
         var msg = {};
         msg.error = {};
         msg.error.message = "Invalid endpoint: " + err;
@@ -450,8 +475,8 @@ module.exports = function (RED) {
         node.error("Invalid endpoint", msg);
         return;
       }
-      verbose_log("Connected to " + opcuaEndpoint.endpoint);
-      verbose_log("Endpoint parameters: " + JSON.stringify(opcuaEndpoint)); 
+      verbose_log(chalk.green("Connected to endpoint: ") + chalk.cyan(opcuaEndpoint.endpoint));
+      // verbose_log("Endpoint parameters: " + JSON.stringify(opcuaEndpoint)); 
       // verbose_log("Connection options: " + stringify(connectionOption));
       // STEP 2
       // This will succeed first time only if security policy and mode are None
@@ -586,7 +611,7 @@ module.exports = function (RED) {
       }
 
       if (!node.client || !node.session) {
-        verbose_log("Not connected, current status:" + currentStatus);
+        verbose_log("Not connected, current status: " + currentStatus);
         // Added statuses when msg must be put to queue
         // Added statuses when msg must be put to queue
         const statuses = ['', 'create client', 'connecting', 'reconnect'];
