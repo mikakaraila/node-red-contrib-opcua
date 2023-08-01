@@ -126,8 +126,8 @@ module.exports = function (RED) {
     };
     if (node.useTransport) {
       verbose_log(chalk.yellow("Using, transport settings: ") + chalk.cyan(JSON.stringify(transportSettings)));
+      connectionOption.transportSettings = transportSettings;
     }
-    connectionOption.transportSettings = transportSettings;
 
     // connectionOption.transportSettings.maxChunkCount = transportSettings.maxChunkCount;
     // connectionOption.transportSettings.maxMessageSize = transportSettings.maxMessageSize;
@@ -213,9 +213,21 @@ module.exports = function (RED) {
       //}
     }
 
+    async function getBrowseName(_session, nodeId) {
+      const dataValue = await _session.read({
+          attributeId: AttributeIds.BrowseName,
+          nodeId
+      });
+      if (dataValue.statusCode.isGood()) {
+          const browseName = dataValue.value.value.name;
+          return browseName;
+      } else {
+          return "???";
+      }
+    }
     // Fields selected alarm fields
     // EventFields same order returned from server array of variants (filled or empty)
-    function __dumpEvent(node, session, fields, eventFields, _callback) {
+    async function __dumpEvent(node, session, fields, eventFields, _callback) {
       var msg = {};
       msg.payload = {};
       verbose_log("EventFields=" + eventFields);
@@ -224,18 +236,22 @@ module.exports = function (RED) {
       for (var i = 0; i < eventFields.length; i++) {
         var variant = eventFields[i];
         var fieldName = fields[i];
-        verbose_log("EVENT Field: " + fieldName + stringify(variant));
-        if (variant.dataType === DataType.Null) {
-          verbose_log("Variants dataType is Null");
+        verbose_log(chalk.yellow("EVENT Field: ") + chalk.cyan(fieldName) + " " + chalk.cyan(stringify(variant)));
+        // Check if variant is NodeId and then get qualified name (browseName)
+        if (variant && variant.dataType && variant.dataType === DataType.NodeId) {
+          fieldName = await getBrowseName(session, variant.value);
+        }
+        if (!variant || variant.dataType === DataType.Null || !variant.value) {
+          verbose_log(chalk.red("No variant or variant dataType is Null or no variant value!"));
         } else {
-          if (fieldName === "EventId")  {
+          if (fieldName === "EventId" && variant && variant.value)  {
             msg.payload[fieldName] = "0x" + variant.value.toString("hex"); // As in UaExpert
             msg.payload["_" + fieldName] = variant; // Keep as ByteString
           } else {
             msg.payload[fieldName] = opcuaBasics.clone_object(variant.value);
           }
           // if available, needed for Acknowledge function in client
-          if (fieldName === "ConditionId")  {
+          if (fieldName === "ConditionId" && variant && variant.value)  {
             msg.topic = variant.value.toString();
           }
         }
@@ -250,7 +266,12 @@ module.exports = function (RED) {
         msg.topic=msg.payload.ConditionId.toString();
       } 
       else {
-        msg.topic=msg.payload.EventType.toString();
+        if (msg.payload.EventType) {
+          msg.topic=msg.payload.EventType.toString();
+        }
+        else {
+          msg.topic="No EventType";
+        }
       }
       verbose_log("Event message topic: " +  msg.topic);
       node.send(msg);
