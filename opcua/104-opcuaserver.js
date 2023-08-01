@@ -1290,7 +1290,7 @@
                     var priority = msg.priority;
                     var nodeStr = msg.topic.substring(0, msg.topic.indexOf(";datatype=")); 
                     var nodeId = addressSpace.findNode(nodeStr);
-                    var boolVar = false;
+                    // var boolVar = false;
                     if (nodeId) {
                         var namespace = addressSpace.getOwnNamespace(); // Default
                         var alarmState = namespace.addVariable({
@@ -1299,8 +1299,9 @@
                             displayName: nodeStr.substring(7) + "-" + "AlarmState",
                             propertyOf: nodeId,
                             dataType: "Boolean",
-                            // minimumSamplingInterval: 500, // NOTE alarm is event based DO NOT USE THIS!
+                            minimumSamplingInterval: 500, // NOTE alarm is event based DO NOT USE THIS! ???
                             eventSourceOf: "i=2253", // Use server as default event source
+                            /* Use default
                             value: {
                                 get: function () {
                                     return new opcua.Variant({
@@ -1313,7 +1314,9 @@
                                     return opcua.StatusCodes.Good;
                                 }
                             }
+                            */
                         });
+                        alarmState.setValueFromSource({dataType: "Boolean", value: false});
                         var discreteAlarm = addressSpace.findEventType("DiscreteAlarmType");
                         var alarm = namespace.instantiateDiscreteAlarm(discreteAlarm,
                             {
@@ -1322,30 +1325,28 @@
                                 displayName: nodeStr.substring(7) + "-" + "DiscreteAlarm",
                                 organizedBy: nodeId,
                                 conditionSource: alarmState,
+                                severity: priority,
+                                conditionName: "Node-Red OPC UA Event",
                                 browseName: "DiscreteAlarmInstance",
                                 inputNode: alarmState,   // the variable that will be monitored for change, generate below
                                 optionals: [ "Acknowledge", "ConfirmedState", "Confirm" ], // confirm state and confirm Method
                             }
                         );
                         alarm.setEnabledState(true);
-                       
+                        // alarm.setSeverity(priority);
+                        // Do not use default
                         try {
                             alarmState.on("value_changed", function (newDataValue) {
+                                // console.log("DISCRETE value: " + newDataValue.value.value);
+                                // This works OK
                                 if (newDataValue.value.value === true) {
-                                    if (alarm && alarm.getEnabledState()) {
-                                        alarm.activeState.setValue(true);
-                                        alarm.ackedState.setValue(false);
-                                        
-                                        alarm.raiseNewCondition(new opcua.ConditionInfo({
-                                          severity: priority,
-                                          message: alarmText,
-                                          retain: true,
-                                          quality: newDataValue.statusCode
-                                        }));
-                                        
-                                      }
-                                  
-                                    // alarm.raiseNewCondition(); // {severity: priority, message: alarmText});
+                                    alarm.activeState.setValue(true);
+                                    alarm.ackedState.setValue(false);
+                                    alarm.raiseNewCondition({
+                                        severity: priority,
+                                        message: alarmText,
+                                        retain: true
+                                    });
                                 }
                                 if (newDataValue.value.value === false) {
                                     alarm.deactivateAlarm();
@@ -1355,7 +1356,6 @@
                         catch(error) {
                             node.error("Error: " + error.toString());
                         }
-                        
                     }
                     else {
                         node_error("Cannot find node: " + msg.topic + " nodeId: " + nodeStr);
@@ -1370,7 +1370,7 @@
                         var lowlowLimit = msg.ll;
                         var nodeStr = msg.topic.substring(0, msg.topic.indexOf(";datatype=")); 
                         var nodeId = addressSpace.findNode(nodeStr);
-                        var levelVar = 0.0;
+                        var levelVar = 5.0;
                         if (nodeId) {
                             var namespace = addressSpace.getOwnNamespace(); // Default
                             
@@ -1379,13 +1379,14 @@
                                 browseName: nodeStr.substring(7) + "-" + "LimitState",
                                 displayName: nodeStr.substring(7) + "-" + "LimitState",
                                 propertyOf: nodeId,
-                                dataType: "Float",
+                                dataType: "Double",
                                 minimumSamplingInterval: 500,
                                 eventSourceOf: "i=2253", // nodeId, // Use server!
+                                inputNode: msg.topic,
                                 value: {
                                     get: function () {
                                         return new opcua.Variant({
-                                            dataType: "Float",
+                                            dataType: "Double",
                                             value: levelVar
                                         });
                                     },
@@ -1395,7 +1396,7 @@
                                     }
                                 }
                             });
-                            
+                            alarmState.setValueFromSource({datatype: "Double", value: 5.0});
                             var alarm = namespace.instantiateNonExclusiveLimitAlarm("NonExclusiveLimitAlarmType",
                                 {
                                     nodeId: nodeStr + "-" + "LimitAlarm",
@@ -1403,6 +1404,9 @@
                                     displayName: nodeStr.substring(7) + "-" + "LimitAlarm",
                                     organizedBy: nodeId,
                                     conditionSource: alarmState,
+                                    conditionName: "Node-Red OPC UA Event",
+                                    eventSourceOf: "i=2253", // nodeId, // Use server!
+                                    minimumSamplingInterval: 500,
                                     browseName: "LimitAlarmInstance",
                                     inputNode: alarmState,   // the variable that will be monitored for change, generate below
                                     highHighLimit: highhighLimit,
@@ -1413,36 +1417,35 @@
                                     optionals: [ "Acknowledge", "ConfirmedState", "Confirm" ], // confirm state and confirm Method
                                 }
                             );
-                            //alarm.setEnabledState(true);
-                            
+                            alarm.setEnabledState(true);
                             /*
+                            alarm._onInputDataValueChange = function (dataValue) {
+                                // Overwrite node-opcua default alarm event
+                                console.log("LIMIT ALARM NEW VALUE: " + dataValue.value.value + " message: " + msg.alarmText);
+                                    // This is not working anymore for some reason???
+                                    alarm.activeState.setValue(true);
+                                    alarm.ackedState.setValue(false);
+                                    alarm.raiseNewCondition({severity: priority, 
+                                                             message: msg.alarmText + " " + dataValue.value.value,
+                                                             retain: true});  
+                            }; // Do not generate events by default node-opcua, use code below
+                            */
+                            // alarm.setSeverity(priority);
+                            // Do not use default change event messages
                             try {
                                 alarmState.on("value_changed", function (newDataValue) {
-                                    if (newDataValue.value.value === true) {
-                                        if (alarm && alarm.getEnabledState()) {
-                                            alarm.activeState.setValue(true);
-                                            alarm.ackedState.setValue(false);
-                                            
-                                            alarm.raiseNewCondition(new opcua.ConditionInfo({
-                                              severity: priority,
-                                              message: alarmText,
-                                              retain: true,
-                                              quality: newDataValue.statusCode
-                                            }));
-                                            
-                                          }
-                                      
-                                        // alarm.raiseNewCondition(); // {severity: priority, message: alarmText});
-                                    }
-                                    if (newDataValue.value.value === false) {
-                                        alarm.deactivateAlarm();
-                                    }
+                                    console.log("NEW ALARM LIMIT VALUE: " + newDataValue.value.value + " message: " + msg.alarmText);
+                                    // This is not working anymore for some reason???
+                                    alarm.activeState.setValue(true);
+                                    alarm.ackedState.setValue(false);
+                                    alarm.raiseNewCondition({severity: priority, 
+                                                             message: msg.alarmText + " " + newDataValue.value.value,
+                                                             retain: true});
                                 });
                             }
                             catch(error) {
-                                console.error("Error: " + error.toString());
+                                console.error("Error: " + error.message);
                             }
-                            */
                         }
                         else {
                             node_error("Cannot find node: " + msg.topic + " nodeId: " + nodeStr);
