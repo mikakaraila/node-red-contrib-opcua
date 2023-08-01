@@ -355,7 +355,7 @@ module.exports = function (RED) {
             if (arg.dataType === "ExtensionObject") {
               var extensionobject = null;
               if (arg.typeid) {
-                extensionObject = await node.session.constructExtensionObject(opcua.coerceNodeId(arg.typeid), {}); // TODO make while loop to enable await
+                extensionobject = await node.session.constructExtensionObject(opcua.coerceNodeId(arg.typeid), {}); // TODO make while loop to enable await
               }
               verbose_log("ExtensionObject=" + stringify(extensionobject));
               Object.assign(extensionobject, arg.value);
