@@ -230,19 +230,19 @@ module.exports = function (RED) {
     async function __dumpEvent(node, session, fields, eventFields, _callback) {
       var msg = {};
       msg.payload = {};
-      verbose_log("EventFields=" + eventFields);
+      verbose_log(chalk.yellow("Event Fields: ") + chalk.cyan(JSON.stringify(eventFields)));
       set_node_status_to("active event");
       
       for (var i = 0; i < eventFields.length; i++) {
         var variant = eventFields[i];
         var fieldName = fields[i];
-        verbose_log(chalk.yellow("EVENT Field: ") + chalk.cyan(fieldName) + " " + chalk.cyan(stringify(variant)));
+        verbose_log(chalk.yellow("Event Field: ") + chalk.cyan(fieldName) + " " + chalk.cyan(stringify(variant)));
         // Check if variant is NodeId and then get qualified name (browseName)
         if (variant && variant.dataType && variant.dataType === DataType.NodeId) {
           fieldName = await getBrowseName(session, variant.value);
         }
         if (!variant || variant.dataType === DataType.Null || !variant.value) {
-          verbose_log(chalk.red("No variant or variant dataType is Null or no variant value!"));
+          verbose_log(chalk.red("No variant or variant dataType is Null or no variant value! Variant: ") + chalk.cyan(JSON.stringify(variant)));
         } else {
           if (fieldName === "EventId" && variant && variant.value)  {
             msg.payload[fieldName] = "0x" + variant.value.toString("hex"); // As in UaExpert
@@ -264,16 +264,16 @@ module.exports = function (RED) {
       // if available, needed for Acknowledge function in client
       else if (msg.payload.ConditionId) {
         msg.topic=msg.payload.ConditionId.toString();
+      }
+      else if (msg.payload.EventId) {
+        msg.topic=msg.payload.EventId.toString(); // Set then this can be used to Acknowledge event
       } 
       else {
         if (msg.payload.EventType) {
           msg.topic=msg.payload.EventType.toString();
         }
-        else {
-          msg.topic="No EventType";
-        }
       }
-      verbose_log("Event message topic: " +  msg.topic);
+      verbose_log(chalk.yellow("Event message topic: ") +  chalk.cyan(msg.topic));
       node.send(msg);
       _callback();
     }
@@ -616,7 +616,7 @@ module.exports = function (RED) {
         node.action = msg.action;
       }
       else {
-        verbose_log("Using node action: " + originalAction);
+        verbose_log(chalk.green("Using node action: ") + chalk.cyan(originalAction));
         node.action = originalAction; // Use original action from the node
       }
       // With new node-red easier to set action into payload
@@ -666,8 +666,9 @@ module.exports = function (RED) {
         }
       }
 
-      verbose_log("Action on input:" + node.action +
-        " Item from Topic: " + msg.topic + " session Id: " + node.session.sessionId);
+      verbose_log(chalk.yellow("Action on input: ") + chalk.cyan(node.action) +
+                  chalk.yellow(" Item from Topic: ") + chalk.cyan(msg.topic) + 
+                  chalk.yellow(" session Id: ") + chalk.cyan(node.session.sessionId));
 
       switch (node.action) {
         case "connect":
@@ -754,7 +755,10 @@ module.exports = function (RED) {
         const dataValue = await node.session.read({ nodeId: msg.conditionId, attributeId: AttributeIds.Value });
         
         eventId = dataValue.value.value;
-        verbose_log("Acknowledge (alarm object == topic): " + msg.topic + " conditionObject (nodeId of eventId): " + msg.conditionId + " value of eventId: 0x" + eventId.toString("hex") + " comment: " + msg.comment);
+        verbose_log(chalk.yellow("Acknowledge (alarm object == topic): ") + chalk.cyan(msg.topic) + 
+                    chalk.yellow(" conditionObject (nodeId of eventId): ") + chalk.cyan(msg.conditionId) + 
+                    chalk.yellow(" value of eventId: 0x") + chalk.cyan(eventId.toString("hex")) + 
+                    chalk.yellow(" comment: ") + chalk.cyan(msg.comment));
       }
       // If actual eventId provided use it
       if (msg.eventId) {
@@ -763,7 +767,7 @@ module.exports = function (RED) {
       if (eventId) {
         try {
           const ackedState = await node.session.read({ nodeId: msg.topic + "/0:AckedState/0:Id", attributeId: AttributeIds.Value });
-          node.debug("EVENT ACKED STATE: " + ackedState);
+          node.debug(chalk.yellow("EVENT ACKED STATE: ") + chalk.cyan(ackedState));
           if (ackedState && ackedState.statusCode === opcua.StatusCodes.Good && ackedState.value.value === true) {
             node.status({
               fill: "yellow",
@@ -883,7 +887,7 @@ module.exports = function (RED) {
             verbose_log("Write done!");
         }
         catch(err) {
-            node.error(chalk.red("Cannot write file, error: " + err));
+            node.error(chalk.red("Cannot write file, error: " + err.message));
         }
       }
       else {
@@ -906,7 +910,7 @@ module.exports = function (RED) {
   
         }
         catch(err) {
-            node.error(chalk.red("Cannot call method, error: " + err));
+            node.error(chalk.red("Cannot call method, error: " + err.message));
         }
       }
       else {
@@ -962,8 +966,8 @@ module.exports = function (RED) {
             outputArguments: msg.outputArguments
           });
         } catch (err) {
-          set_node_status_to("error: " + err)
-          node.error("Build method request failed, error:" + err);
+          set_node_status_to("error: " + err.message)
+          node.error("Build method request failed, error: " + err.message);
         }
 
         verbose_log("Call request: " + callMethodRequest.toString());
@@ -998,8 +1002,8 @@ module.exports = function (RED) {
           node.send(msg);
           return opcua.StatusCodes.Good;
         } catch (err) {
-          set_node_status_to("Method execution error: " + err)
-          node.error("Method execution error: " + err);
+          set_node_status_to("Method execution error: " + err.message)
+          node.error("Method execution error: " + err.message);
           return opcua.StatusCodes.BadMethodInvalid;
         }
       }
@@ -1234,6 +1238,9 @@ module.exports = function (RED) {
             processingInterval);
             msg.payload = resultMax;
             node.send(msg);
+            if (resultMax.statusCode === opcua.StatusCodes.Good) {
+              verbose_log(chalk.green("History max: ") + chalk.cyan(resultMax.historyData.dataValues[0].value.value));
+            }
         }
         if (msg.aggregate && msg.aggregate==="min") {
           var resultMin = await node.session.readAggregateValue(
@@ -1244,6 +1251,9 @@ module.exports = function (RED) {
             processingInterval);
             msg.payload = resultMin;
             node.send(msg);
+            if (resultMin.statusCode === opcua.StatusCodes.Good) {
+              verbose_log(chalk.green("History min: ") + chalk.cyan(resultMin.historyData.dataValues[0].value.value));
+            }
         }
         if (msg.aggregate && msg.aggregate==="ave") {
           var resultAve = await node.session.readAggregateValue(
@@ -1254,6 +1264,9 @@ module.exports = function (RED) {
             processingInterval);
             msg.payload = resultAve;
             node.send(msg);
+            if (resultAve.statusCode === opcua.StatusCodes.Good) {
+              verbose_log(chalk.green("History ave: ") + chalk.cyan(resultAve.historyData.dataValues[0].value.value));
+            }
         }
         if (msg.aggregate && msg.aggregate==="interpolative") {
           var resultInter = await node.session.readAggregateValue(
@@ -1264,6 +1277,10 @@ module.exports = function (RED) {
             processingInterval);
             msg.payload = resultInter;
             node.send(msg);
+            if (resultInter.statusCode === opcua.StatusCodes.Good) {
+              verbose_log(chalk.green("History interpolative: ") + chalk.cyan(resultInter.historyData.dataValues[0].value.value));
+            }
+
         }
       }
     }
