@@ -1,0 +1,284 @@
+<!--
+
+Copyright 2015 Valmet Automation Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-->
+
+<script type="text/javascript">
+    RED.nodes.registerType('OpcUa-Endpoint2', {
+        category: 'config',
+        defaults: {
+            endpoint: {value: "", required: true},
+            secpol: {value: "None"},
+            secmode: {value: "None"},
+            none: {value: true},
+            login: {value: false},
+            usercert: {value: false},
+            usercertificate: {value: ""},
+            userprivatekey: {value: ""},
+            // These are fixed or can be read through endPoint
+            certificate: {value: "n"}, 
+            localfile: {value: ""},
+            localkeyfile: {value: ""},
+            securitymode: {value: "None"},
+            securitypolicy: {value: "None"},
+            folderName4PKI: {value: ""},
+            useTransport: {value: false, required: false},
+            maxChunkCount: {value: 1, required: false},
+            maxMessageSize: {value: 8192, required: false}, // should be at least 8192
+            receiveBufferSize: {value: 8192, required: false},
+            sendBufferSize: {value: 8192, required: false},
+        },
+        credentials: {
+            user: {type: "text"},
+            password: {type: "password"}
+        },
+        label: function () {
+            return this.endpoint || "OPC UA Endpoint";
+        },
+        oneditprepare: function () {
+            var node = this;
+            try {
+                var noneCheckbox = $("#node-config-input-none");
+                var loginCheckbox = $("#node-config-input-login");
+                var usercertCheckbox = $("#node-config-input-usercert");
+                var authRow = $(".node-input-useAuth-row");
+                var certRow = $(".node-input-userCert-row");
+                noneCheckbox.prop('checked', node.none);
+                loginCheckbox.prop('checked', node.login);
+                usercertCheckbox.prop('checked', node.usercert);
+
+                if (node.none === true) {
+                    noneCheckbox.prop('checked', true);
+                    // authRow.show();
+                    $('#node-input-user').val('');
+                    $('#node-input-password').val('');
+                } else {
+                    noneCheckbox.prop('checked', false);
+                    // loginCheckbox.prop('checked', false);
+                    // usercertCheckbox.prop('checked', false);
+                    // authRow.hide();
+                    if (node.login === true) {
+                        authRow.show();
+                    }
+                    else {
+                        authRow.hide();
+                    }
+                    if (node.usercert === true) {
+                        certRow.show();
+                    }
+                    else {
+                        certRow.hide();
+                    }
+                }
+
+                if (node.login === true) {
+                    loginCheckbox.prop('checked', true);
+                    authRow.show();
+                } else {
+                    loginCheckbox.prop('checked', false);
+                    authRow.hide();
+                }
+
+                if (node.usercert === true) {
+                    usercertCheckbox.prop('checked', true);
+                    certRow.show();
+                    $('#node-input-user').val('');
+                    $('#node-input-password').val('');
+                } else {
+                    usercertCheckbox.prop('checked', false);
+                    certRow.hide();
+                }
+                noneCheckbox.change(function () {
+                    if ($(this).is(":checked")) {
+                        console.log("Changed Anonymous: TRUE");
+                        node.none = true;
+                        noneCheckbox.prop('checked', true);
+                        loginCheckbox.prop('checked', false);
+                        usercertCheckbox.prop('checked', false);
+                        $('#node-input-user').val('');
+                        $('#node-input-password').val('');
+                        authRow.hide();
+                        certRow.hide();
+                    } else {
+                        console.log("Changed Anonymous: FALSE");
+                        node.none = false;
+                        // $('#node-input-user').val('');
+                        // $('#node-input-password').val('');
+                    }
+                });
+
+                loginCheckbox.change(function () {
+                    if ($(this).is(":checked")) {
+                        login = true;
+                        usercertCheckbox.prop('checked', false);
+                        noneCheckbox.prop('checked', false);
+                        authRow.show();
+                        certRow.hide();
+                    } else {
+                        login = false;
+                        authRow.hide();
+                        certRow.hide();
+                        // DO NOT CLEAR
+                        // $('#node-input-user').val('');
+                        // $('#node-input-password').val('');
+                    }
+                });
+
+                usercertCheckbox.change(function () {
+                    if ($(this).is(":checked")) {
+                        usercert = true;
+                        loginCheckbox.prop('checked', false);
+                        noneCheckbox.prop('checked', false);
+                        certRow.show();
+                        authRow.hide();
+                    } else {
+                        usercert = false;
+                        certRow.hide();
+                        authRow.hide();
+                        $('#node-input-usercertificate').val('');
+                        $('#node-input-userprivatekey').val('');
+                    }
+                });
+
+            } catch (err) {
+                console.error(err);
+            }
+            finally {
+                // console.debug("finally"); // Nothing to do
+            }
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="OpcUa-Endpoint2">
+    <div class="form-row">
+        <label for="node-config-input-endpoint"><i class="icon-link"></i> Endpoint</label>
+        <input type="text" id="node-config-input-endpoint">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-secpol"><i class="icon-key"></i> SecurityPolicy</label>
+        <select type="text" id="node-config-input-secpol">
+            <option value="None">None</option>
+            <option value="Basic128">Basic128</option>
+            <option value="Basic192">Basic192</option>
+            <option value="Basic192Rsa15">Basic192Rsa15</option>
+            <option value="Basic256Rsa15">Basic256Rsa15</option>
+            <option value="Basic256Sha256">Basic256Sha256</option>
+            <option value="Aes128_Sha256">Aes128_Sha256</option>
+            <option value="Aes128_Sha256_RsaOaep">Aes128_Sha256_RsaOaep</option>
+            <option value="PubSub_Aes128_CTR">PubSub_Aes128_CTR</option>
+            <option value="PubSub_Aes256_CTR">PubSub_Aes256_CTR</option>
+            <option value="Basic128Rsa15">Basic128Rsa15</option>
+            <option value="Basic256">Basic256</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-secmode"><i class="icon-key"></i> SecurityMode</label>
+        <select type="text" id="node-config-input-secmode">
+            <option value="None">None</option>
+            <option value="Sign">Sign</option>
+            <option value="SignAndEncrypt">Sign&Encrypt</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <lable><input type="checkbox" id="node-config-input-none" > Anonymous</lable>
+    </div>
+    <div class="form-row">
+        <lable><input type="checkbox" id="node-config-input-login" > use credentials</lable>
+    </div>
+    <div class="form-row">
+        <lable><input type="checkbox" id="node-config-input-usercert" > user certificate</lable>
+    </div>
+
+    <div class="form-row node-input-useAuth-row">
+        <label for="node-config-input-user"><i class="icon-user"></i> User</label>
+        <input type="text" id="node-config-input-user">
+    </div>
+    <div class="form-row node-input-useAuth-row">
+        <label for="node-config-input-password"><i class="icon-password"></i> Password</label>
+        <input type="password" id="node-config-input-password">
+    </div>
+
+    <div class="form-row node-input-userCert-row">
+        <label for="node-config-input-usercertificate"><i class="icon-file"></i> Certificate file</label>
+        <input type="text" id="node-config-input-usercertificate">
+    </div>
+    <div class="form-row node-input-userCert-row">
+        <label for="node-config-input-userprivatekey"><i class="icon-file"></i> Private key file</label>
+        <input type="text" id="node-config-input-userprivatekey">
+    </div>
+   <div class="form-row" id="node-input-servercertificate">
+        <label for="node-input-location"><i class="icon-time"></i> Certificate</label>
+        <select id="node-input-certificate" style="width:72%;">
+            <option value="n">None, use generated self-signed certificate</option>
+            <option value="l">Local certificate file, give path with filename (pem)</option>
+        </select>
+    </div>
+	<div class="form-row">
+        <label for="node-input-path"><i class="icon-tasks"></i> Local certificate file with absolute path</label>
+        <input type="text" id="node-input-localfile" placeholder="selfSigned.pem">
+    </div>
+	<div class="form-row">
+        <label for="node-input-path"><i class="icon-tasks"></i> Local private key file with absolute path</label>
+        <input type="text" id="node-input-localkeyfile" placeholder="private_key.pem">
+    </div>
+    <div class="form-row">
+        <label for="node-input-folderName4PKI"><i class="icon-tasks"></i> PKI certificate folder</label>
+        <input type="text" id="node-input-folderName4PKI" placeholder="">
+    </div>
+    <div class="form-row">
+        <label for="node-input-useTransport"><i class="icon-tasks"></i> Use transport settings</label>
+        <input type="checkbox" id="node-input-useTransport" placeholder="">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxChunkCount"><i class="icon-tasks"></i> Max ChunkCount</label>
+        <input type="number" id="node-input-maxChunkCount" placeholder="1" style="width:20%;">
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxMessageSize"><i class="icon-tasks"></i> Max MessageSize</label>
+        <input type="number" id="node-input-maxMessageSize" placeholder="8192" style="width:20%;">
+    </div>
+    <div class="form-row">
+        <label for="node-input-receiveBufferSize"><i class="icon-tasks"></i> Receive BufferSize</label>
+        <input type="number" id="node-input-receiveBufferSize" placeholder="8192" style="width:20%;">
+    </div>
+    <div class="form-row">
+        <label for="node-input-sendBufferSize"><i class="icon-tasks"></i> Send BufferSize</label>
+        <input type="number" id="node-input-sendBufferSize" placeholder="8192" style="width:20%;">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tasks"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="">
+    </div>
+
+
+</script>
+
+<script type="text/x-red" data-help-name="OpcUa-Endpoint2">
+
+    <p>Server certificate options are:</p>
+    <p>
+        <ul>
+            <li>None</li>
+            <li>Local certificate file (.pem)</li>
+            <li>Local private key file (.pem)</li>
+         </ul>
+    </p>
+    <p>Certificate is not needed if security is None.</p>
+    <p>Client will try to load server certificate from endpoint if server can provide it (copy server certificate under pki folder).</p>
+    <p>Local file with relative path and certificate filename can be then used to use server certificate (.pem ending file).</p>
+    <p>User can manually copy server certificate.</p>
+</script>

@@ -1,0 +1,186 @@
+<!--
+
+Copyright 2015 Valmet Automation Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-->
+
+<script type="text/javascript">
+    RED.nodes.registerType('OpcUa-Client2', {
+        category: 'opcua',
+        color: "#3FADB5",
+        defaults: {
+            endpoint: {value: "", required: true, type: "OpcUa-Endpoint"},
+            action: {value: "read", required: true},
+            deadbandtype: {value: "a"},
+            deadbandvalue: {value: 1},
+            time: {value: 10},
+            timeUnit: {value: "s"},
+            name: {value: ""}
+        },
+        inputs: 1,
+        outputs: 1,
+        align: "right",
+        icon: "opcuanodeLogo.png",
+        label: function () {
+            return this.name || "OPC UA Client";
+        },
+        labelStyle: function () {
+            return this.name ? "node_label_italic" : "";
+        },
+        oneditprepare: function () {
+
+            var node = this;
+
+            try {
+                var inputAction = $('#node-input-action');
+                var inputTime = $('#node-input-timerow');
+                var inputDeadband = $('#node-input-deadband');
+                change_time_input(); // first to fit config now
+                inputAction.change(change_time_input);
+
+            } catch (err) {
+                node.error(err);
+            }
+
+            function change_time_input() {
+                if (inputAction.val() == "subscribe" || inputAction.val() == "events" || inputAction.val() == "monitor") {
+                    inputTime.show();
+                }
+                else {
+                    inputTime.hide();
+                }
+                if (inputAction.val() == "monitor") {
+                    inputDeadband.show();
+                }
+                else {
+                    inputDeadband.hide();
+                }
+
+            }
+        }
+    });
+</script>
+
+
+<script type="text/x-red" data-template-name="OpcUa-Client2">
+    <div class="form-row">
+        <label for="node-input-endpoint"><i class="icon-tasks"></i> Endpoint</label>
+        <input type="text" id="node-input-endpoint" placeholder="opc.tcp://localhost:4334">
+    </div>
+     <div class="form-row">
+        <label for="node-input-action"><i class="fa fa-tasks"></i> Action</label>
+        <select type="text" id="node-input-action" style="width:72%;">
+            <option selected value="read">READ</option>
+            <option value="write">WRITE</option>
+            <option value="browse">BROWSE</option>
+            <option value="subscribe">SUBSCRIBE</option>
+            <option value="unsubscribe">UNSUBSCRIBE</option>
+            <option value="deletesubscription">DELETE SUBSCRIPTION</option>
+            <option value="events">EVENTS</option>
+            <option value="info">INFO</option>
+            <option value="build">BUILD</option>
+            <option value="monitor">MONITOR</option>
+            <option value="readmultiple">READ MULTIPLE</option>
+            <option value="writemultiple">WRITE MULTIPLE</option>
+            <option value="register">REGISTER</option>
+            <option value="unregister">UNREGISTER</option>
+            <option value="acknowledge">ACKNOWLEDGE</option>
+            <option value="history">HISTORY</option>
+            <option value="readfile">READ FILE</option>
+            <option value="writefile">WRITE FILE</option>
+            <option value="connect">CONNECT</option>
+            <option value="disconnect">DISCONNECT</option>
+            <option value="reconnect">RE-CONNECT</option>
+            <option value="method">METHOD</option>
+        </select>
+    </div>
+    <div class="form-row" id="node-input-timerow">
+        <label for="node-input-time"><i class="icon-time"></i> Interval</label>
+        <input type="number" id="node-input-time" placeholder="number" style="max-width:120px">
+        <select id="node-input-timeUnit" style="max-width:160px">
+            <option value="ms">millisecond(s)</option>
+            <option value="s">second(s)</option>
+            <option value="m">minute(s)</option>
+            <option value="h">hour(s)</option>
+        </select>
+    </div>
+    <div class="form-row" id="node-input-deadband">
+        <label for="node-input-deadbandlabel"><i class="icon-time"></i> Deadband Type</label>
+        <input type="number" id="node-input-deadbandvalue" placeholder="number" style="max-width:120px">
+        <select id="node-input-deadbandtype" style="max-width:160px">
+            <option value="a">Absolute</option>
+            <option value="p">Percent</option>
+        </select>
+    </div>
+ </script>
+
+<script type="text/x-red" data-help-name="OpcUa-Client">
+    <p>Connect to an endpoint like opc.tcp://host:port/UA/EndpointName.</p>
+    <p>Actions are:</p>
+    <p>
+        <ul>
+            <li>Read</li>
+            <li>Write</li>
+            <li>Browse</li>
+            <li>Subscribe</li>
+            <li>Unsubscribe</li>
+            <li>Deletesubscription</li>
+            <li>Event</li>
+            <li>Info</li>
+            <li>Build</li>
+            <li>Monitor</li>
+            <li>Read Multiple</li>
+            <li>Write Multiple</li>
+            <li>Register</li>
+            <li>Unregister</li>
+            <li>Acknowledge</li>
+            <li>History</li>
+            <li>Read file</li>
+            <li>Write file</li>
+            <li>Connect</li>
+            <li>Disconnect</li>
+            <li>Reconnect</li>
+            <li>Method</li>
+         </ul>
+    </p>
+    <p>Inject your OPC UA address (NodeId) by the <strong>Topic</strong> of an Inject node or with the OpcUa-Item cotrolled by an Inject node.</p>
+    <p>To Read/Write inject the Topic for every operation.</p>
+    <p>Use register to registerNodeIds, if server supports registeredNodes then it will perform better on normal read or readMultiple</p>
+    <p>Use unregister to unregisterNodeIds, if server supports unregisteredNodes then it will release earlier registered nodeIds</p>
+    <p>Acknowledge can be used to acknowledge event/condition, msg must contain topic (alarm nodeId), conditionId (nodeId of eventId) and comment</p>
+    <p>The value to Write should be injected by an OpcUa-Item.</p>
+    <p>Inject the Topic only once on Subscribe or Event for subscription and you got the changing value on every Interval.
+        Every inject subscribes a new monitored Item.</p>
+    <p>Interval is setting for Client <strong>requestedPublishingInterval</strong> (default: 100ms).</p>
+    <p>Input <strong>msg.payload</strong> can bring an samplingInterval for monitored Items/Events in subscription (default: 100ms).</p>
+    <p>Monitor will ask additional parameters like Absolute or Percent and deadband value</p>
+    <p>Read multiple will first store all input msg nodeId values to array</p>
+    <p> when input message is string readmultiple then actual read is done. NOTE: If payload == ALL then all values are in one msg.payload</p>
+    <p> when input message is string clearitems then nodeId array is cleared</p>
+    <p>Subscribe topic contains nodeId and datatype. NOTE: topic "multiple" and payload array of {nodeId: "ns=1;s=example", datatype: "Double}"<p>
+    <p>  Look examples folder and flow file OPCUA-MULTI-SUB.json<p>
+    <p>Info read attributes from the given nodeId</p>
+    <p>Build will construct Extension Object message with topic, datatype and payload (value)</p>
+    <p>Browse will lookup address space from the injected msg.topic (nodeId)</p>
+    <p> if msg.collect === true then result will be collected into one msg. msg.payload will be array of items</p>
+    <p> msg.payload.range = "2:4" and FloatArray or any Array datatype then indexes from 2 to 4 will be used to read or write depending on action</p>
+    <p>History will read mdg.topic = nodeId and msg.aggregate = "raw", historical values or aggregate "min" or "max" or "ave" or "interpolative"</p>
+    <p> Other needed parameters start time and end time:
+    <p> msg.start if not given 1 hour from now will be used</p>
+    <p> msg.end   if not given default value is now</p>
+    <p>Read file will read msg.topic nodeId from the server File object, msg.payload will contain buffer</p>
+    <p>Write file will write msg.topic nodeId to the server File object, msg.payload will contain buffer OR msg.fileName path to local file to be written to server </p>
+
+</script>
