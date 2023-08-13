@@ -2,21 +2,16 @@
     {
       "username": "visitor",
       "password": "qwerty",
-      "roles": "Guest"
+      "role": "Guest"
     },
     {
       "username": "JohnSmith",
       "password": "1234",
-      "roles": "Operator"
-    },
-    {
-      "username": "James",
-      "password": "Bond",
-      "roles": "Observer"
+      "role": "Operator"
     },
     {
       "username": "Administrator",
       "password": "HardPassword!",
-      "roles": "Supervisor;ConfigureAdmin;SecurityAdmin"
+      "role": "ConfigureAdmin"
     }
   ]

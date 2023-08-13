@@ -1,4 +1,3 @@
-"use strict";
 /*
  Copyright 2016 Klaus Landsdorf
 
@@ -14,10 +13,16 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.build_new_dataValue = exports.build_new_value_by_datatype = exports.build_new_variant = exports.get_node_status = exports.toInt32 = exports.buildBrowseMessage = exports.convertToString = exports.getSubscriptionParameters = exports.getEventSubscriptionParameters = exports.getBasicEventFields = exports.collectAlarmFields = exports.calc_milliseconds_by_time_and_unit = exports.get_timeUnit_name = exports.cloneObject = void 0;
-const flatted_1 = require("flatted");
-const node_opcua_1 = require("node-opcua");
+
+import { NodeStatusFill, NodeStatusShape } from "node-red";
+import { stringify } from "flatted";
+import {
+    NodeId,
+    Variant,
+    DataType,
+    LocalizedText,
+    VariantArrayType
+} from "node-opcua";
 /*
 const typedArrays = {
     SByte: Int8Array,
@@ -32,20 +37,22 @@ const typedArrays = {
     Double: Float64Array
 };
 */
-function cloneObject(obj) {
+export function cloneObject(obj) {
     let cpy;
+
     // Handle the 3 simple types, and null or undefined
-    if (null === obj || "object" != typeof obj)
-        return obj;
+    if (null === obj || "object" != typeof obj) return obj;
+
     // Handle Buffer
-    if (Buffer.isBuffer(obj))
-        return Buffer.from(obj);
+    if (Buffer.isBuffer(obj)) return Buffer.from(obj);
+
     // Handle Date
     if (obj instanceof Date) {
         cpy = new Date();
         cpy.setTime(obj.getTime());
         return cpy;
     }
+
     // Handle Array
     if (Array.isArray(obj)) {
         cpy = [];
@@ -54,26 +61,30 @@ function cloneObject(obj) {
         }
         return cpy;
     }
+
     // Handle NodeId
-    if (obj instanceof node_opcua_1.NodeId) {
+    if (obj instanceof NodeId) {
         cpy = obj.toString();
         return cpy;
     }
+
     // Handle Object
     if (obj instanceof Object) {
         cpy = {};
         for (const attr in obj) {
             //eslint-disable-next-line
-            if (obj.hasOwnProperty(attr))
-                cpy[attr] = cloneObject(obj[attr]);
+            if (obj.hasOwnProperty(attr)) cpy[attr] = cloneObject(obj[attr]);
         }
         return cpy;
     }
+
     throw new Error("Unable to copy obj! Its type isn't supported.");
 }
-exports.cloneObject = cloneObject;
-function get_timeUnit_name(unit) {
+
+export function get_timeUnit_name(unit: string) {
+
     let unitAbbreviation = '';
+
     switch (unit) {
         case "ms":
             unitAbbreviation = 'msec.';
@@ -90,10 +101,12 @@ function get_timeUnit_name(unit) {
         default:
             break;
     }
-    return unitAbbreviation;
+
+    return unitAbbreviation
 }
-exports.get_timeUnit_name = get_timeUnit_name;
-function calc_milliseconds_by_time_and_unit(time, unit) {
+
+export function calc_milliseconds_by_time_and_unit(time: number, unit: string) {
+
     switch (unit) {
         case "ms":
             break;
@@ -110,11 +123,13 @@ function calc_milliseconds_by_time_and_unit(time, unit) {
             time = 10000; // 10 sec.
             break;
     }
-    return time;
+
+    return time
 }
-exports.calc_milliseconds_by_time_and_unit = calc_milliseconds_by_time_and_unit;
-function collectAlarmFields(field, key, value, payload, node) {
-    console.log("Collect from node: " + node + " field: " + field + " key: " + key + " value:" + value + " payload:" + (0, flatted_1.stringify)(payload));
+
+export function collectAlarmFields(field, key, value, payload, node) {
+    console.log("Collect from node: " + node + " field: " + field + " key: " + key + " value:" + value + " payload:" + stringify(payload));
+    
     switch (field) {
         // Common fields
         case "EventId":
@@ -141,7 +156,8 @@ function collectAlarmFields(field, key, value, payload, node) {
         case "Severity":
             payload.Severity = value;
             break;
-        // ConditionType
+
+            // ConditionType
         case "ConditionClassId":
             payload.ConditionClassId = value;
             break;
@@ -173,14 +189,16 @@ function collectAlarmFields(field, key, value, payload, node) {
         case "ClientUserId":
             payload.ClientUserId = value;
             break;
-        // AcknowledgeConditionType
+
+            // AcknowledgeConditionType
         case "AckedState":
             payload.AckedState = value.text;
             break;
         case "ConfirmedState":
             payload.ConfirmedState = value.text;
             break;
-        // AlarmConditionType
+
+            // AlarmConditionType
         case "ActiveState":
             payload.ActiveState = value.text;
             break;
@@ -190,7 +208,8 @@ function collectAlarmFields(field, key, value, payload, node) {
         case "SupressedState":
             payload.SupressedState = value.text;
             break;
-        // Limits
+
+            // Limits
         case "HighHighLimit":
             payload.HighHighLimit = value;
             break;
@@ -211,8 +230,10 @@ function collectAlarmFields(field, key, value, payload, node) {
             break;
     }
 }
-exports.collectAlarmFields = collectAlarmFields;
-function getBasicEventFields() {
+
+
+export function getBasicEventFields() {
+
     return [
         // Common fields
         "EventId",
@@ -223,6 +244,7 @@ function getBasicEventFields() {
         "ReceiveTime",
         "Message",
         "Severity",
+
         // ConditionType
         "ConditionClassId",
         "ConditionClassName",
@@ -234,34 +256,43 @@ function getBasicEventFields() {
         "LastSeverity",
         "Comment",
         "ClientUserId",
+
         // AcknowledgeConditionType
         "AckedState",
         "ConfirmedState",
+
         // AlarmConditionType
         "ActiveState",
         "InputNode",
         "SuppressedState",
+
         // Limits
         "HighLimit",
         "LowLimit",
         "HighHighLimit",
         "LowLowLimit",
+
         // AutoIdScanEventType & AutoIdDiagnosisEventType
         "3:DeviceName",
+
         // AutoIdScanEventType
         "3:ScanResult",
+
         // AutoIdDiagnosisEventType
         "4:DeviceName",
+
         // AutoIdLastAccessEventType
         "4:Client",
         "4:Command",
         "4:LastAccessResult",
+
         // AutoIdPresenceEventType
         "4:Presence",
+
         "Value"
     ];
 }
-exports.getBasicEventFields = getBasicEventFields;
+
 /*
  Options defaults node-opcua
 
@@ -272,7 +303,8 @@ exports.getBasicEventFields = getBasicEventFields;
  options.publishingEnabled           = options.publishingEnabled ? true : false;
  options.priority                    = options.priority || 1;
  */
-function getEventSubscriptionParameters(timeMilliseconds) {
+
+export function getEventSubscriptionParameters(timeMilliseconds) {
     return {
         requestedPublishingInterval: timeMilliseconds || 100,
         requestedLifetimeCount: 120,
@@ -282,8 +314,8 @@ function getEventSubscriptionParameters(timeMilliseconds) {
         priority: 1
     };
 }
-exports.getEventSubscriptionParameters = getEventSubscriptionParameters;
-function getSubscriptionParameters(timeMilliseconds) {
+
+export function getSubscriptionParameters(timeMilliseconds) {
     return {
         requestedPublishingInterval: timeMilliseconds || 100,
         requestedLifetimeCount: 30,
@@ -291,9 +323,9 @@ function getSubscriptionParameters(timeMilliseconds) {
         maxNotificationsPerPublish: 10,
         publishingEnabled: true,
         priority: 10
-    };
+    }
 }
-exports.getSubscriptionParameters = getSubscriptionParameters;
+
 /*
 ALIASES for Basic types:
 <Alias Alias="Boolean">i=1</Alias>
@@ -332,8 +364,10 @@ ALIASES for Basic types:
 <Alias Alias="HasEncoding">i=38</Alias>
 <Alias Alias="HasDescription">i=39</Alias>
 */
-function convertToString(dataTypeInNodeFormat) {
+
+export function convertToString(dataTypeInNodeFormat) {
     let datatype = "";
+
     switch (dataTypeInNodeFormat) {
         case "ns=0;i=1":
             datatype = "Boolean";
@@ -375,10 +409,11 @@ function convertToString(dataTypeInNodeFormat) {
             datatype = "";
             break;
     }
+
     return datatype;
 }
-exports.convertToString = convertToString;
-function buildBrowseMessage(topic) {
+
+export function buildBrowseMessage(topic) {
     return {
         "topic": topic,
         "nodeId": "",
@@ -390,22 +425,25 @@ function buildBrowseMessage(topic) {
         "payload": ""
     };
 }
-exports.buildBrowseMessage = buildBrowseMessage;
-function toInt32(x) {
+
+export function toInt32(x) {
     let uint16 = x;
+
     if (uint16 >= Math.pow(2, 15)) {
         uint16 = x - Math.pow(2, 16);
         return uint16;
-    }
-    else {
+    } else {
         return uint16;
     }
 }
-exports.toInt32 = toInt32;
-function get_node_status(statusValue) {
-    let fillValue = 'red';
-    let shapeValue = "dot";
+
+export  function get_node_status(statusValue) {
+
+    let fillValue: NodeStatusFill = 'red';
+    let shapeValue: NodeStatusShape = "dot";
+
     switch (statusValue) {
+
         case "create client":
         case "connecting":
         case "connected":
@@ -416,11 +454,13 @@ function get_node_status(statusValue) {
             fillValue = "green";
             shapeValue = "ring";
             break;
+        
         case "reconnect":
         case "closed":
             fillValue = "yellow";
             shapeValue = "dot";
             break;
+
         case "active":
         case "active reading":
         case "value written":
@@ -449,6 +489,7 @@ function get_node_status(statusValue) {
             fillValue = "red";
             shapeValue = "ring";
             break;
+
         default:
             if (!statusValue) {
                 fillValue = "blue";
@@ -456,114 +497,116 @@ function get_node_status(statusValue) {
             }
             break;
     }
+
     return {
         fill: fillValue,
         shape: shapeValue,
         status: statusValue
     };
 }
-exports.get_node_status = get_node_status;
-function build_new_variant(opcua, datatype, value) {
-    let nValue = new node_opcua_1.Variant({
-        dataType: node_opcua_1.DataType.Float,
+
+export function build_new_variant(opcua, datatype, value) {
+
+    let nValue = new Variant({
+        dataType: DataType.Float,
         value: 0.0
     });
+
     switch (datatype) {
         case "Float":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.Float,
+            nValue = new Variant({
+                dataType: DataType.Float,
                 value: parseFloat(value)
             });
             break;
         case "Double":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.Double,
+            nValue = new Variant({
+                dataType: DataType.Double,
                 value: parseFloat(value)
             });
             break;
         case "Int32":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.Int32,
+            nValue = new Variant({
+                dataType: DataType.Int32,
                 value: parseInt(value)
             });
             break;
         case "Int16":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.Int16,
+            nValue = new Variant({
+                dataType: DataType.Int16,
                 value: parseInt(value)
             });
             break;
         case "Int8":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.SByte,
+            nValue = new Variant({
+                dataType: DataType.SByte,
                 value: parseInt(value)
             });
             break;
         case "UInt32":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.UInt32,
+            nValue = new Variant({
+                dataType: DataType.UInt32,
                 value: parseInt(value)
             });
             break;
         case "UInt16":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.UInt16,
+            nValue = new Variant({
+                dataType: DataType.UInt16,
                 value: parseInt(value)
             });
             break;
         case "UInt8":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.Byte,
+            nValue = new Variant({
+                dataType: DataType.Byte,
                 value: parseInt(value)
             });
             break;
         case "Boolean":
             if (value && value !== "false") {
-                nValue = new node_opcua_1.Variant({
-                    dataType: node_opcua_1.DataType.Boolean,
+                nValue = new Variant({
+                    dataType: DataType.Boolean,
                     value: true
                 });
-            }
-            else {
-                nValue = new node_opcua_1.Variant({
-                    dataType: node_opcua_1.DataType.Boolean,
+            } else {
+                nValue = new Variant({
+                    dataType: DataType.Boolean,
                     value: false
                 });
             }
             break;
         case "String":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.String,
+            nValue = new Variant({
+                dataType: DataType.String,
                 value: value
             });
             break;
         case "LocalizedText":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.LocalizedText,
-                value: new node_opcua_1.LocalizedText({ locale: "en", text: value })
+            nValue = new Variant({
+                dataType: DataType.LocalizedText,
+                value: new LocalizedText({locale: "en", text: value})
             });
             break;
         case "DateTime":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.DateTime,
+            nValue = new Variant({
+                dataType: DataType.DateTime,
                 value: new Date(value)
             });
             break;
         case "Byte":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.Byte,
+            nValue = new Variant({
+                dataType: DataType.Byte,
                 value: value
             });
             break;
         case "SByte":
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.SByte,
+            nValue = new Variant({
+                dataType: DataType.SByte,
                 value: value
             });
             break;
         default:
-            nValue = new node_opcua_1.Variant({
-                dataType: node_opcua_1.DataType.Null,
+            nValue = new Variant({
+                dataType: DataType.Null,
                 value: value
             });
             break;
@@ -571,82 +614,86 @@ function build_new_variant(opcua, datatype, value) {
     // Checks if Array and grabs Data Type
     const m = datatype.match(/\b(\w+) Array\b/);
     if (m) {
-        nValue = new node_opcua_1.Variant({
-            dataType: node_opcua_1.DataType[m[1]],
+        nValue = new Variant({
+            dataType: DataType[m[1]],
             value: value,
-            arrayType: node_opcua_1.VariantArrayType.Array,
+            arrayType: VariantArrayType.Array,
             dimensions: [value.length]
         });
     }
+
     return nValue;
 }
-exports.build_new_variant = build_new_variant;
+
 function getArrayValues(datatype, items) {
     //eslint-disable-next-line
-    const uaArray = new Object(); // { values: [], uaType: DataType.Null};
+    const uaArray: any = new Object(); // { values: [], uaType: DataType.Null};
     uaArray["values"] = [];
     uaArray["uaType"] = null;
+    
     console.debug("### getArrayValues:" + datatype + " items:" + items);
+
     // Check datatype string, example Byte Array, Double Array etc.
     if (datatype.indexOf("Boolean") === 0) {
-        uaArray["uaType"] = node_opcua_1.DataType.Boolean;
+        uaArray["uaType"] = DataType.Boolean;
         uaArray["values"] = new Array(items.length);
     }
     if (datatype.indexOf("UInt8") === 0 || datatype.indexOf("Byte") === 0) {
-        uaArray["uaType"] = node_opcua_1.DataType.Byte;
+        uaArray["uaType"] = DataType.Byte;
         uaArray["values"] = new Uint8Array(items);
     }
     if (datatype.indexOf("UInt16") === 0) {
-        uaArray["uaType"] = node_opcua_1.DataType.UInt16;
+        uaArray["uaType"] = DataType.UInt16;
         uaArray["values"] = new Uint16Array(items);
     }
     if (datatype.indexOf("UInt32") === 0) {
-        uaArray["uaType"] = node_opcua_1.DataType.UInt32;
+        uaArray["uaType"] = DataType.UInt32;
         uaArray["values"] = new Uint32Array(items);
     }
     if (datatype.indexOf("Int8") === 0 || datatype.indexOf("SByte") === 0) {
-        uaArray["uaType"] = node_opcua_1.DataType.SByte;
+        uaArray["uaType"] = DataType.SByte;
         uaArray["values"] = new Int8Array(items);
     }
     if (datatype.indexOf("Int16") === 0) {
-        uaArray["uaType"] = node_opcua_1.DataType.Int16;
+        uaArray["uaType"] = DataType.Int16;
         uaArray["values"] = new Int16Array(items);
     }
     if (datatype.indexOf("Int32") === 0) {
-        uaArray["uaType"] = node_opcua_1.DataType.Int32;
+        uaArray["uaType"] = DataType.Int32;
         uaArray["values"] = new Int32Array(items);
     }
     if (datatype.indexOf("Float") === 0) {
-        uaArray["uaType"] = node_opcua_1.DataType.Float;
+        uaArray["uaType"] = DataType.Float;
         uaArray["values"] = new Float32Array(items);
     }
     if (datatype.indexOf("Double") >= 0) {
-        uaArray["uaType"] = node_opcua_1.DataType.Double;
+        uaArray["uaType"] = DataType.Double;
         uaArray["values"] = new Float64Array(items);
     }
     if (datatype.indexOf("String") >= 0) {
-        uaArray["uaType"] = node_opcua_1.DataType.String;
+        uaArray["uaType"] = DataType.String;
         uaArray["values"] = new Array(items);
         console.log("ITEMS:" + items.toString());
     }
+
     if (uaArray["uaType"] === null) {
         console.warn("Array support for String nor ByteString etc. not implemented, only basic types supported!");
         console.error("Unknown type for Array: " + datatype + " cannot convert items:" + items);
     }
     //eslint-disable-next-line
-    function setValue(item, index, arr) {
+    function setValue(item, index, arr) { // TODO check arr if not needed remove
         // Boolean, Float basic conversions TODO DateTime etc. if needed
-        if (uaArray["uaType"] === node_opcua_1.DataType.Float || uaArray["uaType"] === node_opcua_1.DataType.Double) {
+        if (uaArray["uaType"] === DataType.Float || uaArray["uaType"] === DataType.Double) {
             uaArray["values"][index] = parseFloat(item);
         }
-        else if (uaArray["uaType"] === node_opcua_1.DataType.Boolean) {
-            console.log("Item: " + item + " index: " + index);
+        else if (uaArray["uaType"] === DataType.Boolean) {
+            console.log("Item: " + item + " index: " + index)
             uaArray["values"][index] = false;
             if (item === 1 || item === "1" || item === "true" || item === true) {
                 uaArray["values"][index] = true;
             }
         }
-        else if (uaArray["uaType"] === node_opcua_1.DataType.String) {
+        else if (uaArray["uaType"] === DataType.String) {
             uaArray["values"][index] = item;
         }
         else {
@@ -654,46 +701,53 @@ function getArrayValues(datatype, items) {
         }
     }
     items.forEach(setValue);
+
     return uaArray["values"];
 }
+
 function getArrayType(datatype) {
+    
     console.debug("getArrayType:" + datatype);
+
     // Check datatype string, example Byte Array, Double Array etc.
     if (datatype.indexOf("Boolean") >= 0) {
-        return node_opcua_1.DataType.Boolean;
+        return DataType.Boolean;
     }
     if (datatype.indexOf("UInt8") >= 0 || datatype.indexOf("Byte") >= 0) {
-        return node_opcua_1.DataType.Byte;
+        return DataType.Byte;
     }
     if (datatype.indexOf("UInt16") >= 0) {
-        return node_opcua_1.DataType.UInt16;
+        return DataType.UInt16;
     }
     if (datatype.indexOf("UInt32") >= 0) {
-        return node_opcua_1.DataType.UInt32;
+        return DataType.UInt32;
     }
     if (datatype.indexOf("Int8") >= 0 || datatype.indexOf("SByte") >= 0) {
-        return node_opcua_1.DataType.SByte;
+        return DataType.SByte;
     }
     if (datatype.indexOf("Int16") >= 0) {
-        return node_opcua_1.DataType.Int16;
+        return DataType.Int16;
     }
     if (datatype.indexOf("Int32") >= 0) {
-        return node_opcua_1.DataType.Int32;
+        return DataType.Int32;
     }
     if (datatype.indexOf("Float") >= 0 || datatype.indexOf("Float32") >= 0) {
-        return node_opcua_1.DataType.Float;
+        return DataType.Float;
     }
     if (datatype.indexOf("Double") >= 0 || datatype.indexOf("Float64") >= 0) {
-        return node_opcua_1.DataType.Double;
+        return DataType.Double;
     }
     if (datatype.indexOf("String") >= 0) {
-        return node_opcua_1.DataType.String;
+        return DataType.String;
     }
     console.warn("Array support for String nor ByteString etc. not implemented, only basic types supported!");
     console.error("Unknown type for Array: " + datatype);
+
     return null;
 }
-function build_new_value_by_datatype(datatype, value) {
+
+export function build_new_value_by_datatype(datatype, value) {
+
     let nValue;
     let uaType;
     let float32;
@@ -705,98 +759,98 @@ function build_new_value_by_datatype(datatype, value) {
     let int16;
     let int32;
     let bytes;
+
     switch (datatype) {
         case "Float":
-            uaType = node_opcua_1.DataType.Float;
+            uaType = DataType.Float;
             // nValue = parseFloat(value);
             float32 = new Float32Array([value]);
             nValue = float32[0];
             break;
         case "Double":
-            uaType = node_opcua_1.DataType.Double;
+            uaType = DataType.Double;
             // nValue = parseFloat(value); // (Double) or Float64 ?
             float64 = new Float64Array([value]);
             nValue = float64[0];
             break;
         case "SByte":
-            uaType = node_opcua_1.DataType.SByte;
+            uaType = DataType.SByte;
             int8 = new Int8Array([value]);
             nValue = int8[0];
             break;
         case "Int8":
-            uaType = node_opcua_1.DataType.SByte;
+            uaType = DataType.SByte;
             int8 = new Int8Array([value]);
             nValue = int8[0];
             break;
         case "Int16":
-            uaType = node_opcua_1.DataType.Int16;
+            uaType = DataType.Int16;
             int16 = new Int16Array([value]);
             nValue = int16[0];
             break;
         case "Int32":
-            uaType = node_opcua_1.DataType.Int32;
+            uaType = DataType.Int32;
             int32 = new Int32Array([value]);
             nValue = int32[0];
             break;
         case "Byte":
-            uaType = node_opcua_1.DataType.Byte;
+            uaType = DataType.Byte;
             uint8 = new Uint8Array([value]);
             nValue = uint8[0];
             break;
         case "ByteString":
-            uaType = node_opcua_1.DataType.ByteString;
+            uaType = DataType.ByteString;
             nValue = Buffer.from(value);
             break;
         case "UInt8":
-            uaType = node_opcua_1.DataType.Byte;
+            uaType = DataType.Byte;
             uint8 = new Uint8Array([value]);
             nValue = uint8[0];
             break;
         case "UInt16":
-            uaType = node_opcua_1.DataType.UInt16;
+            uaType = DataType.UInt16;
             uint16 = new Uint16Array([value]);
             nValue = uint16[0];
             break;
         case "UInt32":
-            uaType = node_opcua_1.DataType.UInt32;
+            uaType = DataType.UInt32;
             uint32 = new Uint32Array([value]);
             nValue = uint32[0];
             break;
         case "UInt64":
-            uaType = node_opcua_1.DataType.UInt64;
+            uaType = DataType.UInt64;
             // console.log("BYTES uint64: " + value);
             bytes = value.toString().split(",");
-            nValue = { arrayType: node_opcua_1.VariantArrayType.Scalar, dataType: node_opcua_1.DataType.UInt64, value: [parseInt(bytes[0]), parseInt(bytes[1])] };
+            nValue = { arrayType: VariantArrayType.Scalar, dataType: DataType.UInt64, value: [parseInt(bytes[0]), parseInt(bytes[1])] };
             break;
         case "Int64":
-            uaType = node_opcua_1.DataType.Int64;
+            uaType = DataType.Int64;
             // console.log("BYTES int64: " + value);
             bytes = value.toString().split(",");
-            nValue = { arrayType: node_opcua_1.VariantArrayType.Scalar, dataType: node_opcua_1.DataType.Int64, value: [parseInt(bytes[0]), parseInt(bytes[1])] };
+            nValue = { arrayType: VariantArrayType.Scalar, dataType: DataType.Int64, value: [parseInt(bytes[0]), parseInt(bytes[1])] };
             break;
         case "Boolean":
-            uaType = node_opcua_1.DataType.Boolean;
+            uaType = DataType.Boolean;
             if (value && value !== "false") {
                 nValue = true;
-            }
-            else {
+            } else {
                 nValue = false;
             }
             break;
         case "String":
-            uaType = node_opcua_1.DataType.String;
+            uaType = DataType.String;
             nValue = value.toString();
             break;
         case "LocalizedText":
-            uaType = node_opcua_1.DataType.LocalizedText;
-            nValue = new node_opcua_1.LocalizedText({ locale: "en", text: value });
+            uaType = DataType.LocalizedText;
+            nValue = new LocalizedText({locale: "en", text: value});
             break;
         case "DateTime":
-            uaType = node_opcua_1.DataType.DateTime;
-            nValue = new Date(value); // value.toString();
+            uaType = DataType.DateTime;
+            nValue = new Date(value);  // value.toString();
             break;
         case "ExtensionObject":
-            uaType = node_opcua_1.DataType.ExtensionObject;
+            uaType = DataType.ExtensionObject;
             nValue = JSON.parse(value);
             break;
         default:
@@ -832,140 +886,144 @@ function build_new_value_by_datatype(datatype, value) {
             arrayValues = getArrayValues(datatype, items);
             uaType = getArrayType(datatype);
         }
+
         nValue = {
             dataType: uaType,
             value: arrayValues,
-            arrayType: node_opcua_1.VariantArrayType.Array
+            arrayType: VariantArrayType.Array
         };
     }
+
     return nValue;
 }
-exports.build_new_value_by_datatype = build_new_value_by_datatype;
-function build_new_dataValue(datatype, value) {
+
+export function build_new_dataValue(datatype, value) {
+
     let nValue;
-    nValue["datatype"] = node_opcua_1.DataType.Null;
+    nValue["datatype"] = DataType.Null;
     nValue["value"] = null;
+
     switch (datatype) {
         case "Float":
             nValue = {
-                dataType: node_opcua_1.DataType.Float,
+                dataType: DataType.Float,
                 value: parseFloat(value)
             };
             break;
         case "Double":
             nValue = {
-                dataType: node_opcua_1.DataType.Double,
+                dataType: DataType.Double,
                 value: parseFloat(value)
             };
             break;
         case "Int64":
             // console.log("BYTES INT64: " + JSON.stringify(value));
-            nValue = { arrayType: node_opcua_1.VariantArrayType.Scalar, dataType: node_opcua_1.DataType.Int64, value: value.value };
+            nValue = { arrayType: VariantArrayType.Scalar, dataType: DataType.Int64, value: value.value };
             break;
         case "Int32":
             nValue = {
-                dataType: node_opcua_1.DataType.Int32,
+                dataType: DataType.Int32,
                 value: parseInt(value)
             };
             break;
         case "Int16":
             nValue = {
-                dataType: node_opcua_1.DataType.Int16,
+                dataType: DataType.Int16,
                 value: parseInt(value)
             };
             break;
         case "Int8":
             nValue = {
-                dataType: node_opcua_1.DataType.SByte,
+                dataType: DataType.SByte,
                 value: parseInt(value)
             };
             break;
         case "UInt64":
             // console.log("BYTES UINT64: " + value);
-            nValue = { arrayType: node_opcua_1.VariantArrayType.Scalar, dataType: node_opcua_1.DataType.UInt64, value: value.value };
+            nValue = { arrayType: VariantArrayType.Scalar, dataType: DataType.UInt64, value: value.value };
             break;
         case "UInt32":
             nValue = {
-                dataType: node_opcua_1.DataType.UInt32,
+                dataType: DataType.UInt32,
                 value: parseInt(value)
             };
             break;
         case "UInt16":
             nValue = {
-                dataType: node_opcua_1.DataType.UInt16,
+                dataType: DataType.UInt16,
                 value: parseInt(value)
             };
             break;
         case "UInt8":
             nValue = {
-                dataType: node_opcua_1.DataType.Byte,
+                dataType: DataType.Byte,
                 value: parseInt(value)
             };
             break;
         case "Boolean":
             if (value && value !== "false") {
                 nValue = {
-                    dataType: node_opcua_1.DataType.Boolean,
+                    dataType: DataType.Boolean,
                     value: true
                 };
-            }
-            else {
+            } else {
                 nValue = {
-                    dataType: node_opcua_1.DataType.Boolean,
+                    dataType: DataType.Boolean,
                     value: false
                 };
             }
             break;
         case "String":
             nValue = {
-                dataType: node_opcua_1.DataType.String,
+                dataType: DataType.String,
                 value: value
             };
             break;
         case "LocalizedText":
             nValue = {
-                dataType: node_opcua_1.DataType.LocalizedText,
-                value: new node_opcua_1.LocalizedText({ locale: "en", text: value })
+                dataType: DataType.LocalizedText,
+                value: new LocalizedText({locale: "en", text: value })
             };
             break;
         case "DateTime":
             nValue = {
-                dataType: node_opcua_1.DataType.DateTime,
+                dataType: DataType.DateTime, // was UtcTime
                 value: value // Date.parse(value)
             };
             break;
         case "Byte":
             nValue = {
-                dataType: node_opcua_1.DataType.Byte,
+                dataType: DataType.Byte,
                 value: parseInt(value)
             };
             break;
         case "SByte":
             nValue = {
-                dataType: node_opcua_1.DataType.SByte,
+                dataType: DataType.SByte,
                 value: parseInt(value)
             };
             break;
         default:
             nValue = {
-                dataType: node_opcua_1.DataType.Null,
+                dataType: DataType.Null,
                 value: value
             };
             break;
     }
+
     // Checks if Array and grabs Data Type
     // var m = datatype.match(/\b(\w+) Array\b/);
     const m = datatype.indexOf("Array");
     if (m > 0) {
         const uaType = getArrayType(datatype);
         const arrayValues = getArrayValues(datatype, Object.values(value.value));
+
         nValue = {
-            dataType: uaType,
+            dataType: uaType, // maps SByte and Byte // DataType[m[1]],
             value: arrayValues,
-            arrayType: node_opcua_1.VariantArrayType.Array,
+            arrayType: VariantArrayType.Array,
         };
     }
+
     return nValue;
 }
-exports.build_new_dataValue = build_new_dataValue;
-//# sourceMappingURL=opcua-basics.js.map

@@ -1,5 +1,4 @@
-.DS_Store
-*.iml
+.vscode
 .idea
-node_modules
+node_modules/
 temp

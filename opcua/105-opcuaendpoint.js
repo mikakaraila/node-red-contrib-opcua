@@ -1,3 +1,4 @@
+"use strict";
 /**
 
  Copyright 2015 Valmet Automation Inc.
@@ -15,42 +16,39 @@
  limitations under the License.
 
  **/
-
-module.exports = function (RED) {
-    "use strict";
-
-    function OpcUaEndpointNode(n) {
-
+// OLD: See https://www.technicalfeeder.com/2021/07/how-to-implement-node-red-node-in-typescript/
+// NEW: Start from https://github.com/alexk111/node-red-node-typescript-starter
+/* eslint-disable-next-line */
+const UaEndpoint = (RED) => {
+    function UaEndpointNodeConstructor(n) {
         RED.nodes.createNode(this, n);
-
-		// Used to translate node-opcua old (v0.x.x) secmode strings to new (v2.x.x) secmode strings
-		const security_mode_map_compat = {
-			"NONE": "None",
-			"None": "None",
-			"SIGN": "Sign",
-			"Sign": "Sign",
-			"SIGNANDENCRYPT": "SignAndEncrypt",
-			"SignAndEncrypt": "SignAndEncrypt"
-		};		
-
+        /* eslint-disable-next-line */
+        const node = this;
+        // Used to translate node-opcua old (v0.x.x) secmode strings to new (v2.x.x) secmode strings
+        // Used to translate node-opcua old (v0.x.x) secmode strings to new (v2.x.x) secmode strings
+        const security_mode_map_compat = {
+            "NONE": "None",
+            "None": "None",
+            "SIGN": "Sign",
+            "Sign": "Sign",
+            "SIGNANDENCRYPT": "SignAndEncrypt",
+            "SignAndEncrypt": "SignAndEncrypt"
+        };
         this.endpoint = n.endpoint;
-        this.securityPolicy = n.secpol;
-        this.securityMode = security_mode_map_compat[n.secmode];
+        this.securityPolicy = n.securityPolicy;
+        this.securityMode = security_mode_map_compat[n.securityMode];
         this.login = n.login;
         this.none = n.none;
         this.usercert = n.usercert;
-        this.userCertificate = n.usercertificate;
-        this.userPrivatekey = n.userprivatekey;
-
-        if (this.credentials) {
-			// from node-opcua version 2.0.0 and onwards empty strings are not allowed anymore, so use null instead
-            this.user = this.credentials.user && this.credentials.user.length > 0 ? this.credentials.user : null;
-            this.password = this.credentials.password && this.credentials.password.length > 0 ? this.credentials.password : null;
+        this.usercertificate = n.userCertificate;
+        this.userprivatekey = n.userPrivatekey;
+        if (this.credentials && this.credentials.user) {
+            // from node-opcua version 2.0.0 and onwards empty strings are not allowed anymore, so use null instead
+            this.user = this.credentials.user && this.credentials.user.length > 0 ? this.credentials.user : "";
+            this.password = this.credentials.password && this.credentials.password.length > 0 ? this.credentials.password : "";
         }
     }
-
-    RED.nodes.registerType("OpcUa-Endpoint", OpcUaEndpointNode, {
-
+    RED.nodes.registerType("OpcUa-Endpoint", UaEndpointNodeConstructor, {
         credentials: {
             user: {
                 type: "text"
@@ -60,5 +58,6 @@ module.exports = function (RED) {
             }
         }
     });
-
 };
+module.exports = UaEndpoint;
+//# sourceMappingURL=105-opcuaendpoint.js.map

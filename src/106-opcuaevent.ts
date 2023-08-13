@@ -1,4 +1,3 @@
-"use strict";
 /**
 
  Copyright 2016 Valmet Automation Inc.
@@ -16,30 +15,45 @@
  limitations under the License.
 
  **/
+
+ import {
+    NodeInitializer
+} from "node-red";
+
+import {
+    UaEventNode,
+    UaEventDef
+} from "./106-opcuaeventdef";
+
 /* eslint-disable-next-line */
-const UaEvent = (RED) => {
-    function UaEventNodeConstructor(n) {
+const UaEvent: NodeInitializer = (RED): void => {
+    function UaEventNodeConstructor(
+        this: UaEventNode,
+        n: UaEventDef
+    ): void {
         RED.nodes.createNode(this, n);
+
         this.root = n.root; // OPC UA item nodeID subscription source
         this.customeventtype = n.customeventtype;
         this.eventtype = n.eventtype; // eventType
         this.name = n.name; // Node name
         this.activatecustomevent = n.activatecustomevent;
+
         /* eslint-disable-next-line */
-        const node = this;
+        const node: UaEventNode = this;
         /* eslint-disable-next-line */
-        node.on("input", function (msg) {
+        node.on("input", function (msg: any) {
             msg.topic = node.root; // example: ns=0;i=85;
-            if (node.activatecustomevent) {
+            if (node.activatecustomevent)
+            {
                 msg.eventTypeIds = node.customeventtype; // example: ns=2;i=1234
-            }
-            else {
+            } else {
                 msg.eventTypeIds = node.eventtype; // example: ns=0;i=10751;
             }
             node.send(msg);
         });
     }
+
     RED.nodes.registerType("OpcUa-Event", UaEventNodeConstructor);
 };
-module.exports = UaEvent;
-//# sourceMappingURL=106-opcuaevent.js.map
+export = UaEvent;

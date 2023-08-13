@@ -1,4 +1,3 @@
-"use strict";
 /**
 
  Copyright 2015 Valmet Automation Inc.
@@ -16,58 +15,82 @@
  limitations under the License.
 
  **/
-const opcua_basics_1 = require("./opcua-basics");
-const flatted_1 = require("flatted");
+
+import {
+    NodeInitializer
+} from "node-red";
+
+import {
+    UaItemNode,
+    UaItemDef
+} from "./101-opcuaitemdef";
+
+import {
+    build_new_value_by_datatype
+} from "./opcua-basics";
+import {
+    stringify
+} from "flatted";
+
 /* eslint-disable-next-line */
-const UaItem = (RED) => {
-    function UaItemNodeConstructor(n) {
+const UaItem: NodeInitializer = (RED): void => {
+    function UaItemNodeConstructor(
+        this: UaItemNode,
+        n: UaItemDef
+    ): void {
         RED.nodes.createNode(this, n);
+
         /* eslint-disable-next-line */
-        const node = this;
+        const node: UaItemNode = this;
+
         node.item = n.item; // OPC UA address: ns=2;i=4 OR ns=3;s=MyVariable
         node.datatype = n.datatype; // String;
         node.value = n.value; // 66.6
         node.name = n.name; // browseName shall be put here
+
         function verbose_warn(logMessage) {
             if (RED.settings.verbose) {
                 node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage);
             }
         }
+
         function verbose_log(logMessage) {
             if (RED.settings.verbose) {
                 node.log(logMessage);
             }
         }
-        node.on("input", function (msg) {
+
+        node.on("input", function (msg: any) {
             msg.topic = node.item;
             msg.datatype = node.datatype;
             msg.browseName = node.name;
+
             // Node contains static value, inject with empty string as payload
             if (node.value && msg.payload.length === 0) {
                 verbose_log('First set value by node value:' + node.value);
                 if (node.datatype) {
-                    msg.payload = (0, opcua_basics_1.build_new_value_by_datatype)(node.datatype, node.value);
+                    msg.payload = build_new_value_by_datatype(node.datatype, node.value);
                 }
                 if (msg.datatype) {
-                    msg.payload = (0, opcua_basics_1.build_new_value_by_datatype)(msg.datatype, node.value);
+                    msg.payload = build_new_value_by_datatype(msg.datatype, node.value);
                 }
-                verbose_warn("NODE value, setting value to " + (0, flatted_1.stringify)(msg));
+                verbose_warn("NODE value, setting value to " + stringify(msg));
             }
             // Input msg is dynamic and will overwrite node.value
             if (msg.payload && msg.payload.length > 0) {
                 verbose_warn("Second set value by Input " + msg.payload);
                 if (node.datatype) {
-                    msg.payload = (0, opcua_basics_1.build_new_value_by_datatype)(node.datatype, msg.payload);
+                    msg.payload = build_new_value_by_datatype(node.datatype, msg.payload);
                 }
                 if (msg.datatype) {
-                    msg.payload = (0, opcua_basics_1.build_new_value_by_datatype)(msg.datatype, msg.payload);
+                    msg.payload = build_new_value_by_datatype(msg.datatype, msg.payload);
                 }
-                verbose_warn("Payload value, setting value to " + (0, flatted_1.stringify)(msg));
+                verbose_warn("Payload value, setting value to " + stringify(msg));
             }
             node.send(msg);
         });
     }
+
     RED.nodes.registerType("OpcUa-Item", UaItemNodeConstructor);
 };
-module.exports = UaItem;
-//# sourceMappingURL=101-opcuaitem.js.map
+export = UaItem;

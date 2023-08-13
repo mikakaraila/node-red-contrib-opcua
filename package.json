@@ -1,29 +1,28 @@
 {
   "name": "node-red-contrib-opcua",
-  "version": "0.2.310",
-  "description": "A Node-RED node to communicate via OPC UA based on node-opcua library.",
+  "version": "1.0.0",
+  "description": "A Node-RED node to communicate via OPC UA based on node-opcua library (typescript version.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mikakaraila/node-red-contrib-opcua.git"
+    "url": "git+https://github.com/mikakaraila/node-red-contrib-opcua-ts.git"
   },
   "keywords": [
     "node-red",
     "OPC UA",
     "opc-ua",
-    "unified automation",
     "opc foundation",
-    "node-opcua"
+    "node-opcua",
+    "typescript"
   ],
   "author": {
     "name": "Mika Karaila",
-    "email": "mika.karaila@gmail.com"
+    "email": "mika.karaila@valmet.com"
   },
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/mikakaraila/node-red-contrib-opcua/issues"
+    "url": "https://github.com/mikakaraila/node-red-contrib-opcua-ts/issues"
   },
   "node-red": {
-    "version": ">=1.3",
     "nodes": {
       "OpcUa-Item": "opcua/101-opcuaitem.js",
       "OpcUa-Client": "opcua/102-opcuaclient.js",
@@ -36,30 +35,39 @@
       "OpcUa-Discovery": "opcua/109-opcuadiscovery.js"
     }
   },
-  "engines": {
-    "node": ">=15"
-  },
   "dependencies": {
+    "@types/node-red": "^1.2.0",
     "async": "^3.2.1",
     "chalk": "4.1.2",
     "env-paths": "2.2.1",
+    "es6-map": "^0.1.5",
     "flatted": "^3.2.2",
-    "lodash.clonedeep": "^4.5.0",
     "node-opcua": "^2.108.0",
+    "node-opcua-client": "^2.108.0",
     "node-opcua-client-crawler": "^2.108.0",
-    "node-opcua-file-transfer": "^2.108.0"
+    "node-opcua-extension-object": "^2.108.0",
+    "node-opcua-file-transfer": "^2.108.0",
+    "node-opcua-service-subscription": "^2.108.0",
+    "node-red": "^2.1.4",
+    "treeify": "^1.1.0"
   },
-  "directories": {
-    "example": "examples"
-  },
-  "homepage": "https://github.com/mikakaraila/node-red-contrib-opcua#readme",
+  "homepage": "https://github.com/mikakaraila/node-red-contrib-opcua-ts#readme",
   "scripts": {
-    "test": "karma start opcua.conf.js --log-level debug --single-run"
+    "build": "node .\\node_modules\\typescript\\bin\\tsc --build tsconfig.json",
+    "test": "jest --forceExit --verbose -- --watchAll",
+    "coverage": "jest --forceExit --coverage --verbose",
+    "lint": "eslint .\\src --ext .ts"
   },
   "devDependencies": {
-    "jasmine-core": "^3.8.0",
-    "karma": "^6.3.4",
-    "karma-chrome-launcher": "^3.1.0",
-    "karma-jasmine": "^4.0.1"
+    "@types/fs-extra": "^9.0.13",
+    "@types/node": "^17.0.5",
+    "@typescript-eslint/eslint-plugin": "^5.8.0",
+    "@typescript-eslint/parser": "^5.8.0",
+    "eslint": "^8.5.0",
+    "node-red-node-test-helper": "^0.3.2",
+    "source-map-support": "^0.5.21",
+    "supertest": "^6.1.6",
+    "ts-jest": "^27.1.2",
+    "typescript": "^4.5.4"
   }
 }
