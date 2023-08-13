@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+      "module": "commonjs",
+      "lib": [],
+      "esModuleInterop": true,
+      "target": "es6",
+      "noImplicitAny": false,
+      "moduleResolution": "node",
+      "sourceMap": true,
+      "strict": true,
+      "outDir": "opcua",
+      "baseUrl": ".",
+      "types": [
+          "node"
+      ],
+      "paths": {
+          "*": [
+              "node_modules/*",
+              "src/types/*"
+          ]
+      }
+  },
+  "include": [
+      "src/**/*"
+  ],
+  "exclude": [
+      "src/**/*.test.ts",
+      "node_modules/*"
+  ]
+}
