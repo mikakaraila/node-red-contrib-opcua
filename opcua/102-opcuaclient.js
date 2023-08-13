@@ -72,7 +72,7 @@ module.exports = function (RED) {
     // this.certificate_data = n.certificate_data;
     var node = this;
     var opcuaEndpoint = RED.nodes.getNode(n.endpoint);
-    var userIdentity = {};
+    var userIdentity = { type: opcua.UserTokenType.Anonymous }; // Initialize with Anonymous
     var connectionOption = {};
     var cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
     var currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
@@ -154,9 +154,9 @@ module.exports = function (RED) {
     }
 
     if (opcuaEndpoint.login === true && connectionOption.securityMode != opcua.SecurityPolicy.None) {
-      userIdentity = {"type": opcua.UserTokenType.UserName,
-                      "userName": opcuaEndpoint.credentials.user.toString(),
-                      "password": opcuaEndpoint.credentials.password.toString()
+      userIdentity = { type: opcua.UserTokenType.UserName,
+                       userName: opcuaEndpoint.credentials.user.toString(),
+                       password: opcuaEndpoint.credentials.password.toString()
                      };
       verbose_log(chalk.green("Using UserName & password: ") + chalk.cyan(stringify(userIdentity)));
       // verbose_log(chalk.green("Connection options: ") + chalk.cyan(JSON.stringify(connectionOption))); // .substring(0,75) + "...");
@@ -181,7 +181,7 @@ module.exports = function (RED) {
       // connectionOption.endpointMustExist = false;
     }
     else {
-      userIdentity.type = opcua.UserTokenType.Anonymous;
+      userIdentity = { type: opcua.UserTokenType.Anonymous };
       // console.log("CASE Anonymous UserIdentity: " + JSON.stringify(userIdentity));
       // console.log("         connection options: " + JSON.stringify(connectionOption).substring(0,75) + "...");
     }
@@ -1029,9 +1029,10 @@ module.exports = function (RED) {
         connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode]; // || opcua.MessageSecurityMode.None;
         verbose_log("NEW connectionOption security parameters, policy: " + connectionOption.securityPolicy + " mode: " + connectionOption.securityMode);
         if (opcuaEndpoint.login === true) {
-          userIdentity.userName = opcuaEndpoint.user;
-          userIdentity.password = opcuaEndpoint.password;
-          userIdentity.type = opcua.UserTokenType.UserName;
+          userIdentity = { userName: opcuaEndpoint.user,
+                           password: opcuaEndpoint.password,
+                           type: opcua.UserTokenType.UserName
+          };
           verbose_log("NEW UserIdentity: " + JSON.stringify(userIdentity));
         }
         verbose_log("Using new endpoint:" + stringify(opcuaEndpoint));
@@ -2433,9 +2434,10 @@ module.exports = function (RED) {
         connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode]; // || opcua.MessageSecurityMode.None;
         verbose_log("NEW connectionOption security parameters, policy: " + connectionOption.securityPolicy + " mode: " + connectionOption.securityMode);
         if (opcuaEndpoint.login === true) {
-          userIdentity.userName = opcuaEndpoint.user;
-          userIdentity.password = opcuaEndpoint.password;
-          userIdentity.type = opcua.UserTokenType.UserName;
+          userIdentity = { userName: opcuaEndpoint.user, 
+                           password: opcuaEndpoint.password, 
+                           type: opcua.UserTokenType.UserName
+          };
           verbose_log("NEW UserIdentity: " + JSON.stringify(userIdentity));
         }
         verbose_log("Using new endpoint:" + stringify(opcuaEndpoint));
