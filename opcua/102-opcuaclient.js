@@ -143,7 +143,7 @@ module.exports = function (RED) {
     // verbose_log("EndPoint: " + JSON.stringify(opcuaEndpoint));
 
     // Ensure Anonymous login
-    if (connectionOption.securityMode === opcua.SecurityPolicy.None || opcuaEndpoint.none === true) {
+    if (connectionOption.securityMode === opcua.MessageSecurityMode.None || opcuaEndpoint.none === true) {
       userIdentity = { type: opcua.UserTokenType.Anonymous };
     }
     if (opcuaEndpoint.login === true && opcuaEndpoint.usercert === true) {
@@ -153,7 +153,7 @@ module.exports = function (RED) {
       node.error("Cannot use username & password & user certificate at the same time!");
     }
 
-    if (opcuaEndpoint.login === true && connectionOption.securityMode != opcua.SecurityPolicy.None) {
+    if (opcuaEndpoint.login === true && connectionOption.securityMode != opcua.MessageSecurityMode.None) {
       userIdentity = { type: opcua.UserTokenType.UserName,
                        userName: opcuaEndpoint.credentials.user.toString(),
                        password: opcuaEndpoint.credentials.password.toString()
