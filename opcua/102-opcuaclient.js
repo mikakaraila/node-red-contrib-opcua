@@ -158,7 +158,7 @@ module.exports = function (RED) {
                        userName: opcuaEndpoint.credentials.user.toString(),
                        password: opcuaEndpoint.credentials.password.toString()
                      };
-      verbose_log(chalk.green("Using UserName & password: ") + chalk.cyan(stringify(userIdentity)));
+      verbose_log(chalk.green("Using UserName & password: ") + chalk.cyan(JSON.stringify(userIdentity)));
       // verbose_log(chalk.green("Connection options: ") + chalk.cyan(JSON.stringify(connectionOption))); // .substring(0,75) + "...");
     }
     else if (opcuaEndpoint.usercert === true) {
@@ -463,7 +463,9 @@ module.exports = function (RED) {
       }
       verbose_log(chalk.yellow("Exact endpointUrl: ") + chalk.cyan(opcuaEndpoint.endpoint) + chalk.yellow(" hostname: ") + chalk.cyan(os.hostname()));
       try {
+        console.log(chalk.yellowBright("Certificate manager initialization for node: ") + chalk.cyan(n.name));
         await node.client.clientCertificateManager.initialize();
+        console.log(chalk.green("Certificate manager initialized for node: ") + chalk.cyan(n.name));
       }
       catch (error1) {
         console.log(chalk.red("Certificate manager error: ") + chalk.cyan(error1.message));
@@ -479,7 +481,9 @@ module.exports = function (RED) {
         verbose_log(chalk.green("2) Connecting using endpoint: ") + chalk.cyan(opcuaEndpoint.endpoint) +
         chalk.green(" securityMode: ") + chalk.cyan(connectionOption.securityMode) +
         chalk.green(" securityPolicy: ") + chalk.cyan(connectionOption.securityPolicy));
+        console.log(chalk.yellowBright("Client connecting, node: ") + chalk.cyan(n.name));
         await node.client.connect(opcuaEndpoint.endpoint);
+        console.log(chalk.green("Client connected, node: ") + chalk.cyan(n.name));
       } catch (err) {
         console.log(chalk.red("Client connect error: ") + chalk.cyan(err.message));
         verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt, using securityMode: " + stringify(connectionOption.securityMode));
@@ -521,7 +525,9 @@ module.exports = function (RED) {
           close_opcua_client("connection error: no client", 0);
           return;
         }
+        console.log(chalk.yellowBright("Create session for node: ") + chalk.cyan(n.name));
         session = await node.client.createSession(userIdentity);
+        console.log(chalk.green("Session created for node: ") + chalk.cyan(n.name));
         if (!session) {
           node_error("Create session failed!");
           close_opcua_client("connection error: no session", 0);
@@ -536,6 +542,7 @@ module.exports = function (RED) {
         }
         cmdQueue = [];
       } catch (err) {
+        console.log(chalk.red("Error on create session for node: ") + chalk.cyan(n.name));
         node_error(node.name + " OPC UA connection error: " + err.message);
         verbose_log(err);
         node.session = null;
