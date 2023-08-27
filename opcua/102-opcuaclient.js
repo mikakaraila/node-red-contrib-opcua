@@ -79,7 +79,12 @@ module.exports = function (RED) {
     var multipleItems = []; // Store & read multiple nodeIds
     var writeMultipleItems = []; // Store & write multiple nodeIds & values
 
-    connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
+    // connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
+    console.log(chalk.yellow("Node securityPolicy: ") + chalk.cyan(opcuaEndpoint.securityPolicy));
+    var enumValue = opcua.fromURI(opcua.coerceSecurityPolicy(opcuaEndpoint.securityPolicy)) || opcua.SecurityPolicy.None;
+    connectionOption.securityPolicy = enumValue;
+    console.log(chalk.yellow("Enum securityPolicy: ") + chalk.cyan(connectionOption.securityPolicy));
+
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
     var userCertificate = opcuaEndpoint.userCertificate;
     var userPrivatekey = opcuaEndpoint.userPrivatekey;
@@ -603,11 +608,11 @@ module.exports = function (RED) {
         cmdQueue = [];
         // msg.endpoint can be used to change endpoint
         msg.action = "";
-        var msg = {};
-        msg.error = {};
-        msg.error.message = "reconnect";
-        msg.error.source = this;
-        node.error("reconnect", msg);
+        // var msg = {};
+        // msg.error = {};
+        // msg.error.message = "reconnect";
+        // msg.error.source = this;
+        // node.error("reconnect", msg);
         reconnect(msg);
         return;
       }
