@@ -81,10 +81,10 @@ module.exports = function (RED) {
 
     // connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
     console.log(chalk.yellow("Node securityPolicy: ") + chalk.cyan(opcuaEndpoint.securityPolicy));
-    var enumValue = opcua.fromURI(opcua.coerceSecurityPolicy(opcuaEndpoint.securityPolicy)) || opcua.SecurityPolicy.None;
-    connectionOption.securityPolicy = enumValue;
-    console.log(chalk.yellow("Enum securityPolicy: ") + chalk.cyan(connectionOption.securityPolicy));
-
+    // var enumValue = opcua.fromURI(opcua.coerceSecurityPolicy(opcuaEndpoint.securityPolicy)) || opcua.SecurityPolicy.None;
+    // connectionOption.securityPolicy = enumValue;
+    // console.log(chalk.yellow("Enum securityPolicy: ") + chalk.cyan(connectionOption.securityPolicy));
+    connectionOption.securityPolicy = opcuaEndpoint.securityPolicy
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
     var userCertificate = opcuaEndpoint.userCertificate;
     var userPrivatekey = opcuaEndpoint.userPrivatekey;
@@ -143,7 +143,7 @@ module.exports = function (RED) {
       initialDelay: 5000, // 5s
       maxDelay: 30 * 1000 // 30s
     };
-    connectionOption.keepSessionAlive = true;
+    // connectionOption.keepSessionAlive = true; // Not to be used anymore? NOTE: commented out: issue #599
     // verbose_log("Connection options:" + JSON.stringify(connectionOption));
     // verbose_log("EndPoint: " + JSON.stringify(opcuaEndpoint));
 
@@ -157,8 +157,8 @@ module.exports = function (RED) {
     if (opcuaEndpoint.login === true && opcuaEndpoint.usercert === true) {
       node.error("Cannot use username & password & user certificate at the same time!");
     }
-
-    if (opcuaEndpoint.login === true && connectionOption.securityMode != opcua.MessageSecurityMode.None) {
+    // Username & password with securityMode None is allowed
+    if (opcuaEndpoint.login === true) { // } && connectionOption.securityMode != opcua.MessageSecurityMode.None) {
       userIdentity = { type: opcua.UserTokenType.UserName,
                        userName: opcuaEndpoint.credentials.user.toString(),
                        password: opcuaEndpoint.credentials.password.toString()
@@ -343,7 +343,7 @@ module.exports = function (RED) {
           defaultSecureTokenLifetime: connectionOption.defaultSecureTokenLifetime,
           endpointMustExist: connectionOption.endpointMustExist,
           connectionStrategy: connectionOption.connectionStrategy,
-          keepSessionAlive: true, // TODO later make it possible to disable
+          // keepSessionAlive: true, // TODO later make it possible to disable NOTE: commented out: issue #599
           requestedSessionTimeout: 60000 * 5, // 5min, default 1min
           // transportSettings: transportSettings // Some 
         };
