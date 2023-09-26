@@ -312,8 +312,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.314",
-                buildDate: "2023-09-07T16:21:00"
+                buildNumber: "0.2.315",
+                buildDate: "2023-09-26T21:25:00"
             };
             
             var hostname = os.hostname();
@@ -644,7 +644,7 @@
                         // if( typeof(payload.variableName)==='string')
                         // this must be string - a plain variable name
                         // TODO opaque
-                        verbose_log("findNode(ns="+ns+";s="+payload.variableName);
+                        verbose_log("findNode ns="+ns+";s="+payload.variableName);
                         var vnode = addressSpace.findNode("ns="+ns+";s="+payload.variableName);
                     }
                     if (vnode) {
@@ -680,12 +680,12 @@
                                 {
                                     nodeId: vnode.nodeId,
                                     attributeId: opcua.AttributeIds.Value,
-                                    value: /*new DataValue(*/
+                                    value: new opcua.DataValue(
                                     {
                                         value: newValue,
-                                        statusCode,
-                                        ts
-                                    }
+                                        statusCode: statusCode,
+                                        sourceTimestamp: ts
+                                    })
                                 }
                             ];
                             verbose_log("Write: " + JSON.stringify(nodesToWrite));
