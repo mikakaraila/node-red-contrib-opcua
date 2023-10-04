@@ -63,6 +63,11 @@
         this.maxNodesPerTranslateBrowsePathsToNodeIds = n.maxNodesPerTranslateBrowsePathsToNodeIds;
         this.registerToDiscovery = n.registerToDiscovery;
         this.constructDefaultAddressSpace = n.constructDefaultAddressSpace;
+                       
+        this.maxSessions =  Math.max(1,n.maxSessions); // Always have minimum of 1 session.
+        
+
+
         var maxConnectionsPerEndpoint = 20;
         if (n.maxConnectionsPerEndpoint > 20) {
             maxConnectionsPerEndpoint = n.maxConnectionsPerEndpoint;
@@ -285,7 +290,7 @@
                 serverCapabilities: {
                   maxBrowseContinuationPoints: 10,
                   maxHistoryContinuationPoints: 10,
-                  maxSessions: 20,
+                  maxSessions: node.maxSessions,
                   // maxInactiveLockTime,
                   // Get these from the node parameters
                   operationLimits: {
