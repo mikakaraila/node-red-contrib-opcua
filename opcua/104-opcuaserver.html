@@ -51,7 +51,8 @@ limitations under the License.
             maxNodesPerTranslateBrowsePathsToNodeIds: {value: 0, required: false},
             maxConnectionsPerEndpoint: {value: 20, required: false},
             maxMessageSize: {value: 4096, required: false},
-            maxBufferSize: {value: 4096, required: false}
+            maxBufferSize: {value: 4096, required: false},
+            maxSessions: {value: 20 , required: false}
         },
         inputs:1,
         outputs:1,
@@ -194,6 +195,10 @@ limitations under the License.
         <label for="node-input-maxBufferSize" style="width:72%;"><i class="icon-tasks"></i> maxBufferSize</label>
         <input type="number" id="node-input-maxBufferSize" placeholder="4096" style="max-width:100px">
     </div>
+    <div class="form-row">
+        <label for="node-input-maxSessions" style="width:72%;"><i class="icon-tasks"></i> maxSessions</label>
+        <input type="number" id="node-input-maxSessions" style="max-width:100px">
+    </div>
 </script>
 
 <script type="text/x-red" data-help-name="OpcUa-Server">
@@ -205,6 +210,7 @@ limitations under the License.
     <p>Server active endpoints from security mode and policy:</p>
     <p>Security mode: None Sign SignAndEncrypt<p>
     <p>Security policy: Basic128-Rsa15 | Basic256 | Basic128-Sha256<p>
+    <p>maxSessions: Maximum number of sessions allowed by the server, default 20. Changing might impact performance.<p>    
     <p>
         OPC UA server commands:
         <ul>
