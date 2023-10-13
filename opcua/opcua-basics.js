@@ -677,7 +677,7 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
             nValue = int8[0];
             break;
         case "Int8":
-            uaType = opcua.DataType.Int8;
+            uaType = opcua.DataType.SByte;
             var int8 = new Int8Array([value]);
             nValue = int8[0];
             break;
