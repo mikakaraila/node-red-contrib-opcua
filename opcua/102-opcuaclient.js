@@ -22,6 +22,8 @@ const { parseArgs } = require("util");
 module.exports = function (RED) {
   "use strict";
   var chalk = require("chalk");
+  // const osLocale = require("os-locale");
+  // const getUserLocale = require("get-user-locale");
   var opcua = require('node-opcua');
   const { NodeCrawler  } = require("node-opcua-client-crawler"); // Legacy support
   // var nodeId = require("node-opcua-nodeid");
@@ -253,6 +255,25 @@ module.exports = function (RED) {
             msg.payload[fieldName] = "0x" + variant.value.toString("hex"); // As in UaExpert
             msg.payload["_" + fieldName] = variant; // Keep as ByteString
           } else {
+            // Added handling for LocalizedText to use OS locale / node-red __language__
+            if (fieldName === "Message") {
+              const locale = Intl.DateTimeFormat().resolvedOptions().locale;
+              console.log(chalk.yellow("OS Locale: ") + chalk.cyan(locale));
+              console.log(chalk.yellow("Locale: ") + chalk.cyan(variant.value.locale));
+              console.log(chalk.yellow("Message: ") + chalk.cyan(variant.value.text)); // Change according locale if available
+              if (variant.value.length > 1) {
+                var i = 0;
+                while (i < variant.value.length) {
+                  var localText = variant.value[i];
+                  // Change according locale
+                  if (localText.locale === locale) {
+                    variant.value = localText;
+                    break;
+                  }
+                  i++;
+                }
+              }
+            }
             msg.payload[fieldName] = opcuaBasics.clone_object(variant.value);
           }
           // if available, needed for Acknowledge function in client
@@ -1635,6 +1656,87 @@ module.exports = function (RED) {
           };
         }
         else {
+          console.log("Writing datatype: " + opcuaDataValue.dataType + " value: " + opcuaDataValue.value);
+          // Added overflow/underflow check Int32, Int16, UInt32, UInt16, Byte, SByte
+          if (opcuaDataValue.dataType === opcua.DataType.Int32) {
+            if (opcuaDataValue.value > 2147483647) {
+              // See note below, some servers will NOT accept statusCode write
+              set_node_errorstatus_to("error", "overflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: overflow Writing max Int32");
+              opcuaDataValue.value = 2147483647;
+            }
+            if (opcuaDataValue.value < -2147483648) {
+              set_node_errorstatus_to("error", "underflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: underflow Writing min Int32");
+              opcuaDataValue.value = -2147483648;
+            }
+          }
+          if (opcuaDataValue.dataType === opcua.DataType.Int16) {
+            if (opcuaDataValue.value > 32767) {
+              // See note below, some servers will NOT accept statusCode write
+              set_node_errorstatus_to("error", "overflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: overflow Writing max Int16");
+              opcuaDataValue.value = 32767;
+            }
+            if (opcuaDataValue.value < -32768) {
+              set_node_errorstatus_to("error", "underflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: underflow Writing min Int16");
+              opcuaDataValue.value = -32768;
+            }
+          }
+          if (opcuaDataValue.dataType === opcua.DataType.UInt32) {
+            if (opcuaDataValue.value > 4294967295) {
+              // See note below, some servers will NOT accept statusCode write
+              set_node_errorstatus_to("error", "overflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: overflow Writing max UInt32");
+              opcuaDataValue.value = 4294967295;
+            }
+            if (opcuaDataValue.value < 0) {
+              set_node_errorstatus_to("error", "underflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: underflow Writing min UInt32");
+              opcuaDataValue.value = 0;
+            }
+          }
+          if (opcuaDataValue.dataType === opcua.DataType.UInt16) {
+            if (opcuaDataValue.value > 65535) {
+              // See note below, some servers will NOT accept statusCode write
+              set_node_errorstatus_to("error", "overflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: overflow Writing max UInt16");
+              opcuaDataValue.value = 65535;
+            }
+            if (opcuaDataValue.value < 0) {
+              set_node_errorstatus_to("error", "underflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: underflow Writing min UInt16");
+              opcuaDataValue.value = 0;
+            }
+          }
+          if (opcuaDataValue.dataType === opcua.DataType.Byte) {
+            if (opcuaDataValue.value > 255) {
+              // See note below, some servers will NOT accept statusCode write
+              set_node_errorstatus_to("error", "overflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: overflow Writing max Byte");
+              opcuaDataValue.value = 255;
+            }
+            if (opcuaDataValue.value < 0) {
+              set_node_errorstatus_to("error", "underflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: underflow Writing min Byte");
+              opcuaDataValue.value = 0;
+            }
+          }
+          if (opcuaDataValue.dataType === opcua.DataType.SByte) {
+            if (opcuaDataValue.value > 127) {
+              // See note below, some servers will NOT accept statusCode write
+              set_node_errorstatus_to("error", "overflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: overflow Writing max SByte");
+              opcuaDataValue.value = 127;
+            }
+            if (opcuaDataValue.value < -128) {
+              set_node_errorstatus_to("error", "underflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: underflow Writing min SByte");
+              opcuaDataValue.value = -128;
+            }
+          }
+          
           nodeToWrite = {
             nodeId: nodeid.toString(),
             attributeId: opcua.AttributeIds.Value,
