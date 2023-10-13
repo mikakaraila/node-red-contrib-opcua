@@ -29,7 +29,7 @@
     var opcuaBasics = require('./opcua-basics');
     const {parse, stringify} = require('flatted');
     const { createServerCertificateManager, createUserCertificateManager } = require("./utils");
-    const { ExtensionObject } = require("node-opcua-extension-object");
+   
     function OpcUaServerNode(n) {
 
         RED.nodes.createNode(this, n);
@@ -39,7 +39,6 @@
         this.endpoint = n.endpoint;
         this.users = n.users;
         this.nodesetDir = n.nodesetDir;
-        this.folderName4PKI = n.folderName4PKI; // Storage folder for PKI and certificates
         this.autoAcceptUnknownCertificate = n.autoAcceptUnknownCertificate;
         this.allowAnonymous = n.allowAnonymous;
         this.endpointNone = n.endpointNone;
@@ -254,8 +253,8 @@
             verbose_log("Create Server from XML ...");
             // DO NOT USE "%FQDN%" anymore, hostname is OK
             const applicationUri =  opcua.makeApplicationUrn(os.hostname(), "node-red-contrib-opcua-server");
-            const serverCertificateManager = createServerCertificateManager(node.autoAcceptUnknownCertificate, node.folderName4PKI);
-            const userCertificateManager = createUserCertificateManager(node.autoAcceptUnknownCertificate, node.folderName4PKI);
+            const serverCertificateManager = createServerCertificateManager();
+            const userCertificateManager = createUserCertificateManager();
 
 
             var registerMethod = null;

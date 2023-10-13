@@ -47,8 +47,7 @@ module.exports = function (RED) {
   // var subscription_service = require("node-opcua-service-subscription");
 
   const { createClientCertificateManager } = require("./utils");
-  const { dumpCertificates } = require("./dump_certificates");
-
+ 
   const {parse, stringify} = require('flatted');
 
   function OpcUaClientNode(n) {
@@ -63,7 +62,6 @@ module.exports = function (RED) {
     this.certificate = n.certificate; // n == NONE, l == Local file, e == Endpoint, u == Upload
     this.localfile = n.localfile; // Local certificate file
     this.localkeyfile = n.localkeyfile; // Local private key file
-    this.folderName4PKI = n.folderName4PKI; // Storage folder for PKI and certificates
     this.useTransport = n.useTransport;
     this.maxChunkCount = n.maxChunkCount;
     this.maxMessageSize = n.maxMessageSize
@@ -91,10 +89,7 @@ module.exports = function (RED) {
     var userCertificate = opcuaEndpoint.userCertificate;
     var userPrivatekey = opcuaEndpoint.userPrivatekey;
 
-    if (node.folderName4PKI && node.folderName4PKI.length>0) {
-      verbose_log("Node: " + node.name + " using own PKI folder:" + node.folderName4PKI);
-    }
-    connectionOption.clientCertificateManager = createClientCertificateManager(true, node.folderName4PKI); // AutoAccept certificates, TODO add to client node as parameter if really needed
+    connectionOption.clientCertificateManager = createClientCertificateManager();
 
     if (node.certificate === "l" && node.localfile) {
       verbose_log("Using 'own' local certificate file " + node.localfile);

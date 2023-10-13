@@ -33,7 +33,6 @@ limitations under the License.
             localkeyfile: {value: ""},
             securitymode: {value: "None"},
             securitypolicy: {value: "None"},
-            folderName4PKI: {value: ""},
             useTransport: {value: false, required: false},
             maxChunkCount: {value: 1, required: false},
             maxMessageSize: {value: 8192, required: false}, // should be at least 8192
@@ -150,10 +149,6 @@ limitations under the License.
 	<div class="form-row">
         <label for="node-input-path"><i class="icon-tasks"></i> Local private key file with absolute path</label>
         <input type="text" id="node-input-localkeyfile" placeholder="private_key.pem">
-    </div>
-    <div class="form-row">
-        <label for="node-input-folderName4PKI"><i class="icon-tasks"></i> PKI certificate folder</label>
-        <input type="text" id="node-input-folderName4PKI" placeholder="">
     </div>
     <div class="form-row">
         <label for="node-input-useTransport"><i class="icon-tasks"></i> Use transport settings</label>
