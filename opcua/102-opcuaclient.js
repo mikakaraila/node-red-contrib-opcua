@@ -343,6 +343,7 @@ module.exports = function (RED) {
     };
 
     function create_opcua_client(callback) {
+      verbose_warn("Creating OPCUA CLIENT ")
       node.client = null;
       // verbose_log("Create Client: " + stringify(connectionOption).substring(0,75) + "...");
       try {
