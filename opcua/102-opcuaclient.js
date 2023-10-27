@@ -557,7 +557,7 @@ module.exports = function (RED) {
       // STEP 3
       // verbose_log("Create session...");
       try {
-        verbose_warn(`Create session with userIdentity node.client ${node.client} userIdentity ${userIdentity}`)
+        verbose_warn(`Create session with userIdentity node.client ${node.client ==null} userIdentity ${userIdentity}`)
         verbose_log(chalk.green("3) Create session with userIdentity at: ") + chalk.cyan(JSON.stringify(userIdentity)));
         //  {"clientName": "Node-red OPC UA Client node " + node.name},
         // sessionName = "Node-red OPC UA Client node " + node.name;
@@ -2658,6 +2658,25 @@ module.exports = function (RED) {
       } else {
         node.session = null;
         close_opcua_client("node error", 0);
+      }
+
+
+      verbose_log("Disconnecting...");
+
+      verbose_warn(`node.client == null ?  ${node.client ==null}`)
+      if (node.client) {
+        verbose_warn("Node CLient Error")
+        node.client.removeListener("connection_reestablished", reestablish);
+        verbose_log("Backoff event count:" + node.client.listenerCount("backoff"));
+        node.client.removeListener("backoff", backoff);
+        verbose_log("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
+        node.client.removeListener("start_reconnection", reconnection);
+        node.client.disconnect(function () {
+          verbose_log("Client disconnected!");
+          set_node_status_to("disconnected");
+        });
+        close_opcua_client("node error", 0);
+        node.client = null;
       }
     });
   }
