@@ -348,6 +348,13 @@ module.exports = function (RED) {
       try {
         // Use empty 0.0.0.0 address as "no client" initial value
         if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") == 0) {
+
+          if(node.client){
+            verbose_warn(`close opcua client ${node.client}`);
+            close_opcua_client("connection error: no session", 0);
+          }
+
+
           items = [];
           node.items = items;
           set_node_status_to("no client");
@@ -478,6 +485,10 @@ module.exports = function (RED) {
       }
       
       if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") === 0) {
+        if(node.client){
+          verbose_warn(`close opcua client in connect ${node.client}`);
+          close_opcua_client("connection error: no session", 0);
+        }
         set_node_status_to("no client")
       }
       else {
