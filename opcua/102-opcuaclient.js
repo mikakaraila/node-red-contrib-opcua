@@ -406,7 +406,7 @@ module.exports = function (RED) {
     }
 
     function close_opcua_client(message, error) {
-      verbose_warn(`closing opcua client ${opcua.client} userIdentity ${userIdentity}`)
+      verbose_warn(`closing opcua client ${opcua.client == null} userIdentity ${JSON.stringify(userIdentity)}`)
       if (node.client) {
         node.client.removeListener("connection_reestablished", reestablish);
         node.client.removeListener("backoff", backoff);
@@ -473,7 +473,7 @@ module.exports = function (RED) {
     }
 
     async function connect_opcua_client() {
-      verbose_warn(`connect_opcua_client ${node.client} userIdentity ${userIdentity}`);
+      verbose_warn(`connect_opcua_client ${node.client ==null} userIdentity ${JSON.stringify(userIdentity)}`);
 
       // Refactored from old async Javascript to new Typescript with await
       var session;
@@ -557,7 +557,7 @@ module.exports = function (RED) {
       // STEP 3
       // verbose_log("Create session...");
       try {
-        verbose_warn(`Create session with userIdentity node.client ${node.client ==null} userIdentity ${userIdentity}`)
+        verbose_warn(`Create session with userIdentity node.client ${node.client ==null} userIdentity ${JSON.stringify(userIdentity)}`)
         verbose_log(chalk.green("3) Create session with userIdentity at: ") + chalk.cyan(JSON.stringify(userIdentity)));
         //  {"clientName": "Node-red OPC UA Client node " + node.name},
         // sessionName = "Node-red OPC UA Client node " + node.name;
@@ -571,9 +571,14 @@ module.exports = function (RED) {
         console.log(chalk.green("Session created for node: ") + chalk.cyan(n.name));
         if (!session) {
           node_error("Create session failed!");
+          verbose_warn(`Create session failed!`)
+
           close_opcua_client("connection error: no session", 0);
           return;
         }
+
+
+        
         node.session = session;
 
         // verbose_log("session active");
