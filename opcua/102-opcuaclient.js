@@ -672,7 +672,7 @@ module.exports = function (RED) {
         if (statuses.includes(currentStatus)) {
           cmdQueue.push(msg);
         } else {
-          verbose_warn("can't work without OPC UA Session");
+          verbose_warn(`can't work without OPC UA client ${node.client} client ${node.session}`);
           reset_opcua_client(connect_opcua_client);
         }
         //node.send(msg); // do not send in case of error
@@ -1079,7 +1079,9 @@ module.exports = function (RED) {
 
     function disconnect_action_input(msg) {
       verbose_log("Closing session...");
+      
       if (node.session) {
+        
         node.session.close(function(err) {
           if (err) {
             node_error("Session close error: " + err);
@@ -1092,8 +1094,20 @@ module.exports = function (RED) {
       else {
         verbose_warn("No session to close!");
       }
+
+      opcuaEndpoint = {}; // Clear
+      opcuaEndpoint = msg.OpcUaEndpoint; 
+         // Now reconnect and use msg parameters
+         subscription = null;
+         // monitoredItems = new Map();
+         monitoredItems.clear();
       verbose_log("Disconnecting...");
       if (node.client) {
+        node.client.removeListener("connection_reestablished", reestablish);
+        verbose_log("Backoff event count:" + node.client.listenerCount("backoff"));
+        node.client.removeListener("backoff", backoff);
+        verbose_log("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
+        node.client.removeListener("start_reconnection", reconnection);
         node.client.disconnect(function () {
           verbose_log("Client disconnected!");
           set_node_status_to("disconnected");
