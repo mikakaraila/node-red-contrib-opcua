@@ -505,9 +505,9 @@ module.exports = function (RED) {
         // connectionOption.endpointMustExist = false;
       }
       else {
+        verbose_warn("userIdentity is ANONYMOUS ")
         userIdentity = { type: opcua.UserTokenType.Anonymous };
-        // console.log("CASE Anonymous UserIdentity: " + JSON.stringify(userIdentity));
-        // console.log("         connection options: " + JSON.stringify(connectionOption).substring(0,75) + "...");
+
       }
       // Refactored from old async Javascript to new Typescript with await
       var session;
@@ -522,10 +522,10 @@ module.exports = function (RED) {
       }
       
       if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") === 0) {
-        if(node.client){
-          verbose_warn(`close opcua client in connect ${node.client}`);
-          close_opcua_client("connection error: no session", 0);
-        }
+        // if(node.client){
+        //   verbose_warn(`close opcua client in connect ${node.client}`);
+        //   close_opcua_client("connection error: no session", 0);
+        // }
         set_node_status_to("no client")
       }
       else {
