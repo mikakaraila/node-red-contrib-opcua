@@ -2583,6 +2583,20 @@ module.exports = function (RED) {
       if (!fields.includes("ConditionClassId")) {
 //        fields.splice(fields.indexOf("ConditionId"), 1); // remove field ConditionId ??? Needed for Acknowledge
       }
+      // FIX for issue #623
+      if (msg.hasOwnProperty("customEventFields")) {
+        // verbose_log("msg has customEventFields"); // Not needed
+        if(Array.isArray(msg.customEventFields)) {
+          verbose_log("customEventFields: " + msg.customEventFields);
+          fields = fields.concat(msg.customEventFields);
+        } else {
+            verbose_log("customEventFields is NOT Array!"); // Good to show
+        }
+      } 
+      else { 
+        verbose_log("msg object does not have customEventFields!");
+      }
+      
       msg.eventFilter = opcua.constructEventFilter(fields, opcua.ofType(eventTypeId));
       msg.eventFields = fields;
       verbose_log("EventFields: " + msg.eventFields);
