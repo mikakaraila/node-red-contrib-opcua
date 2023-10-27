@@ -475,6 +475,39 @@ module.exports = function (RED) {
     async function connect_opcua_client() {
       verbose_warn(`connect_opcua_client ${node.client ==null} userIdentity ${JSON.stringify(userIdentity)}`);
 
+
+      if (opcuaEndpoint.login === true) { // } && connectionOption.securityMode != opcua.MessageSecurityMode.None) {
+        userIdentity = { type: opcua.UserTokenType.UserName,
+                         userName: opcuaEndpoint.credentials.user.toString(),
+                         password: opcuaEndpoint.credentials.password.toString()
+                       };
+        verbose_log(chalk.green("Using UserName & password: ") + chalk.cyan(JSON.stringify(userIdentity)));
+        // verbose_log(chalk.green("Connection options: ") + chalk.cyan(JSON.stringify(connectionOption))); // .substring(0,75) + "...");
+      }
+      else if (opcuaEndpoint.usercert === true) {
+        if (!fs.existsSync(userCertificate)) {
+          node.error("User certificate file not found: " + userCertificate);
+        }
+        const certificateData = crypto_utils.readCertificate(userCertificate);
+  
+        if (!fs.existsSync(userPrivatekey)) {
+          node.error("User private key file not found: " + userPrivatekey);
+        }
+        const privateKey = crypto_utils.readPrivateKeyPEM(userPrivatekey);
+        userIdentity = {
+          certificateData,
+          privateKey,
+          type: opcua.UserTokenType.Certificate // User certificate
+        };
+        // console.log("CASE User certificate UserIdentity: " + JSON.stringify(userIdentity));
+        // connectionOption = {};
+        // connectionOption.endpointMustExist = false;
+      }
+      else {
+        userIdentity = { type: opcua.UserTokenType.Anonymous };
+        // console.log("CASE Anonymous UserIdentity: " + JSON.stringify(userIdentity));
+        // console.log("         connection options: " + JSON.stringify(connectionOption).substring(0,75) + "...");
+      }
       // Refactored from old async Javascript to new Typescript with await
       var session;
       // STEP 1
