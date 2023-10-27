@@ -348,9 +348,9 @@ module.exports = function (RED) {
       try {
         // Use empty 0.0.0.0 address as "no client" initial value
         if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") == 0) {
-
+          
+          verbose_warn(`close opcua client ${node.client} userIdentity ${userIdentity}`);
           if(node.client){
-            verbose_warn(`close opcua client ${node.client}`);
             close_opcua_client("connection error: no session", 0);
           }
 
@@ -396,7 +396,7 @@ module.exports = function (RED) {
       }
     }
 
-    function reset_opcua_client(callback) {
+    function   reset_opcua_client(callback) {
       if (node.client) {
         node.client.disconnect(function () {
           verbose_log("Client disconnected!");
@@ -406,6 +406,7 @@ module.exports = function (RED) {
     }
 
     function close_opcua_client(message, error) {
+      verbose_warn(`closing opcua client ${opcua.client} userIdentity ${userIdentity}`)
       if (node.client) {
         node.client.removeListener("connection_reestablished", reestablish);
         node.client.removeListener("backoff", backoff);
@@ -472,6 +473,8 @@ module.exports = function (RED) {
     }
 
     async function connect_opcua_client() {
+      verbose_warn(`connect_opcua_client ${node.client} userIdentity ${userIdentity}`);
+
       // Refactored from old async Javascript to new Typescript with await
       var session;
       // STEP 1
@@ -554,7 +557,8 @@ module.exports = function (RED) {
       // STEP 3
       // verbose_log("Create session...");
       try {
-        verbose_log(chalk.green("3) Create session with userIdentity: ") + chalk.cyan(JSON.stringify(userIdentity)));
+        verbose_warn(`Create session with userIdentity node.client ${node.client} userIdentity ${userIdentity}`)
+        verbose_log(chalk.green("3) Create session with userIdentity at: ") + chalk.cyan(JSON.stringify(userIdentity)));
         //  {"clientName": "Node-red OPC UA Client node " + node.name},
         // sessionName = "Node-red OPC UA Client node " + node.name;
         if (!node.client) {
