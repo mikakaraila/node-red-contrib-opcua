@@ -477,12 +477,26 @@ module.exports = function (RED) {
       verbose_warn(`connect_opcua_client ${node.client ==null} userIdentity ${JSON.stringify(userIdentity)}`);
 
 
-      if (opcuaEndpoint.login === true) { // } && connectionOption.securityMode != opcua.MessageSecurityMode.None) {
-        userIdentity = { type: opcua.UserTokenType.UserName,
-                         userName: opcuaEndpoint.credentials.user.toString(),
-                         password: opcuaEndpoint.credentials.password.toString()
-                       };
+      if (opcuaEndpoint.login === true) { 
         verbose_log(chalk.green("Using UserName & password: ") + chalk.cyan(JSON.stringify(userIdentity)));
+        
+        if(opcuaEndpoint.credentials && opcuaEndpoint['user'] && opcuaEndpoint['password']){
+
+          userIdentity = { type: opcua.UserTokenType.UserName,
+            userName: opcuaEndpoint.credentials.user.toString(),
+            password: opcuaEndpoint.credentials.password.toString()
+          };
+
+        }         else  if(opcuaEndpoint['user'] && opcuaEndpoint['password']) {
+
+        
+        userIdentity = { type: opcua.UserTokenType.UserName,
+                         userName: opcuaEndpoint.user.toString(),
+                         password: opcuaEndpoint.password.toString()
+                       };} else {
+
+                        node_error("Please enter user or password in credentiasl or same level as login")
+                       }
         // verbose_log(chalk.green("Connection options: ") + chalk.cyan(JSON.stringify(connectionOption))); // .substring(0,75) + "...");
       }
       else if (opcuaEndpoint.usercert === true) {
