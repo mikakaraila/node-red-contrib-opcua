@@ -343,11 +343,19 @@ module.exports = function (RED) {
     };
 
     function create_opcua_client(callback) {
+      verbose_warn("Creating OPCUA CLIENT ")
       node.client = null;
       // verbose_log("Create Client: " + stringify(connectionOption).substring(0,75) + "...");
       try {
         // Use empty 0.0.0.0 address as "no client" initial value
         if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") == 0) {
+          
+          verbose_warn(`close opcua client ${node.client} userIdentity ${userIdentity}`);
+          if(node.client){
+            close_opcua_client("connection error: no session", 0);
+          }
+
+
           items = [];
           node.items = items;
           set_node_status_to("no client");
@@ -389,7 +397,7 @@ module.exports = function (RED) {
       }
     }
 
-    function reset_opcua_client(callback) {
+    function   reset_opcua_client(callback) {
       if (node.client) {
         node.client.disconnect(function () {
           verbose_log("Client disconnected!");
@@ -399,6 +407,7 @@ module.exports = function (RED) {
     }
 
     function close_opcua_client(message, error) {
+      verbose_warn(`closing opcua client ${opcua.client == null} userIdentity ${JSON.stringify(userIdentity)}`)
       if (node.client) {
         node.client.removeListener("connection_reestablished", reestablish);
         node.client.removeListener("backoff", backoff);
@@ -465,6 +474,55 @@ module.exports = function (RED) {
     }
 
     async function connect_opcua_client() {
+      verbose_warn(`connect_opcua_client ${node.client ==null} userIdentity ${JSON.stringify(userIdentity)}`);
+
+
+      if (opcuaEndpoint.login === true) { 
+        verbose_log(chalk.green("Using UserName & password: ") + chalk.cyan(JSON.stringify(userIdentity)));
+        
+        if(opcuaEndpoint.credentials && opcuaEndpoint['user'] && opcuaEndpoint['password']){
+
+          userIdentity = { type: opcua.UserTokenType.UserName,
+            userName: opcuaEndpoint.credentials.user.toString(),
+            password: opcuaEndpoint.credentials.password.toString()
+          };
+
+        }         else  if(opcuaEndpoint['user'] && opcuaEndpoint['password']) {
+
+        
+        userIdentity = { type: opcua.UserTokenType.UserName,
+                         userName: opcuaEndpoint.user.toString(),
+                         password: opcuaEndpoint.password.toString()
+                       };} else {
+
+                        node_error("Please enter user or password in credentiasl or same level as login")
+                       }
+        // verbose_log(chalk.green("Connection options: ") + chalk.cyan(JSON.stringify(connectionOption))); // .substring(0,75) + "...");
+      }
+      else if (opcuaEndpoint.usercert === true) {
+        if (!fs.existsSync(userCertificate)) {
+          node.error("User certificate file not found: " + userCertificate);
+        }
+        const certificateData = crypto_utils.readCertificate(userCertificate);
+  
+        if (!fs.existsSync(userPrivatekey)) {
+          node.error("User private key file not found: " + userPrivatekey);
+        }
+        const privateKey = crypto_utils.readPrivateKeyPEM(userPrivatekey);
+        userIdentity = {
+          certificateData,
+          privateKey,
+          type: opcua.UserTokenType.Certificate // User certificate
+        };
+        // console.log("CASE User certificate UserIdentity: " + JSON.stringify(userIdentity));
+        // connectionOption = {};
+        // connectionOption.endpointMustExist = false;
+      }
+      else {
+        verbose_warn("userIdentity is ANONYMOUS ")
+        userIdentity = { type: opcua.UserTokenType.Anonymous };
+
+      }
       // Refactored from old async Javascript to new Typescript with await
       var session;
       // STEP 1
@@ -478,6 +536,10 @@ module.exports = function (RED) {
       }
       
       if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") === 0) {
+        // if(node.client){
+        //   verbose_warn(`close opcua client in connect ${node.client}`);
+        //   close_opcua_client("connection error: no session", 0);
+        // }
         set_node_status_to("no client")
       }
       else {
@@ -543,7 +605,8 @@ module.exports = function (RED) {
       // STEP 3
       // verbose_log("Create session...");
       try {
-        verbose_log(chalk.green("3) Create session with userIdentity: ") + chalk.cyan(JSON.stringify(userIdentity)));
+        verbose_warn(`Create session with userIdentity node.client ${node.client ==null} userIdentity ${JSON.stringify(userIdentity)}`)
+        verbose_log(chalk.green("3) Create session with userIdentity at: ") + chalk.cyan(JSON.stringify(userIdentity)));
         //  {"clientName": "Node-red OPC UA Client node " + node.name},
         // sessionName = "Node-red OPC UA Client node " + node.name;
         if (!node.client) {
@@ -556,9 +619,14 @@ module.exports = function (RED) {
         console.log(chalk.green("Session created for node: ") + chalk.cyan(n.name));
         if (!session) {
           node_error("Create session failed!");
+          verbose_warn(`Create session failed!`)
+
           close_opcua_client("connection error: no session", 0);
           return;
         }
+
+
+        
         node.session = session;
 
         // verbose_log("session active");
@@ -672,7 +740,7 @@ module.exports = function (RED) {
         if (statuses.includes(currentStatus)) {
           cmdQueue.push(msg);
         } else {
-          verbose_warn("can't work without OPC UA Session");
+          verbose_warn(`can't work without OPC UA client ${node.client} client ${node.session}`);
           reset_opcua_client(connect_opcua_client);
         }
         //node.send(msg); // do not send in case of error
@@ -1079,7 +1147,9 @@ module.exports = function (RED) {
 
     function disconnect_action_input(msg) {
       verbose_log("Closing session...");
+      
       if (node.session) {
+        
         node.session.close(function(err) {
           if (err) {
             node_error("Session close error: " + err);
@@ -1092,8 +1162,20 @@ module.exports = function (RED) {
       else {
         verbose_warn("No session to close!");
       }
+
+      opcuaEndpoint = {}; // Clear
+      opcuaEndpoint = msg.OpcUaEndpoint; 
+         // Now reconnect and use msg parameters
+         subscription = null;
+         // monitoredItems = new Map();
+         monitoredItems.clear();
       verbose_log("Disconnecting...");
       if (node.client) {
+        node.client.removeListener("connection_reestablished", reestablish);
+        verbose_log("Backoff event count:" + node.client.listenerCount("backoff"));
+        node.client.removeListener("backoff", backoff);
+        verbose_log("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
+        node.client.removeListener("start_reconnection", reconnection);
         node.client.disconnect(function () {
           verbose_log("Client disconnected!");
           set_node_status_to("disconnected");
@@ -2629,6 +2711,25 @@ module.exports = function (RED) {
       } else {
         node.session = null;
         close_opcua_client("node error", 0);
+      }
+
+
+      verbose_log("Disconnecting...");
+
+      verbose_warn(`node.client == null ?  ${node.client ==null}`)
+      if (node.client) {
+        verbose_warn("Node CLient Error")
+        node.client.removeListener("connection_reestablished", reestablish);
+        verbose_log("Backoff event count:" + node.client.listenerCount("backoff"));
+        node.client.removeListener("backoff", backoff);
+        verbose_log("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
+        node.client.removeListener("start_reconnection", reconnection);
+        node.client.disconnect(function () {
+          verbose_log("Client disconnected!");
+          set_node_status_to("disconnected");
+        });
+        close_opcua_client("node error", 0);
+        node.client = null;
       }
     });
   }
