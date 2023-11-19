@@ -300,7 +300,9 @@ module.exports = function (RED) {
         }
       }
       verbose_log(chalk.yellow("Event message topic: ") +  chalk.cyan(msg.topic));
-      node.send(msg);
+      // node.send(msg);
+      node.send([msg,null]);
+
       _callback();
     }
 
@@ -733,6 +735,7 @@ module.exports = function (RED) {
       if (!node.action) {
         verbose_warn("Can't work without action (read, write, browse ...)");
         //node.send(msg); // do not send in case of error
+
         return;
       }
 
@@ -748,6 +751,8 @@ module.exports = function (RED) {
           reset_opcua_client(connect_opcua_client);
         }
         //node.send(msg); // do not send in case of error
+        node.send([null,{error: "can't work without OPC UA client", endpoint: `${opcuaEndpoint.endpoint}`}]);
+
         return;
       }
 
@@ -756,6 +761,9 @@ module.exports = function (RED) {
         verbose_warn("terminated OPC UA Session");
         reset_opcua_client(connect_opcua_client);
         // node.send(msg); // do not send in case of error
+
+        node.send([null,{error: "terminated OPC UA Session", endpoint: `${opcuaEndpoint.endpoint}`}]);
+
         return;
       }
 
@@ -767,6 +775,9 @@ module.exports = function (RED) {
         if (!msg.topic) {
           verbose_warn("can't work without OPC UA NodeId - msg.topic empty");
           // node.send(msg); // do not send in case of error
+
+          node.send([null,{error: "can't work without OPC UA NodeId", endpoint: `${opcuaEndpoint.endpoint}`}]);
+
           return;
         }
       }
@@ -946,6 +957,8 @@ module.exports = function (RED) {
             msg.payload = ""; 
             node_error(node.name + " failed to read file, nodeId: " + msg.topic + " error: " + err);
             set_node_errorstatus_to("error", "Cannot read file!");
+            node.send([null,{error: node.name + " failed to read file, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint.endpoint}`}]);
+
           }
           /*
           }
@@ -956,11 +969,15 @@ module.exports = function (RED) {
             set_node_errorstatus_to("error", "Cannot read file size");  
           }
           */
-          node.send(msg);
+          // node.send(msg);
+          node.send([msg,null]);
+
         }
         catch(err) {
           node_error(node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err);
           set_node_errorstatus_to("error", err.toString());  
+          node.send([null,{error: node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint.endpoint}`}]);
+
         }
       }
       else {
@@ -1102,13 +1119,19 @@ module.exports = function (RED) {
           } else {
             set_node_status_to("error: " + result.statusCode.description)
             node.error("Execute method result, error:" + result.statusCode.description);
+            node.send([null,{error: "Execute method result, error:" + result.statusCode.description, endpoint: `${opcuaEndpoint.endpoint}`}]);
+
             return result.statusCode;
           }
-          node.send(msg);
+          // node.send(msg);
+          node.send([msg, null]);
+
           return opcua.StatusCodes.Good;
         } catch (err) {
           set_node_status_to("Method execution error: " + err.message)
           node.error("Method execution error: " + err.message);
+          node.send([null,{error: "Method execution error: " + err.message, endpoint: `${opcuaEndpoint.endpoint}`}]);
+
           return opcua.StatusCodes.BadMethodInvalid;
         }
       }
@@ -1287,14 +1310,20 @@ module.exports = function (RED) {
                   if (dataValue.statusCode && dataValue.statusCode.isGoodish() === false) {
                     verbose_warn("StatusCode: " + dataValue.statusCode.toString(16) + " " + dataValue.statusCode.description);
                   }
-                  node.send(msg);
+                  // node.send(msg);
+                  node.send([msg,null]);
+
                 } catch (e) {
                   if (dataValue) {
                     node_error("Bad read: " + (dataValue.statusCode.toString(16)));
                     node_error("Message:" + msg.topic + " dataType:" + msg.datatype);
                     node_error("Data:" + stringify(dataValue));
+                    node.send([null,{error: "Bad read: " + (dataValue.statusCode.toString(16)), endpoint: `${opcuaEndpoint.endpoint}`}]);
+
                   } else {
                     node_error(e.message);
+                     node.send([null,{error: e.message, endpoint: `${opcuaEndpoint.endpoint}`}]);
+
                   }
                 }
 
@@ -1347,7 +1376,9 @@ module.exports = function (RED) {
           verbose_log("NodeId: " + msg.topic + " from: " + new Date(start) + " to: " + new Date(end) + " options: " + JSON.stringify(historyReadDetails));
           var historicalReadResult = await node.session.readHistoryValue({nodeId: msg.topic}, new Date(start), new Date(end), historyReadDetails);
           msg.payload = historicalReadResult;
-          node.send(msg);
+          // node.send(msg);
+          node.send([msg,null]);
+
         }
         if (msg.aggregate && msg.aggregate==="max") {
           var resultMax = await node.session.readAggregateValue(
@@ -1357,7 +1388,9 @@ module.exports = function (RED) {
             opcua.AggregateFunction.Maximum,
             processingInterval);
             msg.payload = resultMax;
-            node.send(msg);
+            // node.send(msg);
+          node.send([msg,null]);
+
             if (resultMax.statusCode === opcua.StatusCodes.Good) {
               verbose_log(chalk.green("History max: ") + chalk.cyan(resultMax.historyData.dataValues[0].value.value));
             }
@@ -1370,7 +1403,9 @@ module.exports = function (RED) {
             opcua.AggregateFunction.Minimum,
             processingInterval);
             msg.payload = resultMin;
-            node.send(msg);
+            // node.send(msg);
+          node.send([msg,null]);
+
             if (resultMin.statusCode === opcua.StatusCodes.Good) {
               verbose_log(chalk.green("History min: ") + chalk.cyan(resultMin.historyData.dataValues[0].value.value));
             }
@@ -1383,7 +1418,9 @@ module.exports = function (RED) {
             opcua.AggregateFunction.Average,
             processingInterval);
             msg.payload = resultAve;
-            node.send(msg);
+            // node.send(msg);
+          node.send([msg,null]);
+
             if (resultAve.statusCode === opcua.StatusCodes.Good) {
               verbose_log(chalk.green("History ave: ") + chalk.cyan(resultAve.historyData.dataValues[0].value.value));
             }
@@ -1396,7 +1433,9 @@ module.exports = function (RED) {
             opcua.AggregateFunction.Interpolative,
             processingInterval);
             msg.payload = resultInter;
-            node.send(msg);
+            // node.send(msg);
+          node.send([msg,null]);
+
             if (resultInter.statusCode === opcua.StatusCodes.Good) {
               verbose_log(chalk.green("History interpolative: ") + chalk.cyan(resultInter.historyData.dataValues[0].value.value));
             }
@@ -1472,7 +1511,9 @@ module.exports = function (RED) {
             set_node_status_to("active multiple reading");
             
             if (msg.payload === "ALL") {
-              node.send({"topic": "ALL", "payload": dataValues, "items": multipleItems});
+              // node.send({"topic": "ALL", "payload": dataValues, "items": multipleItems});
+          node.send([{"topic": "ALL", "payload": dataValues, "items": multipleItems},null]);
+
               return;
             }
             for (var i = 0; i < dataValues.length; i++) {
@@ -1507,19 +1548,27 @@ module.exports = function (RED) {
                     : dataValue.value.value;
 
                   // Use nodeId in topic, arrays are same length
-                  node.send({
+                  // node.send({
+                  //   topic: multipleItems[i],
+                  //   payload: value,
+                  //   statusCode: dataValue.statusCode,
+                  //   serverTimestamp: serverTs,
+                  //   sourceTimestamp: sourceTs
+                  // });
+                  node.send([{
                     topic: multipleItems[i],
                     payload: value,
                     statusCode: dataValue.statusCode,
                     serverTimestamp: serverTs,
                     sourceTimestamp: sourceTs
-                  });
+                  },null]);
                 } catch (e) {
                   if (dataValue) {
                     node_error("Bad read, statusCode: " + (dataValue.statusCode.toString(16)));
                     node_error("Data:" + stringify(dataValue));
                   } else {
                     node_error(e.message);
+                    node.send([null,{error:e.message, endpoint: `${opcuaEndpoint.endpoint}`}]);
                   }
                 }
               }
@@ -1558,7 +1607,9 @@ module.exports = function (RED) {
           if (!err) {
               // console.log("INFO: " + JSON.stringify(result));
               var newMsg = Object.assign(msg, result);
-              node.send(newMsg);
+              // node.send(newMsg);
+              node.send([newMsg,null]);
+
           }
           else {
             set_node_status_to("error");
@@ -1613,7 +1664,9 @@ module.exports = function (RED) {
           newmsg.topic = msg.topic;
           newmsg.payload = JSON.parse(JSON.stringify(ExtensionData)); //  JSON.stringify(ExtensionData); // New value with default values
           verbose_log("Extension Object msg: " + stringify(newmsg))
-          node.send(newmsg);
+          // node.send(newmsg);
+          node.send([newmsg,null]);
+
         }
         catch(err) {
           if (err) {
@@ -1623,6 +1676,9 @@ module.exports = function (RED) {
       } else {
         set_node_status_to("Session invalid");
         node_error("Session is not active!")
+
+        node.send([null,{error:"Session is not active!", endpoint: `${opcuaEndpoint.endpoint}`}]);
+
       }
     }
 
@@ -1846,7 +1902,9 @@ module.exports = function (RED) {
             // No actual error session existing, this case cause connections to server
             // reset_opcua_client(connect_opcua_client);
             msg.payload = err;
-            node.send(msg);
+            // node.send(msg);
+            node.send([msg,null]);
+
           } else {
             set_node_status_to("value written");
             verbose_log("Value written! Result:" + statusCode + " " + statusCode.description);
@@ -1858,7 +1916,9 @@ module.exports = function (RED) {
               set_node_errorstatus_to("error", statusCode.description);
             }
             msg.payload = statusCode;
-            node.send(msg);
+            // node.send(msg);
+            node.send([msg,null]);
+
           }
         });
       } else {
@@ -1931,11 +1991,16 @@ module.exports = function (RED) {
             node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
             // No actual error session created, this case cause connections to server
             // reset_opcua_client(connect_opcua_client);
-            node.send({ payload: err });
+            // node.send({ payload: err });
+
+            node.send([{payload: err},{error:`${err}`, endpoint: `${opcuaEndpoint.endpoint}`}]);
+
           } else {
             set_node_status_to("active writing");
             verbose_log("Values written!");
-            node.send({ payload: statusCode });
+            // node.send({ payload: statusCode });
+            node.send([{payload: statusCode},null]);
+
             return;
           }
         });
@@ -1973,11 +2038,15 @@ module.exports = function (RED) {
               node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
               // No actual error session created, this case cause connections to server
               // reset_opcua_client(connect_opcua_client);
-              node.send({ payload: err });
+              // node.send({ payload: err });
+              node.send([{payload: err},{error:`${err}`, endpoint: `${opcuaEndpoint.endpoint}`}]);
+
             } else {
               set_node_status_to("active writing");
               verbose_log("Values written!");
-              node.send({ payload: statusCode });
+              // node.send({ payload: statusCode });
+              node.send([{payload: statusCode},null]);
+
             }
           });
         }
@@ -1998,7 +2067,9 @@ module.exports = function (RED) {
         verbose_log("Using subscription with publish interval: " + timeMilliseconds);
         subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
         var message = { "topic": "subscriptionId", "payload": subscription.subscriptionId };
-        node.send(message); // Make it possible to store
+        // node.send(message); // Make it possible to store
+        node.send([message,null]);
+
       } else {
         // otherwise check if its terminated start to renew the subscription
         if (subscription.subscriptionId != "terminated") {
@@ -2009,6 +2080,8 @@ module.exports = function (RED) {
           // monitoredItems = new Map();
           monitoredItems.clear();
           set_node_status_to("terminated");
+          
+
           // No actual error session existing, this case cause connections to server
           // reset_opcua_client(connect_opcua_client);
         }
@@ -2109,7 +2182,9 @@ module.exports = function (RED) {
             var msg = {};
             msg.topic = nodeId;
             msg.payload = value; // if users want to get dataValue.value.value example contains function node
-            node.send(msg);
+            // node.send(msg);
+            node.send([msg,null]);
+
           }
         });
         return;
@@ -2210,7 +2285,9 @@ module.exports = function (RED) {
           }
 
           msgToSend.payload = dataValue.value.value;
-          node.send(msgToSend);
+          // node.send(msgToSend);
+          node.send([msgToSend,null]);
+
         });
 
         monitoredItem.on("keepalive", function () {
@@ -2339,7 +2416,9 @@ module.exports = function (RED) {
             msgToSend.sourcePicoseconds = 0;
           }
           msgToSend.payload = dataValue.value.value;
-          node.send(msgToSend);
+          // node.send(msgToSend);
+          node.send([msgToSend,null]);
+
         });
       }
     }
@@ -2479,7 +2558,9 @@ module.exports = function (RED) {
             if (dataType && dataType.length > 0) {
               item.datatype = dataType;
             }
-            node.send(item); // Send immediately as browsed
+            // node.send(item); // Send immediately as browsed
+          node.send([item,null]);
+
           }
           else {
             var item = Object.assign({}, element); // Clone element
@@ -2498,7 +2579,9 @@ module.exports = function (RED) {
                 all.payload = allInOne;
                 all.objects = JSON.stringify(obj); // Added extra result
                 set_node_status_to("browse done");
-                node.send(all);
+                // node.send(all);
+                node.send([all,null]);
+
                 return;
               }
              
