@@ -449,6 +449,8 @@ module.exports = function (RED) {
         text: statusParameter.status,
         endpoint: `${opcuaEndpoint.endpoint}`
       });
+      node.send([null, {error: null , endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }])
+
     }
 
     function set_node_status2_to(statusValue, message) {
@@ -460,8 +462,9 @@ module.exports = function (RED) {
         shape: statusParameter.shape,
         text: statusParameter.status + " " + message,
         endpoint: `${opcuaEndpoint.endpoint}`
-
       });
+
+      node.send([null, {error: null , endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }])
     }
 
     function set_node_errorstatus_to(statusValue, error) {
@@ -477,6 +480,9 @@ module.exports = function (RED) {
         text: statusParameter.status + " " + error,
         endpoint: `${opcuaEndpoint.endpoint}`
       });
+
+      node.send([null, {error: error , endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }])
+
     }
 
     async function connect_opcua_client() {
@@ -735,6 +741,7 @@ module.exports = function (RED) {
       if (!node.action) {
         verbose_warn("Can't work without action (read, write, browse ...)");
         //node.send(msg); // do not send in case of error
+        node.send([null,{error: "Can't work without action (read, write, browse ...)", endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
         return;
       }
@@ -751,7 +758,7 @@ module.exports = function (RED) {
           reset_opcua_client(connect_opcua_client);
         }
         //node.send(msg); // do not send in case of error
-        node.send([null,{error: "can't work without OPC UA client", endpoint: `${opcuaEndpoint.endpoint}`}]);
+        node.send([null,{error: "can't work without OPC UA client", endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
         return;
       }
@@ -762,7 +769,7 @@ module.exports = function (RED) {
         reset_opcua_client(connect_opcua_client);
         // node.send(msg); // do not send in case of error
 
-        node.send([null,{error: "terminated OPC UA Session", endpoint: `${opcuaEndpoint.endpoint}`}]);
+        node.send([null,{error: "terminated OPC UA Session", endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
         return;
       }
@@ -776,7 +783,7 @@ module.exports = function (RED) {
           verbose_warn("can't work without OPC UA NodeId - msg.topic empty");
           // node.send(msg); // do not send in case of error
 
-          node.send([null,{error: "can't work without OPC UA NodeId", endpoint: `${opcuaEndpoint.endpoint}`}]);
+          node.send([null,{error: "can't work without OPC UA NodeId", endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
           return;
         }
@@ -957,7 +964,7 @@ module.exports = function (RED) {
             msg.payload = ""; 
             node_error(node.name + " failed to read file, nodeId: " + msg.topic + " error: " + err);
             set_node_errorstatus_to("error", "Cannot read file!");
-            node.send([null,{error: node.name + " failed to read file, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint.endpoint}`}]);
+            node.send([null,{error: node.name + " failed to read file, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
           }
           /*
@@ -976,7 +983,7 @@ module.exports = function (RED) {
         catch(err) {
           node_error(node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err);
           set_node_errorstatus_to("error", err.toString());  
-          node.send([null,{error: node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint.endpoint}`}]);
+          node.send([null,{error: node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
         }
       }
@@ -1119,7 +1126,7 @@ module.exports = function (RED) {
           } else {
             set_node_status_to("error: " + result.statusCode.description)
             node.error("Execute method result, error:" + result.statusCode.description);
-            node.send([null,{error: "Execute method result, error:" + result.statusCode.description, endpoint: `${opcuaEndpoint.endpoint}`}]);
+            node.send([null,{error: "Execute method result, error:" + result.statusCode.description, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
             return result.statusCode;
           }
@@ -1130,7 +1137,7 @@ module.exports = function (RED) {
         } catch (err) {
           set_node_status_to("Method execution error: " + err.message)
           node.error("Method execution error: " + err.message);
-          node.send([null,{error: "Method execution error: " + err.message, endpoint: `${opcuaEndpoint.endpoint}`}]);
+          node.send([null,{error: "Method execution error: " + err.message, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
           return opcua.StatusCodes.BadMethodInvalid;
         }
@@ -1318,11 +1325,11 @@ module.exports = function (RED) {
                     node_error("Bad read: " + (dataValue.statusCode.toString(16)));
                     node_error("Message:" + msg.topic + " dataType:" + msg.datatype);
                     node_error("Data:" + stringify(dataValue));
-                    node.send([null,{error: "Bad read: " + (dataValue.statusCode.toString(16)), endpoint: `${opcuaEndpoint.endpoint}`}]);
+                    node.send([null,{error: "Bad read: " + (dataValue.statusCode.toString(16)), endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
                   } else {
                     node_error(e.message);
-                     node.send([null,{error: e.message, endpoint: `${opcuaEndpoint.endpoint}`}]);
+                     node.send([null,{error: e.message, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
                   }
                 }
@@ -1568,7 +1575,7 @@ module.exports = function (RED) {
                     node_error("Data:" + stringify(dataValue));
                   } else {
                     node_error(e.message);
-                    node.send([null,{error:e.message, endpoint: `${opcuaEndpoint.endpoint}`}]);
+                    node.send([null,{error:e.message, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
                   }
                 }
               }
@@ -1677,7 +1684,7 @@ module.exports = function (RED) {
         set_node_status_to("Session invalid");
         node_error("Session is not active!")
 
-        node.send([null,{error:"Session is not active!", endpoint: `${opcuaEndpoint.endpoint}`}]);
+        node.send([null,{error:"Session is not active!", endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
       }
     }
@@ -1993,7 +2000,7 @@ module.exports = function (RED) {
             // reset_opcua_client(connect_opcua_client);
             // node.send({ payload: err });
 
-            node.send([{payload: err},{error:`${err}`, endpoint: `${opcuaEndpoint.endpoint}`}]);
+            node.send([{payload: err},{error:`${err}`, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
           } else {
             set_node_status_to("active writing");
@@ -2039,7 +2046,7 @@ module.exports = function (RED) {
               // No actual error session created, this case cause connections to server
               // reset_opcua_client(connect_opcua_client);
               // node.send({ payload: err });
-              node.send([{payload: err},{error:`${err}`, endpoint: `${opcuaEndpoint.endpoint}`}]);
+              node.send([{payload: err},{error:`${err}`, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
             } else {
               set_node_status_to("active writing");
