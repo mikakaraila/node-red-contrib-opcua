@@ -472,12 +472,13 @@ module.exports = function (RED) {
       node.status({
         fill: statusParameter.fill,
         shape: statusParameter.shape,
-        text: statusParameter.status + " " + error
+        text: statusParameter.status + " " + error,
+        endpoint: `${opcuaEndpoint.name}`
       });
     }
 
     async function connect_opcua_client() {
-      verbose_warn(`connect_opcua_client ${node.client ==null} userIdentity ${JSON.stringify(userIdentity)}`);
+      verbose_warn(`connect_opcua_client`);
 
 
       if (opcuaEndpoint.login === true) { 
