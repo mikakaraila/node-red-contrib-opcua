@@ -445,7 +445,7 @@ module.exports = function (RED) {
         fill: statusParameter.fill,
         shape: statusParameter.shape,
         text: statusParameter.status,
-        endpoint: `${opcuaEndpoint.name}`
+        endpoint: `${opcuaEndpoint.endpoint}`
       });
     }
 
@@ -457,7 +457,7 @@ module.exports = function (RED) {
         fill: statusParameter.fill,
         shape: statusParameter.shape,
         text: statusParameter.status + " " + message,
-        endpoint: `${opcuaEndpoint.name}`
+        endpoint: `${opcuaEndpoint.endpoint}`
 
       });
     }
@@ -473,7 +473,7 @@ module.exports = function (RED) {
         fill: statusParameter.fill,
         shape: statusParameter.shape,
         text: statusParameter.status + " " + error,
-        endpoint: `${opcuaEndpoint.name}`
+        endpoint: `${opcuaEndpoint.endpoint}`
       });
     }
 
