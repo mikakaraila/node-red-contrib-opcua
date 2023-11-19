@@ -208,7 +208,7 @@ module.exports = function (RED) {
     function verbose_warn(logMessage) {
       //if (RED.settings.verbose) {
         // console.warn(chalk.yellow((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage));
-        node.warn((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage);
+        node.warn(`${opcuaEndpoint.name}`+ ":" + (node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage);
       //}
     }
 
