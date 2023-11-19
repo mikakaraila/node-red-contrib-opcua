@@ -444,7 +444,8 @@ module.exports = function (RED) {
       node.status({
         fill: statusParameter.fill,
         shape: statusParameter.shape,
-        text: statusParameter.status
+        text: statusParameter.status,
+        endpoint: `${opcuaEndpoint.name}`
       });
     }
 
@@ -455,7 +456,9 @@ module.exports = function (RED) {
       node.status({
         fill: statusParameter.fill,
         shape: statusParameter.shape,
-        text: statusParameter.status + " " + message
+        text: statusParameter.status + " " + message,
+        endpoint: `${opcuaEndpoint.name}`
+
       });
     }
 
