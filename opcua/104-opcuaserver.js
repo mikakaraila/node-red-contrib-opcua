@@ -317,8 +317,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.318",
-                buildDate: "2023-10-27T14:10:00"
+                buildNumber: "0.2.320",
+                buildDate: "2023-12-01T15:11:00"
             };
             
             var hostname = os.hostname();
@@ -679,7 +679,7 @@
                             // Dummy & quick fix for statusCode & timeStamp, look timestamped_get
                             variablesStatus[variableId] = statusCode;
                             variablesTs[variableId] = ts;
-                            console.log("Statuscode & sourceTimestamp, vnode: " + JSON.stringify(vnode));
+                            // console.log("Statuscode & sourceTimestamp, vnode: " + JSON.stringify(vnode));
                             var session = new opcua.PseudoSession(addressSpace);
                             const nodesToWrite = [
                                 {
@@ -693,13 +693,13 @@
                                     })
                                 }
                             ];
-                            verbose_log("Write: " + JSON.stringify(nodesToWrite));
+                            // verbose_log("Write: " + JSON.stringify(nodesToWrite));
                             session.write(nodesToWrite, function (err, statusCodes) {
                                 if (err) {
                                     node.error("Write error: " + err);
                                 }
                                 else {
-                                    verbose_log("Write succeeded, statusCode: " + JSON.stringify(statusCodes));
+                                    // verbose_log("Write succeeded, statusCode: " + JSON.stringify(statusCodes));
                                 }
                             });
                             
@@ -1439,7 +1439,7 @@
                             // Do not use default change event messages
                             try {
                                 alarmState.on("value_changed", function (newDataValue) {
-                                    console.log("NEW ALARM LIMIT VALUE: " + newDataValue.value.value + " message: " + msg.alarmText);
+                                    // console.log("NEW ALARM LIMIT VALUE: " + newDataValue.value.value + " message: " + msg.alarmText);
                                     // This is not working anymore for some reason???
                                     alarm.activeState.setValue(true);
                                     alarm.ackedState.setValue(false);
@@ -1544,7 +1544,7 @@
                         });
                         crawler.read(objectsFolder.nodeId, function (err, obj) {
                             if (!err) {
-                                console.log("Obj: " + obj);
+                                // console.log("Obj: " + obj);
                                 // Nothing to do here
                             }
                             else {
