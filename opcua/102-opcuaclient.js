@@ -82,7 +82,7 @@ module.exports = function (RED) {
     var writeMultipleItems = []; // Store & write multiple nodeIds & values
 
     // connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy] || opcua.SecurityPolicy.None;
-    console.log(chalk.yellow("Node securityPolicy: ") + chalk.cyan(opcuaEndpoint.securityPolicy));
+    // console.log(chalk.yellow("Node securityPolicy: ") + chalk.cyan(opcuaEndpoint.securityPolicy));
     // var enumValue = opcua.fromURI(opcua.coerceSecurityPolicy(opcuaEndpoint.securityPolicy)) || opcua.SecurityPolicy.None;
     // connectionOption.securityPolicy = enumValue;
     // console.log(chalk.yellow("Enum securityPolicy: ") + chalk.cyan(connectionOption.securityPolicy));
@@ -258,9 +258,9 @@ module.exports = function (RED) {
             // Added handling for LocalizedText to use OS locale / node-red __language__
             if (fieldName === "Message") {
               const locale = Intl.DateTimeFormat().resolvedOptions().locale;
-              console.log(chalk.yellow("OS Locale: ") + chalk.cyan(locale));
-              console.log(chalk.yellow("Locale: ") + chalk.cyan(variant.value.locale));
-              console.log(chalk.yellow("Message: ") + chalk.cyan(variant.value.text)); // Change according locale if available
+              // console.log(chalk.yellow("OS Locale: ") + chalk.cyan(locale));
+              // console.log(chalk.yellow("Locale: ") + chalk.cyan(variant.value.locale));
+              // console.log(chalk.yellow("Message: ") + chalk.cyan(variant.value.text)); // Change according locale if available
               if (variant.value.length > 1) {
                 var i = 0;
                 while (i < variant.value.length) {
@@ -563,12 +563,12 @@ module.exports = function (RED) {
       }
       verbose_log(chalk.yellow("Exact endpointUrl: ") + chalk.cyan(opcuaEndpoint.endpoint) + chalk.yellow(" hostname: ") + chalk.cyan(os.hostname()));
       try {
-        console.log(chalk.yellowBright("Certificate manager initialization for node: ") + chalk.cyan(n.name));
+        // console.log(chalk.yellowBright("Certificate manager initialization for node: ") + chalk.cyan(n.name));
         await node.client.clientCertificateManager.initialize();
-        console.log(chalk.green("Certificate manager initialized for node: ") + chalk.cyan(n.name));
+        // console.log(chalk.green("Certificate manager initialized for node: ") + chalk.cyan(n.name));
       }
       catch (error1) {
-        console.log(chalk.red("Certificate manager error: ") + chalk.cyan(error1.message));
+        // console.log(chalk.red("Certificate manager error: ") + chalk.cyan(error1.message));
         set_node_status_to("invalid certificate");
         var msg = {};
         msg.error = {};
@@ -581,11 +581,11 @@ module.exports = function (RED) {
         verbose_log(chalk.green("2) Connecting using endpoint: ") + chalk.cyan(opcuaEndpoint.endpoint) +
         chalk.green(" securityMode: ") + chalk.cyan(connectionOption.securityMode) +
         chalk.green(" securityPolicy: ") + chalk.cyan(connectionOption.securityPolicy));
-        console.log(chalk.yellowBright("Client connecting, node: ") + chalk.cyan(n.name));
+        // console.log(chalk.yellowBright("Client connecting, node: ") + chalk.cyan(n.name));
         await node.client.connect(opcuaEndpoint.endpoint);
-        console.log(chalk.green("Client connected, node: ") + chalk.cyan(n.name));
+        // console.log(chalk.green("Client connected, node: ") + chalk.cyan(n.name));
       } catch (err) {
-        console.log(chalk.red("Client connect error: ") + chalk.cyan(err.message));
+        // console.log(chalk.red("Client connect error: ") + chalk.cyan(err.message));
         verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt, using securityMode: " + stringify(connectionOption.securityMode));
         verbose_warn("        using securityPolicy: " + stringify(connectionOption.securityPolicy));
         verbose_warn("Case B: UserName & password does not match to server (needed by Sign or SignAndEncrypt), check username: " + userIdentity.userName +  " and password: " + userIdentity.password);
@@ -626,9 +626,9 @@ module.exports = function (RED) {
           close_opcua_client("connection error: no client", 0);
           return;
         }
-        console.log(chalk.yellowBright("Create session for node: ") + chalk.cyan(n.name));
+        // console.log(chalk.yellowBright("Create session for node: ") + chalk.cyan(n.name));
         session = await node.client.createSession(userIdentity);
-        console.log(chalk.green("Session created for node: ") + chalk.cyan(n.name));
+        // console.log(chalk.green("Session created for node: ") + chalk.cyan(n.name));
         if (!session) {
           node_error("Create session failed!");
           verbose_warn(`Create session failed!`)
@@ -648,7 +648,7 @@ module.exports = function (RED) {
         }
         cmdQueue = [];
       } catch (err) {
-        console.log(chalk.red("Error on create session for node: ") + chalk.cyan(n.name));
+        // console.log(chalk.red("Error on create session for node: ") + chalk.cyan(n.name));
         node_error(node.name + " OPC UA connection error: " + err.message);
         verbose_log(err);
         node.session = null;
@@ -1805,7 +1805,7 @@ module.exports = function (RED) {
           };
         }
         else {
-          console.log("Writing datatype: " + opcuaDataValue.dataType + " value: " + opcuaDataValue.value);
+          // console.log("Writing datatype: " + opcuaDataValue.dataType + " value: " + opcuaDataValue.value);
           // Added overflow/underflow check Int32, Int16, UInt32, UInt16, Byte, SByte
           if (opcuaDataValue.dataType === opcua.DataType.Int32) {
             if (opcuaDataValue.value > 2147483647) {
