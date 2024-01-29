@@ -63,7 +63,7 @@
         this.registerToDiscovery = n.registerToDiscovery;
         this.constructDefaultAddressSpace = n.constructDefaultAddressSpace;
                        
-        this.maxSessions =  Math.max(1,n.maxSessions); // Always have minimum of 1 session.
+        this.maxSessions =  Math.max(10,n.maxSessions); // Always have minimum of 10 sessions.
         
 
 
@@ -250,13 +250,18 @@
         
         async function initNewServer() {
             initialized = false;
-            verbose_log("Create Server from XML ...");
+            verbose_log("Create Server from XML...");
             // DO NOT USE "%FQDN%" anymore, hostname is OK
             const applicationUri =  opcua.makeApplicationUrn(os.hostname(), "node-red-contrib-opcua-server");
+            verbose_log("ApplicationUrn: " + applicationUri);
+            verbose_log("Server certificate manager");
             const serverCertificateManager = createServerCertificateManager();
+            verbose_log("User Certificate manager");
             const userCertificateManager = createUserCertificateManager();
-
-
+            verbose_log("Initialize certificate managers");
+            await serverCertificateManager.initialize();
+            await userCertificateManager.initialize();
+            verbose_log("Certificate managers initialized");
             var registerMethod = null;
             if (node.registerToDiscovery === true) {
                 registerMethod = opcua.RegisterServerMethod.LDS;
@@ -316,8 +321,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.320",
-                buildDate: "2023-12-01T15:11:00"
+                buildNumber: "0.2.321",
+                buildDate: "2024-01-29T12:50:00"
             };
             
             var hostname = os.hostname();
@@ -1215,7 +1220,8 @@
                     }
                     const newMethod = addressSpace.getOwnNamespace().addMethod(
                         parentNode, {
-                            nodeId: "ns=1;s=" + msg.browseName,
+                            // nodeId: "ns=1;s=" + msg.browseName, // Issue #654
+                            nodeId: msg.topic.substring(0, msg.topic.indexOf(";s=")) + ";s=" + msg.browseName,
                             browseName: msg.browseName,
                             inputArguments: [{
                                 name: msg.inputArguments[0].name,
