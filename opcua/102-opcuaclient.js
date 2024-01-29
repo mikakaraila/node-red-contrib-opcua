@@ -369,7 +369,7 @@ module.exports = function (RED) {
           defaultSecureTokenLifetime: connectionOption.defaultSecureTokenLifetime,
           endpointMustExist: connectionOption.endpointMustExist,
           connectionStrategy: connectionOption.connectionStrategy,
-          // keepSessionAlive: true, // TODO later make it possible to disable NOTE: commented out: issue #599
+          keepSessionAlive: true, // TODO later make it possible to disable NOTE: commented out: issue #599, code back active needed!!
           requestedSessionTimeout: 60000 * 5, // 5min, default 1min
           // transportSettings: transportSettings // Some 
         };
@@ -2627,10 +2627,15 @@ module.exports = function (RED) {
           // reset_opcua_client(connect_opcua_client);
         }
         monitoredItems.set(msg.topic, monitoredItem.monitoredItemId);
-        monitoredItem.on("initialized", function () {
-          opcua.callConditionRefresh(subscription);
-          verbose_log("monitored Event initialized");
-          set_node_status_to("initialized");
+        monitoredItem.on("initialized", async function () {
+          if (node.session && subscription) {
+            await opcua.callConditionRefresh(node.session, subscription.subscriptionId); // FIXED
+            verbose_log("monitored Event initialized");
+            set_node_status_to("initialized");
+          }
+          else {
+            set_node_status_to("No active session / subscription!");
+          }
         });
 
         monitoredItem.on("changed", function (eventFields) {
