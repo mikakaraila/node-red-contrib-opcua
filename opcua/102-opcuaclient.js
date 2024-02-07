@@ -2782,27 +2782,25 @@ module.exports = function (RED) {
       create_opcua_client(connect_opcua_client);
     }
 
-    node.on("close", function () {
+    node.on("close", async (done) => {
       if (subscription && subscription.isActive) {
         subscription.terminate();
         // subscription becomes null by its terminated event
       }
 
       if (node.session) {
-        node.session.close(function (err) {
+        try {
+          await node.session.close();
           verbose_log("Session closed");
           set_node_status_to("session closed");
-          if (err) {
-            node_error(node.name + " " + err);
-          }
-
-          node.session = null;
-          close_opcua_client("closed", 0);
-        });
-      } else {
-        node.session = null;
-        close_opcua_client("closed", 0);
+        } catch (err) {
+          node_error(node.name + " " + err);
+        }
       }
+
+      node.session = null;
+      close_opcua_client("closed", 0);
+      done();
     });
 
     node.on("error", function () {
