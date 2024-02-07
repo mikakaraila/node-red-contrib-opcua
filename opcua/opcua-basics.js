@@ -302,6 +302,7 @@ module.exports.get_node_status = function (statusValue) {
         case "invalid endpoint":
         case "disconnected":
         case "connection error":
+        case "subscription error":
         case "node error":
         case "terminated":
         case "no client":

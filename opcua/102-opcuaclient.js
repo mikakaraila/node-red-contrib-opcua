@@ -692,6 +692,13 @@ module.exports = function (RED) {
         monitoredItems.clear();
       });
 
+      newSubscription.on("error", function (err) {
+        verbose_log("Subscription error on ID: " + newSubscription.subscriptionId + ". " + err);
+        set_node_errorstatus_to("subscription error", err)
+        subscription = null;
+        monitoredItems.clear();
+      })
+
       return newSubscription;
     }
 
