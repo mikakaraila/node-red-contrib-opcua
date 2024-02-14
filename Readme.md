@@ -31,7 +31,7 @@ Usage
 Use OpcUa-Item to define variables.
 Use OpcUa-Client to read / write / subscribe / browse OPC UA server.
 
-See some flows under [Examples](examples).
+See some flows under [https://github.com/mikakaraila/node-red-contrib-opcua/tree/master/examples](examples).
 Updated server sub-flow example OPCUA-TEST-NODES.json look commands: addFolder, addVariable, addMethod, setFolder.
 Added new opcua-rights node to set folder/variable access level and role & permissions.
 
