@@ -369,6 +369,7 @@ module.exports = function (RED) {
           defaultSecureTokenLifetime: connectionOption.defaultSecureTokenLifetime,
           endpointMustExist: connectionOption.endpointMustExist,
           connectionStrategy: connectionOption.connectionStrategy,
+          clientName: node.name, // Fix for #664 sessionName
           keepSessionAlive: true, // TODO later make it possible to disable NOTE: commented out: issue #599, code back active needed!!
           requestedSessionTimeout: 60000 * 5, // 5min, default 1min
           // transportSettings: transportSettings // Some 
@@ -481,9 +482,7 @@ module.exports = function (RED) {
     }
 
     async function connect_opcua_client() {
-      verbose_warn(`connect_opcua_client`);
-
-
+      // verbose_warn(`connect_opcua_client`);
       if (opcuaEndpoint.login === true) { 
         verbose_log(chalk.green("Using UserName & password: ") + chalk.cyan(JSON.stringify(userIdentity)));
         
@@ -528,7 +527,6 @@ module.exports = function (RED) {
       else {
         verbose_warn("userIdentity is ANONYMOUS ")
         userIdentity = { type: opcua.UserTokenType.Anonymous };
-
       }
       // Refactored from old async Javascript to new Typescript with await
       var session;
@@ -571,6 +569,12 @@ module.exports = function (RED) {
         msg.error.source = this;
         node.error("Certificate error", msg);
       }
+      node.debug(chalk.yellow("Trusted folder:      ") + chalk.cyan(node.client.clientCertificateManager.trustedFolder));
+      node.debug(chalk.yellow("Rejected folder:     ") + chalk.cyan(node.client.clientCertificateManager.rejectedFolder));
+      node.debug(chalk.yellow("Crl folder:          ") + chalk.cyan(node.client.clientCertificateManager.crlFolder));
+      node.debug(chalk.yellow("Issuers Cert folder: ") + chalk.cyan(node.client.clientCertificateManager.issuersCertFolder));
+      node.debug(chalk.yellow("Issuers Crl folder:  ") + chalk.cyan(node.client.clientCertificateManager.issuersCrlFolder));
+
       try {
         // verbose_log(chalk.green("Client node parameters: ") + chalk.cyan(JSON.stringify(opcuaEndpoint)));
         verbose_log(chalk.green("2) Connecting using endpoint: ") + chalk.cyan(opcuaEndpoint.endpoint) +
@@ -631,12 +635,7 @@ module.exports = function (RED) {
           close_opcua_client("connection error: no session", 0);
           return;
         }
-
-
-        
         node.session = session;
-
-        // verbose_log("session active");
         set_node_status_to("session active");
         for (var i in cmdQueue) {
           processInputMsg(cmdQueue[i]);
