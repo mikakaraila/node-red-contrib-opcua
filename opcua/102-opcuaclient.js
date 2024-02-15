@@ -64,7 +64,7 @@ module.exports = function (RED) {
     this.localkeyfile = n.localkeyfile; // Local private key file
     this.useTransport = n.useTransport;
     this.maxChunkCount = n.maxChunkCount;
-    this.maxMessageSize = n.maxMessageSize
+    this.maxMessageSize = n.maxMessageSize;
     this.receiveBufferSize = n.receiveBufferSize;
     this.sendBufferSize = n.sendBufferSize;
     // this.upload = n.upload; // Upload
@@ -113,22 +113,22 @@ module.exports = function (RED) {
     connectionOption.endpointMustExist = false;
     connectionOption.defaultSecureTokenLifetime = 40000 * 5;
     // From the node UI, keep min values!
-    /*
     // Needed or not?
-    if (node.maxChunkCount < 1) node.maxChunkCount = 1;
-    if (node.maxMessageSize < 8192) node.maxMessageSize = 8192;
-    if (node.receiveBufferSize < 8 * 1024) node.receiveBufferSize = 8 * 1024;
-    if (node.sendBufferSize < 8 * 1024) node.sendBufferSize = 8 * 1024;
-    */
+    if (!node.maxChunkCount || parseInt(node.maxChunkCount) < 1) node.maxChunkCount = 1;
+    if (!node.maxMessageSize || parseInt(node.maxMessageSize) < 8192) node.maxMessageSize = 8192;
+    if (!node.receiveBufferSize || parseInt(node.receiveBufferSize) < 8 * 1024) node.receiveBufferSize = 8 * 1024;
+    if (!node.sendBufferSize || parseInt(node.sendBufferSize) < 8 * 1024) node.sendBufferSize = 8 * 1024;
+
     var transportSettings = {
-      maxChunkCount: node.maxChunkCount,         // Default 1
-      maxMessageSize: node.maxMessageSize,       // should be at least 8192
-      receiveBufferSize: node.receiveBufferSize, // 8 * 1024,
-      sendBufferSize: node.sendBufferSize        // 8 * 1024
+      maxChunkCount: parseInt(node.maxChunkCount),         // Default 1
+      maxMessageSize: parseInt(node.maxMessageSize),       // should be at least 8192
+      receiveBufferSize: parseInt(node.receiveBufferSize), // 8 * 1024,
+      sendBufferSize: parseInt(node.sendBufferSize)        // 8 * 1024
     };
-    if (node.useTransport) {
-      verbose_log(chalk.yellow("Using, transport settings: ") + chalk.cyan(JSON.stringify(transportSettings)));
-      connectionOption.transportSettings = transportSettings;
+    if (node.useTransport === true) {
+      connectionOption["transportSettings"] = {};
+      connectionOption["transportSettings"] = { ...transportSettings};
+      verbose_log(chalk.red("Using, transport settings: ") + chalk.cyan(JSON.stringify(connectionOption["transportSettings"])));
     }
 
     // connectionOption.transportSettings.maxChunkCount = transportSettings.maxChunkCount;
@@ -203,16 +203,17 @@ module.exports = function (RED) {
     function verbose_warn(logMessage) {
       //if (RED.settings.verbose) {
         // console.warn(chalk.yellow((node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage));
-        node.warn(`${opcuaEndpoint.name}`+ ":" + (node.name) ? node.name + ': ' + logMessage : 'OpcUaClientNode: ' + logMessage);
+        console.warn(chalk.cyan(`${opcuaEndpoint.name}`)+ chalk.yellow(":") + chalk.cyan(node.name) ? chalk.cyan(node.name) + chalk.yellow(': ') + chalk.cyan(logMessage) : chalk.yellow('OpcUaClientNode: ') + chalk.cyan(logMessage));
+        node.warn(logMessage);
       //}
     }
 
     function verbose_log(logMessage) {
-      //if (RED.settings.verbose) {
-        // console.log(chalk.cyan(logMessage));
+      if (RED.settings.verbose) {
+        // console.log(chalk.yellow(logMessage));
         // node.log(logMessage); // settings.js log level info
-        node.debug(logMessage);
-      //}
+        node.debug(chalk.yellow(logMessage));
+      }
     }
 
     async function getBrowseName(_session, nodeId) {
@@ -340,7 +341,7 @@ module.exports = function (RED) {
     };
 
     function create_opcua_client(callback) {
-      verbose_warn("Creating OPCUA CLIENT ")
+      // verbose_warn("Creating OPCUA CLIENT ")
       node.client = null;
       // verbose_log("Create Client: " + stringify(connectionOption).substring(0,75) + "...");
       try {
@@ -375,9 +376,11 @@ module.exports = function (RED) {
           // transportSettings: transportSettings // Some 
         };
         if (node.useTransport === true) {
-          options.transportSettings = transportSettings;
+          options["transportSettings"] = {};
+          options["transportSettings"] = JSON.parse(JSON.stringify(connectionOption.transportSettings));
+          verbose_log(chalk.red("NOTE: Using transport settings: " + chalk.cyan(JSON.stringify(options))));
         }
-        verbose_log(chalk.green("1) CREATE CLIENT: ") + chalk.cyan(stringify(options)));
+        verbose_log(chalk.green("1) CREATE CLIENT: ") + chalk.cyan(JSON.stringify(options)));
         // node.client = opcua.OPCUAClient.create(connectionOption); // Something extra?
         node.client = opcua.OPCUAClient.create(options);
         node.client.on("connection_reestablished", reestablish);
