@@ -285,12 +285,14 @@ module.exports.get_node_status = function (statusValue) {
         case "active writing":
         case "writing":
         case "active subscribing":
+        case "unsubscribing":
         case "active subscribed":
         case "active browsing":
         case "active monitoring":
         case "active alarm":
         case "active event":
         case "session active":
+        case "session closed":
         case "subscribed":
         case "browse done":
         case "changed":
@@ -299,13 +301,20 @@ module.exports.get_node_status = function (statusValue) {
             shapeValue = "dot";
             break;
         case "error":
+        case "call method error":
+        case "execute method error":
+        case "extensionObject error":
+        case "invalid session":
         case "invalid endpoint":
+        case "invalid certificate":
         case "disconnected":
         case "connection error":
         case "subscription error":
         case "node error":
         case "terminated":
         case "no client":
+        case "no items to read":
+        case "no items to write":
             fillValue = "red";
             shapeValue = "ring";
             break;
