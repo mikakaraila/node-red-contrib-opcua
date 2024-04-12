@@ -389,6 +389,7 @@ module.exports = function (RED) {
       }
       catch(err) {
         node_error("Cannot create client, check connection options: " + stringify(options)); // connectionOption
+        set_node_status_to("Cannot create client");
       }
       items = [];
       node.items = items;
@@ -594,7 +595,7 @@ module.exports = function (RED) {
         verbose_warn("Case C: With Sign you cannot use SecurityPolicy None!!");
         verbose_warn("Invalid endpoint parameters: ", err);
         node_error("Wrong endpoint parameters: " + JSON.stringify(opcuaEndpoint)); 
-        set_node_status_to("Invalid endpoint, check that server has security policy: " + stringify(connectionOption.securityPolicy));
+        set_node_status_to("invalid endpoint");
         var msg = {};
         msg.error = {};
         msg.error.message = "Invalid endpoint: " + err;
@@ -696,7 +697,7 @@ module.exports = function (RED) {
 
       newSubscription.on("error", function (err) {
         verbose_log("Subscription error on ID: " + newSubscription.subscriptionId + ". " + err);
-        set_node_errorstatus_to("subscription error", err)
+        set_node_errorstatus_to("subscription error")
         subscription = null;
         monitoredItems.clear();
       })
@@ -1099,7 +1100,7 @@ module.exports = function (RED) {
             outputArguments: msg.outputArguments
           });
         } catch (err) {
-          set_node_status_to("error: " + err.message)
+          set_node_status_to("call method error");
           node.error("Build method request failed, error: " + err.message);
         }
 
@@ -1128,7 +1129,7 @@ module.exports = function (RED) {
               }
             }
           } else {
-            set_node_status_to("error: " + result.statusCode.description)
+            set_node_status_to("execute method error");
             node.error("Execute method result, error:" + result.statusCode.description);
             node.send([null,{error: "Execute method result, error:" + result.statusCode.description, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
@@ -1139,7 +1140,7 @@ module.exports = function (RED) {
 
           return opcua.StatusCodes.Good;
         } catch (err) {
-          set_node_status_to("Method execution error: " + err.message)
+          set_node_status_to("execute method error");
           node.error("Method execution error: " + err.message);
           node.send([null,{error: "Method execution error: " + err.message, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
 
@@ -1342,7 +1343,7 @@ module.exports = function (RED) {
             }
           });
       } else {
-        set_node_status_to("Session invalid");
+        set_node_status_to("invalid session");
         node_error("Session is not active!")
       }
     }
@@ -1506,6 +1507,7 @@ module.exports = function (RED) {
         verbose_log("Reading items: " + stringify(multipleItems));
         if (multipleItems.length === 0) {
           node_error(node.name + " no items to read");
+          set_node_status_to("no items to read");
           return;
         }
         node.session.read(multipleItems, function (err, dataValues, diagnostics) {
@@ -1587,7 +1589,7 @@ module.exports = function (RED) {
           }
         });
       } else {
-        set_node_status_to("Session invalid");
+        set_node_status_to("invalid session");
         node_error("Session is not active!")
       }
     }
@@ -1629,7 +1631,7 @@ module.exports = function (RED) {
         });
       
       } else {
-        set_node_status_to("Session invalid");
+        set_node_status_to("invalid session");
         node_error("Session is not active!")
       }
     }
@@ -1682,10 +1684,11 @@ module.exports = function (RED) {
         catch(err) {
           if (err) {
             node_error("Failed to build ExtensionObject, error: " + err);
+            set_node_status_to("extensionObject error");
           }
         }
       } else {
-        set_node_status_to("Session invalid");
+        set_node_status_to("invalid session");
         node_error("Session is not active!")
 
         node.send([null,{error:"Session is not active!", endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
@@ -1933,7 +1936,7 @@ module.exports = function (RED) {
           }
         });
       } else {
-        set_node_status_to("Session invalid");
+        set_node_status_to("invalid session");
         node_error("Session is not active!")
       }
     }
@@ -1994,6 +1997,7 @@ module.exports = function (RED) {
         verbose_log("Writing items: " + stringify(writeMultipleItems));
         if (writeMultipleItems.length === 0) {
           node_error(node.name + " no items to write");
+          set_node_status_to("no items to write");
           return;
         }
         node.session.write(writeMultipleItems, function (err, statusCode) {
@@ -2021,7 +2025,7 @@ module.exports = function (RED) {
           // Skip, special case
         }
         else {
-          set_node_status_to("Write multiple items session invalid");
+          set_node_status_to("invalid session");
           node_error("Write multiple items session is not active!")
         }
       }
@@ -2062,7 +2066,7 @@ module.exports = function (RED) {
           });
         }
       } else {
-        set_node_status_to("Write multiple as array session is invalid");
+        set_node_status_to("invalid session");
         node_error("Write multiple as array session is not active!")
       }
     }
@@ -2602,7 +2606,7 @@ module.exports = function (RED) {
         });
       } else {
         node_error("Session is not active!");
-        set_node_status_to("Session invalid");
+        set_node_status_to("invalid session");
         reset_opcua_client(connect_opcua_client);
       }
     }
@@ -2643,7 +2647,7 @@ module.exports = function (RED) {
             set_node_status_to("initialized");
           }
           else {
-            set_node_status_to("No active session / subscription!");
+            set_node_status_to("invalid session");
           }
         });
 
