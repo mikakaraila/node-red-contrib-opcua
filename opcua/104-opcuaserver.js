@@ -1048,7 +1048,7 @@
                         }
                         if (datatype == "Boolean") {
                             opcuaDataType = opcua.DataType.Boolean;
-                            variables[variableId] = true; 
+                            variables[variableId] = false; 
                         }
                         if (opcuaDataType === null) {
                             verbose_warn("Cannot addVariable, datatype: " + datatype + " is not valid OPC UA datatype!");
