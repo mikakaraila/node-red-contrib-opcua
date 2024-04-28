@@ -790,6 +790,15 @@
                             description = description.substring(0, description.indexOf(";"));
                         }
                     }
+                    var browseName = "";
+                    var d = msg.topic.indexOf("browseName=");
+                    if (d > 0) {
+                        nodeId = nodeId.substring(0, d - 1); // format is msg.topic="ns=1;s=Main.Test;browseName=Test"
+                        browseName = msg.topic.substring(d + 11);
+                        if (browseName.indexOf(";") >= 0) {
+                            browseName = browseName.substring(0, browseName.indexOf(";"));
+                        }
+                    }                    
                     verbose_log("Adding Folder: ".concat(nodeId)); // Example topic format ns=4;s=FolderName
                     var parentFolder = node.server.engine.addressSpace.rootFolder.objects;
                     if (folder) {
@@ -823,7 +832,7 @@
                             userAccessLevel: userAccessLevel, // TEST more
                             rolePermissions: [].concat(permissions),
                             accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
-                            browseName: nodeId.substring(7)
+                            browseName: browseName || nodeId.substring(7)
                         });
                     }
                     else {
@@ -869,6 +878,7 @@
                     verbose_log("Adding node: ".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
                     var datatype = "";
                     var description = "";
+                    var browseNameTopic = "";
                     var opcuaDataType = null;
                     var e = msg.topic.indexOf("datatype=");
                     if (e<0) {
@@ -885,6 +895,13 @@
                             description = description.substring(0, description.indexOf(";"));
                         }
                     }
+                    var d = msg.topic.indexOf("browseName=");
+                    if (d > 0) {
+                        browseNameTopic = msg.topic.substring(d + 11);
+                        if (browseNameTopic.indexOf(";") >= 0) {
+                            browseNameTopic = browseNameTopic.substring(0, browseNameTopic.indexOf(";"));
+                        }
+                    }                    
                     if (e > 0) {
                         name = msg.topic.substring(0, e - 1);
                         datatype = msg.topic.substring(e + 9);
@@ -1095,7 +1112,7 @@
                             userAccessLevel: userAccessLevel,
                             rolePermissions: [].concat(permissions),
                             accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
-                            browseName: browseName, // or displayName
+                            browseName: browseNameTopic || browseName, // or displayName
                             description: description,
                             dataType: datatype, // opcuaDataType,
                             minimumSamplingInterval: 500,
