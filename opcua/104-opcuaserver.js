@@ -1085,7 +1085,7 @@
                                 nodeId: name,
                                 browseName: browseNameTopic || browseName,
                                 description: description,
-                                displayName: displayName || browseName,
+                                displayName: displayName || browseNameTopic || browseName,
                                 dataType: opcua.coerceNodeId(typeId), // "ExtensionObject", // "StructureDefinition", // typeId,
                                 minimumSamplingInterval: 500,
                                 valueRank,
@@ -1124,7 +1124,7 @@
                             accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
                             browseName: browseNameTopic || browseName, // or displayName
                             description: description,
-                            displayName: displayName || browseName,
+                            displayName: displayName || browseNameTopic || browseName,
                             dataType: datatype, // opcuaDataType,
                             minimumSamplingInterval: 500,
                             valueRank,
