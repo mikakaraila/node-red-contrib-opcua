@@ -1251,7 +1251,7 @@ module.exports = function (RED) {
       }  
     }
 
-    function read_action_input(msg) {
+    async function read_action_input(msg) {
 
       verbose_log("reading");
       var item = "";
@@ -1263,6 +1263,31 @@ module.exports = function (RED) {
           item = msg.topic.substring(0, n - 1);
           msg.topic = item;
           verbose_log(stringify(msg));
+        }
+      }
+      let br="";
+      // browsePath enhancement, item starts with br=/Objects/3:Simulation/3:Counter
+      // console.log("ITEM: " + item + " topic: " + msg.topic);
+      if (item.length > 0 && item.indexOf("br=") === 0) {
+        console.log("Finding nodeId by browsePath: " + item.substring(3));
+        br = item.substring(3);
+      }
+      if (msg.topic.length > 0 && msg.topic.indexOf("br=") === 0) {
+        verbose_loglog("Finding nodeId by browsePath: " + msg.topic.substring(3));
+        br = msg.topic.substring(3);
+      }
+      if (br.length > 0) {
+        // console.log("Using browsePath: " + br);
+        const translate = [opcua.makeBrowsePath("RootFolder", br)];
+        const results = await node.session.translateBrowsePath(translate);
+        // console.log("Results: " + JSON.stringify(results));
+        if (results && results[0].statusCode === opcua.StatusCodes.Good &&
+          results[0].targets && results[0].targets[0].targetId) {
+          msg.topic = results[0].targets[0].targetId; // replace msg.topic with the nodeId that is get by using browsePath
+          verbose_log("Found browsePath => nodeId: " + msg.topic);
+        }
+        else {
+          node_error("Cannot translate browsePathToNodeId: " + br + "/" + translate + " error: " + results);
         }
       }
 
@@ -1279,7 +1304,9 @@ module.exports = function (RED) {
       }
       if (node.session) {
         // With Single Read using now read to get sourceTimeStamp and serverTimeStamp
-        node.session.read({
+        console.log("Reading value by nodeId: " + items[0]);
+        try {
+          node.session.read({
             nodeId: items[0],
             attributeId: 13,
             indexRange: range,
@@ -1334,14 +1361,18 @@ module.exports = function (RED) {
 
                   } else {
                     node_error(e.message);
-                     node.send([null,{error: e.message, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
-
+                    node.send([null,{error: e.message, endpoint: `${opcuaEndpoint.endpoint}`,status: currentStatus}]);
                   }
                 }
 
               }
             }
           });
+        }
+        catch(error) {
+          node_error("Cannot read: " + error);
+          // node.send([null,{error: error.message, topic: `${msg.topic}`, status: currenntStatus}]);
+        }
       } else {
         set_node_status_to("invalid session");
         node_error("Session is not active!")
