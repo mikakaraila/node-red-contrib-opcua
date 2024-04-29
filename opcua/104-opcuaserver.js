@@ -321,8 +321,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.325",
-                buildDate: "2024-04-12T13:10:00"
+                buildNumber: "0.2.326",
+                buildDate: "2024-04-29T07:38:00"
             };
             
             var hostname = os.hostname();
@@ -878,6 +878,7 @@
                     verbose_log("Adding node: ".concat(msg.topic)); // Example topic format ns=4;s=VariableName;datatype=Double
                     var datatype = "";
                     var description = "";
+                    var displayName = "";
                     var browseNameTopic = "";
                     var opcuaDataType = null;
                     var e = msg.topic.indexOf("datatype=");
@@ -901,7 +902,15 @@
                         if (browseNameTopic.indexOf(";") >= 0) {
                             browseNameTopic = browseNameTopic.substring(0, browseNameTopic.indexOf(";"));
                         }
-                    }                    
+                    }
+                    const dn = msg.topic.indexOf("displayName=");
+                    if (dn > 0) {
+                      displayName = msg.topic.substring(dn + 12);
+                      // console.log(displayName);
+                      if (displayName.indexOf(";") >= 0) {
+                        displayName = displayName.substring(0, displayName.indexOf(";"));
+                      }
+                    }
                     if (e > 0) {
                         name = msg.topic.substring(0, e - 1);
                         datatype = msg.topic.substring(e + 9);
@@ -1074,8 +1083,9 @@
                             var extNode = namespace.addVariable({
                                 organizedBy: addressSpace.findNode(parentFolder.nodeId),
                                 nodeId: name,
-                                browseName: browseName,
+                                browseName: browseNameTopic || browseName,
                                 description: description,
+                                displayName: displayName || browseName,
                                 dataType: opcua.coerceNodeId(typeId), // "ExtensionObject", // "StructureDefinition", // typeId,
                                 minimumSamplingInterval: 500,
                                 valueRank,
@@ -1114,6 +1124,7 @@
                             accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
                             browseName: browseNameTopic || browseName, // or displayName
                             description: description,
+                            displayName: displayName || browseName,
                             dataType: datatype, // opcuaDataType,
                             minimumSamplingInterval: 500,
                             valueRank,
