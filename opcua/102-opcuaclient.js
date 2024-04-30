@@ -443,13 +443,17 @@ module.exports = function (RED) {
       verbose_log(chalk.yellow("Client status: ") + chalk.cyan(statusValue));
       var statusParameter = opcuaBasics.get_node_status(statusValue);
       currentStatus = statusValue;
+      var endpoint = "";
+      if (opcuaEndpoint && opcuaEndpoint.endpoint) {
+        endpoint = opcuaEndpoint.endpoint
+      }
       node.status({
         fill: statusParameter.fill,
         shape: statusParameter.shape,
         text: statusParameter.status,
-        endpoint: `${opcuaEndpoint.endpoint}`
+        endpoint: `${endpoint}`
       });
-      node.send([null, {error: null , endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }])
+      node.send([null, {error: null , endpoint: `${endpoint}`, status: currentStatus }])
 
     }
 
@@ -457,20 +461,27 @@ module.exports = function (RED) {
       verbose_log(chalk.yellow("Client status: ") + chalk.cyan(statusValue));
       var statusParameter = opcuaBasics.get_node_status(statusValue);
       currentStatus = statusValue;
+      var endpoint = "";
+      if (opcuaEndpoint && opcuaEndpoint.endpoint) {
+        endpoint = opcuaEndpoint.endpoint
+      }
       node.status({
         fill: statusParameter.fill,
         shape: statusParameter.shape,
         text: statusParameter.status + " " + message,
-        endpoint: `${opcuaEndpoint.endpoint}`
+        endpoint: `${endpoint}`
       });
-
-      node.send([null, {error: null , endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }])
+      node.send([null, {error: null , endpoint: `${endpoint}`, status: currentStatus }])
     }
 
     function set_node_errorstatus_to(statusValue, error) {
       verbose_log("Client status: " + statusValue);
       var statusParameter = opcuaBasics.get_node_status(statusValue);
       currentStatus = statusValue;
+      var endpoint = "";
+      if (opcuaEndpoint && opcuaEndpoint.endpoint) {
+        endpoint = opcuaEndpoint.endpoint
+      }
       if (!error) {
         error = "";
       }
@@ -478,35 +489,30 @@ module.exports = function (RED) {
         fill: statusParameter.fill,
         shape: statusParameter.shape,
         text: statusParameter.status + " " + error,
-        endpoint: `${opcuaEndpoint.endpoint}`
+        endpoint: `${endpoint}`
       });
-
-      node.send([null, {error: error , endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }])
-
+      node.send([null, {error: error , endpoint: `${endpoint}`, status: currentStatus }])
     }
 
     async function connect_opcua_client() {
       // verbose_warn(`connect_opcua_client`);
       if (opcuaEndpoint.login === true) { 
         verbose_log(chalk.green("Using UserName & password: ") + chalk.cyan(JSON.stringify(userIdentity)));
-        
-        if(opcuaEndpoint.credentials && opcuaEndpoint['user'] && opcuaEndpoint['password']){
-
+        if (opcuaEndpoint.credentials && opcuaEndpoint['user'] && opcuaEndpoint['password']){
           userIdentity = { type: opcua.UserTokenType.UserName,
             userName: opcuaEndpoint.credentials.user.toString(),
             password: opcuaEndpoint.credentials.password.toString()
           };
-
-        }         else  if(opcuaEndpoint['user'] && opcuaEndpoint['password']) {
-
-        
-        userIdentity = { type: opcua.UserTokenType.UserName,
-                         userName: opcuaEndpoint.user.toString(),
-                         password: opcuaEndpoint.password.toString()
-                       };} else {
-
-                        node_error("Please enter user or password in credentiasl or same level as login")
-                       }
+        }
+        else if(opcuaEndpoint['user'] && opcuaEndpoint['password']) {
+          userIdentity = { 
+            type: opcua.UserTokenType.UserName,
+            userName: opcuaEndpoint.user.toString(),
+            password: opcuaEndpoint.password.toString()
+          };
+        } else {
+          node_error("Please enter user or password in credentiasl or same level as login")
+        }
         // verbose_log(chalk.green("Connection options: ") + chalk.cyan(JSON.stringify(connectionOption))); // .substring(0,75) + "...");
       }
       else if (opcuaEndpoint.usercert === true) {
@@ -514,7 +520,6 @@ module.exports = function (RED) {
           node.error("User certificate file not found: " + userCertificate);
         }
         const certificateData = crypto_utils.readCertificate(userCertificate);
-  
         if (!fs.existsSync(userPrivatekey)) {
           node.error("User private key file not found: " + userPrivatekey);
         }
