@@ -1506,14 +1506,14 @@ module.exports = function (RED) {
           verbose_log(stringify(msg));
         }
       }
-
-      // Store nodeId to read multipleItems array
+      
+      // Store nodeId and browseName to read multipleItems array
       if (msg.topic !== "readmultiple" && msg.topic !== "clearitems") {
         if (item.length > 0) {
-          multipleItems.push({ nodeId: item, attributeId: AttributeIds.Value, TimestampsToReturn: opcua.TimestampsToReturn.Both });
+          multipleItems.push({ nodeId: item, browseName: msg.browseName, attributeId: AttributeIds.Value, TimestampsToReturn: opcua.TimestampsToReturn.Both });
         } else {
           // msg.topic
-          multipleItems.push({ nodeId: msg.topic, attributeId: AttributeIds.Value, TimestampsToReturn: opcua.TimestampsToReturn.Both }); // support for multiple item reading
+          multipleItems.push({ nodeId: msg.topic, browseName: msg.browseName, attributeId: AttributeIds.Value, TimestampsToReturn: opcua.TimestampsToReturn.Both }); // support for multiple item reading
         }
       }
 
