@@ -547,6 +547,12 @@ function getArrayValues(datatype, items) {
         uaArray.values = new Array(items);
         // console.log("ITEMS:" + items.toString());
     }
+    if (datatype.indexOf("Variant") >= 0) {
+        uaArray.uaType = opcua.DataType.Variant;
+        //uaArray.values = new Array(items);
+        uaArray.values = items;
+        // console.log("ITEMS:" + items.toString());
+    }
     if (datatype.indexOf("ExtensionObject") >= 0) {
         uaArray.uaType = opcua.DataType.ExtensionObject;
         uaArray.values = items;
@@ -572,6 +578,30 @@ function getArrayValues(datatype, items) {
         else if (uaArray.uaType === opcua.DataType.String || uaArray.uaType === opcua.DataType.ExtensionObject) {
             uaArray.values[index] = item;
         }
+	else if (uaArray.uaType === opcua.DataType.Variant) {
+            //console.log("----------------------");
+            //console.log("ITEM:  " + JSON.stringify(item));
+            //console.log("INDEX: " + JSON.stringify(index));
+	    if (item.dataType == "Variant" && item.arrayType == "Array"){
+		var uaVarItems = [];
+		function fillVariatArray (varItem, varIdx, varArr){
+		    uaVarItems[varIdx] = new opcua.Variant(
+                        exports.build_new_dataValue(varItem.dataType, varItem.value)
+		    )
+
+                }
+	        item.value.forEach(fillVariatArray);
+		uaArray.values[index] = new opcua.Variant({
+                    dataType: opcua.DataType.Variant,
+                    arrayType: opcua.VariantArrayType.Array,
+                    value: uaVarItems
+                });
+                //console.log("uaArray: " + JSON.stringify(uaArray.values[index]));
+	    }
+	    else {
+                uaArray.values[index] = item;
+            }
+	}
         else {
             uaArray.values[index] = parseInt(item);
         }
@@ -613,6 +643,9 @@ module.exports.getUaType = function (datatype) {
     if (datatype === "String") {
         return opcua.DataType.String;
     }
+    if (datatype === "Variant") {
+        return opcua.DataType.Variant;
+    }
     console.error("Unknown datatype for UA: " + datatype);
 
     return null;
@@ -652,6 +685,9 @@ function getArrayType(datatype) {
     }
     if (datatype.indexOf("String") >= 0) {
         return opcua.DataType.String;
+    }
+    if (datatype.indexOf("Variant") >= 0) {
+        return opcua.DataType.Variant;
     }
     if (datatype.indexOf("ExtensionObject") >= 0) {
         return opcua.DataType.ExtensionObject;
@@ -784,6 +820,10 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
     }
     // Checks if Array and grabs Data Type
     // var m = datatype.match(/\b(\w+) Array\b/);
+    //console.log("-------------------");
+    //console.log("datatype: " + datatype);
+    //console.log("value: " + value);
+
     var m = datatype.indexOf("Array");
     if (m > 0) {
         var arrayValues = [];
@@ -950,10 +990,14 @@ module.exports.build_new_dataValue = function (datatype, value) {
 
     // Checks if Array and grabs Data Type
     // var m = datatype.match(/\b(\w+) Array\b/);
+    //console.log("-------------------");
+    //console.log("datatype: " + JSON.stringify(datatype));
+    //console.log("value: " + JSON.stringify(value));
     var m = datatype.indexOf("Array");
     if (m > 0) {
         var uaType = getArrayType(datatype);
         var arrayValues;
+        //console.log("ARRAY: " + JSON.stringify({"uaType":uaType,"value":value}));
         if (value && value.value) {
             arrayValues = getArrayValues(datatype, Object.values(value.value));
         }
