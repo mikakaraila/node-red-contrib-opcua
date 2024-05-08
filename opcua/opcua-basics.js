@@ -182,6 +182,7 @@ ALIASES for Basic types:
 <Alias Alias="LocalizedText">i=21</Alias>
 <Alias Alias="StatusCode">i=19</Alias>
 <Alias Alias="Structure">i=22</Alias>
+<Alias Alias="Variant">i=24</Alias>
 <Alias Alias="Number">i=26</Alias>
 <Alias Alias="Integer">i=27</Alias>
 <Alias Alias="UInteger">i=28</Alias>
@@ -219,6 +220,7 @@ module.exports.convertToString = function(inType) {
     if (inType === "ns=0;i=20") return "QualifiedName";
     if (inType === "ns=0;i=21") return "LocalizedText";
     if (inType === "ns=0;i=22") return "Structure";
+    if (inType === "ns=0;i=24") return "Variant";
     if (inType === "ns=0;i=26") return "Number";
     if (inType === "ns=0;i=27") return "Integer";
     if (inType === "ns=0;i=28") return "UInteger";
@@ -547,6 +549,11 @@ function getArrayValues(datatype, items) {
         uaArray.values = new Array(items);
         // console.log("ITEMS:" + items.toString());
     }
+    if (datatype.indexOf("Variant") >= 0) {
+        uaArray.uaType = opcua.DataType.Variant;
+        uaArray.values = new Array(items);
+        // console.log("ITEMS:" + items.toString());
+    }
     if (datatype.indexOf("ExtensionObject") >= 0) {
         uaArray.uaType = opcua.DataType.ExtensionObject;
         uaArray.values = items;
@@ -569,7 +576,7 @@ function getArrayValues(datatype, items) {
                 uaArray.values[index] = true;
             }
         }
-        else if (uaArray.uaType === opcua.DataType.String || uaArray.uaType === opcua.DataType.ExtensionObject) {
+        else if (uaArray.uaType === opcua.DataType.String || uaArray.uaType === opcua.DataType.ExtensionObject || uaArray.uaType === opcua.DataType.Variant) {
             uaArray.values[index] = item;
         }
         else {
@@ -652,6 +659,9 @@ function getArrayType(datatype) {
     }
     if (datatype.indexOf("String") >= 0) {
         return opcua.DataType.String;
+    }
+    if (datatype.indexOf("Variant") >= 0) {
+        return opcua.DataType.Variant;
     }
     if (datatype.indexOf("ExtensionObject") >= 0) {
         return opcua.DataType.ExtensionObject;
@@ -954,6 +964,7 @@ module.exports.build_new_dataValue = function (datatype, value) {
     if (m > 0) {
         var uaType = getArrayType(datatype);
         var arrayValues;
+        //console.log("ARRAY: " + JSON.stringify({"uaType":uaType,"value":value}));
         if (value && value.value) {
             arrayValues = getArrayValues(datatype, Object.values(value.value));
         }
