@@ -182,6 +182,7 @@ ALIASES for Basic types:
 <Alias Alias="LocalizedText">i=21</Alias>
 <Alias Alias="StatusCode">i=19</Alias>
 <Alias Alias="Structure">i=22</Alias>
+<Alias Alias="Variant">i=24</Alias>
 <Alias Alias="Number">i=26</Alias>
 <Alias Alias="Integer">i=27</Alias>
 <Alias Alias="UInteger">i=28</Alias>
@@ -219,6 +220,7 @@ module.exports.convertToString = function(inType) {
     if (inType === "ns=0;i=20") return "QualifiedName";
     if (inType === "ns=0;i=21") return "LocalizedText";
     if (inType === "ns=0;i=22") return "Structure";
+    if (inType === "ns=0;i=24") return "Variant";
     if (inType === "ns=0;i=26") return "Number";
     if (inType === "ns=0;i=27") return "Integer";
     if (inType === "ns=0;i=28") return "UInteger";
