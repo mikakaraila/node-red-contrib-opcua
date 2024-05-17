@@ -1278,7 +1278,7 @@ module.exports = function (RED) {
         br = item.substring(3);
       }
       if (msg.topic.length > 0 && msg.topic.indexOf("br=") === 0) {
-        verbose_loglog("Finding nodeId by browsePath: " + msg.topic.substring(3));
+        verbose_log("Finding nodeId by browsePath: " + msg.topic.substring(3));
         br = msg.topic.substring(3);
       }
       if (br.length > 0) {
