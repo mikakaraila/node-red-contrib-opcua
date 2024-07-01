@@ -1274,7 +1274,7 @@ module.exports = function (RED) {
       // browsePath enhancement, item starts with br=/Objects/3:Simulation/3:Counter
       // console.log("ITEM: " + item + " topic: " + msg.topic);
       if (item.length > 0 && item.indexOf("br=") === 0) {
-        console.log("Finding nodeId by browsePath: " + item.substring(3));
+        verbose_log("Finding nodeId by browsePath: " + item.substring(3));
         br = item.substring(3);
       }
       if (msg.topic.length > 0 && msg.topic.indexOf("br=") === 0) {
@@ -1309,7 +1309,7 @@ module.exports = function (RED) {
       }
       if (node.session) {
         // With Single Read using now read to get sourceTimeStamp and serverTimeStamp
-        console.log("Reading value by nodeId: " + items[0]);
+        verbose_log("Reading value by nodeId: " + items[0]);
         try {
           node.session.read({
             nodeId: items[0],
