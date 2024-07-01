@@ -1895,675 +1895,676 @@ module.exports = function (RED) {
       set_node_status_to("invalid session");
       node_error("Write multiple as array session is not active!")
     }
-  }
 
-  function subscribe_action_input(msg) {
-    verbose_log("subscribing");
-    if (!subscription) {
-      // first build and start subscription and subscribe on its started event by callback
-      let timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
-      if (msg?.interval) {
-        timeMilliseconds = parseInt(msg.interval); // Use this instead of node.time and node.timeUnit
-      }
-      verbose_log("Using subscription with publish interval: " + timeMilliseconds);
-      let subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
-      let message = { "topic": "subscriptionId", "payload": subscription.subscriptionId };
-      // node.send(message); // Make it possible to store
-      node.send([message, null]);
-    } else if (subscription.subscriptionId != "terminated") {
-    // otherwise check if its terminated start to renew the subscription
-      set_node_status_to("active subscribing");
-      subscribe_monitoredItem(subscription, msg);
-    } else {
-      monitoredItems.clear();
-      set_node_status_to("terminated");
-      // No actual error session existing, this case cause connections to server
-    }
-  }
-
-  async function monitor_action_input(msg) {
-    verbose_log("monitoring");
-    if (!subscription) {
-      // first build and start subscription and subscribe on its started event by callback
-      let timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
-      let subscription = make_subscription(monitor_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
-    } else if (subscription.subscriptionId != "terminated") {
-      // otherwise check if its terminated start to renew the subscription
-      set_node_status_to("active monitoring");
-      await monitor_monitoredItem(subscription, msg);
-    } else {
-      subscription = null;
-      monitoredItems.clear();
-      set_node_status_to("terminated");
-      // No actual error session created, this case cause connections to server
-    }
-  }
-
-  function unsubscribe_action_input(msg) {
-    verbose_log("unsubscribing");
-    if (!subscription) {
-      // first build and start subscription and subscribe on its started event by callback
-      verbose_warn("Cannot unscubscribe, no subscription");
-    } else if (subscription.subscriptionId != "terminated") {
-    // otherwise check if its terminated start to renew the subscription
-      set_node_status_to("unsubscribing");
-      unsubscribe_monitoredItem(subscription, msg); // Call to terminate monitoredItem
-    } else {
-      subscription = null;
-      monitoredItems.clear();
-      set_node_status_to("terminated");
-      // No actual error session exists, this case cause connections to server
-    }
-  }
-
-  function convertAndCheckInterval(interval) {
-    let n = Number(interval);
-    if (isNaN(n)) {
-      n = 100;
-    }
-    return n;
-  }
-
-  async function subscribe_monitoredItem(subscription, msg) {
-    verbose_log("Session subscriptionId: " + subscription.subscriptionId);
-
-    // Simplified 
-    if (msg.topic === "multiple") {
-      verbose_log("Create monitored itemGroup for " + JSON.stringify(msg.payload));
-      let interval = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
-      if (msg?.interval) {
-        interval = parseInt(msg.interval);
-      }
-      const monitorItems = [];
-      for (const element of msg.payload) {
-        monitorItems.push({ attributeId: AttributeIds.Value, nodeId: element.nodeId });
-      }
-      verbose_log("Using samplingInterval:" + interval);
-      const monitoringParameters = {
-        // clientHandle?: UInt32;
-        samplingInterval: interval, // read from msg.interval
-        // filter?: (ExtensionObject | null);
-        queueSize: 1,
-        discardOldest: true
-      };
-      verbose_log("MONITOR ITEMS: " + JSON.stringify(monitorItems));
-      const group = await subscription.monitorItems(monitorItems, monitoringParameters, TimestampsToReturn.Both);
-      group.on("initialized", async () => {
-        verbose_log(chalk.green("Initialized monitoredItemsGroup !"));
-      });
-      group.on("changed", (_monitoredItem, dataValue, index) => {
-        verbose_log("Group change on item, index: " + index + " item: " + monitorItems[index].nodeId + " value: " + dataValue.value.value);
-
-        const nodeId = monitorItems[index].nodeId.toString();
-
-        let value = dataValue.value.dataType === opcua.DataType.ExtensionObject
-          ? JSON.parse(JSON.stringify(dataValue))
-          : dataValue;
-
-        if (nodeId) {
-          let msg = {};
-          msg.topic = nodeId;
-          msg.payload = value; // if users want to get dataValue.value.value example contains function node
-          node.send([msg, null]);
-
+    function subscribe_action_input(msg) {
+      verbose_log("subscribing");
+      if (!subscription) {
+        // first build and start subscription and subscribe on its started event by callback
+        let timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
+        if (msg?.interval) {
+          timeMilliseconds = parseInt(msg.interval); // Use this instead of node.time and node.timeUnit
         }
-      });
-      return;
+        verbose_log("Using subscription with publish interval: " + timeMilliseconds);
+        let subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
+        let message = { "topic": "subscriptionId", "payload": subscription.subscriptionId };
+        // node.send(message); // Make it possible to store
+        node.send([message, null]);
+      } else if (subscription.subscriptionId != "terminated") {
+        // otherwise check if its terminated start to renew the subscription
+        set_node_status_to("active subscribing");
+        subscribe_monitoredItem(subscription, msg);
+      } else {
+        monitoredItems.clear();
+        set_node_status_to("terminated");
+        // No actual error session existing, this case cause connections to server
+      }
     }
 
-    let nodeStr = msg.topic;
-    if (msg?.topic) {
-      if (nodeStr && nodeStr.length > 1) {
+    async function monitor_action_input(msg) {
+      verbose_log("monitoring");
+      if (!subscription) {
+        // first build and start subscription and subscribe on its started event by callback
+        let timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
+        let subscription = make_subscription(monitor_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
+      } else if (subscription.subscriptionId != "terminated") {
+        // otherwise check if its terminated start to renew the subscription
+        set_node_status_to("active monitoring");
+        await monitor_monitoredItem(subscription, msg);
+      } else {
+        subscription = null;
+        monitoredItems.clear();
+        set_node_status_to("terminated");
+        // No actual error session created, this case cause connections to server
+      }
+    }
+
+    function unsubscribe_action_input(msg) {
+      verbose_log("unsubscribing");
+      if (!subscription) {
+        // first build and start subscription and subscribe on its started event by callback
+        verbose_warn("Cannot unscubscribe, no subscription");
+      } else if (subscription.subscriptionId != "terminated") {
+        // otherwise check if its terminated start to renew the subscription
+        set_node_status_to("unsubscribing");
+        unsubscribe_monitoredItem(subscription, msg); // Call to terminate monitoredItem
+      } else {
+        subscription = null;
+        monitoredItems.clear();
+        set_node_status_to("terminated");
+        // No actual error session exists, this case cause connections to server
+      }
+    }
+
+    function convertAndCheckInterval(interval) {
+      let n = Number(interval);
+      if (isNaN(n)) {
+        n = 100;
+      }
+      return n;
+    }
+
+    async function subscribe_monitoredItem(subscription, msg) {
+      verbose_log("Session subscriptionId: " + subscription.subscriptionId);
+
+      // Simplified 
+      if (msg.topic === "multiple") {
+        verbose_log("Create monitored itemGroup for " + JSON.stringify(msg.payload));
+        let interval = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
+        if (msg?.interval) {
+          interval = parseInt(msg.interval);
+        }
+        const monitorItems = [];
+        for (const element of msg.payload) {
+          monitorItems.push({ attributeId: AttributeIds.Value, nodeId: element.nodeId });
+        }
+        verbose_log("Using samplingInterval:" + interval);
+        const monitoringParameters = {
+          // clientHandle?: UInt32;
+          samplingInterval: interval, // read from msg.interval
+          // filter?: (ExtensionObject | null);
+          queueSize: 1,
+          discardOldest: true
+        };
+        verbose_log("MONITOR ITEMS: " + JSON.stringify(monitorItems));
+        const group = await subscription.monitorItems(monitorItems, monitoringParameters, TimestampsToReturn.Both);
+        group.on("initialized", async () => {
+          verbose_log(chalk.green("Initialized monitoredItemsGroup !"));
+        });
+        group.on("changed", (_monitoredItem, dataValue, index) => {
+          verbose_log("Group change on item, index: " + index + " item: " + monitorItems[index].nodeId + " value: " + dataValue.value.value);
+
+          const nodeId = monitorItems[index].nodeId.toString();
+
+          let value = dataValue.value.dataType === opcua.DataType.ExtensionObject
+            ? JSON.parse(JSON.stringify(dataValue))
+            : dataValue;
+
+          if (nodeId) {
+            let msg = {};
+            msg.topic = nodeId;
+            msg.payload = value; // if users want to get dataValue.value.value example contains function node
+            node.send([msg, null]);
+
+          }
+        });
+        return;
+      }
+
+      let nodeStr = msg.topic;
+      if (msg?.topic) {
+        if (nodeStr && nodeStr.length > 1) {
+          let dTypeIndex = nodeStr.indexOf(";datatype=");
+          if (dTypeIndex > 0) {
+            nodeStr = nodeStr.substring(0, dTypeIndex);
+          }
+        }
+      }
+      let monitoredItem = monitoredItems.get(msg.topic);
+
+      if (!monitoredItem) {
+        verbose_log("Msg " + stringify(msg));
+        // Set as default if no payload
+        let queueSize = 10;
+        let interval = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit); // Use value given at client node
+        // Interval from the payload (old existing feature still supported), but do not accept timestamp, it is too big
+        if (msg.payload && parseInt(msg.payload) > 100 && parseInt(msg.payload) < 1608935031227) {
+          interval = convertAndCheckInterval(msg.payload);
+        }
+        if (msg.interval && parseInt(msg.interval) > 100) {
+          interval = convertAndCheckInterval(msg.interval);
+        }
+        if (msg.queueSize && parseInt(msg.queueSize) > 0) {
+          queueSize = msg.queueSize;
+        }
+
+        verbose_log(msg.topic + " samplingInterval " + interval + " queueSize " + queueSize);
+        verbose_log("Monitoring value: " + msg.topic + ' by interval of ' + interval.toString() + " ms");
+
+        // Validate nodeId
+        try {
+          let nodeId = opcua.coerceNodeId(nodeStr);
+          if (nodeId?.isEmpty()) {
+            node_error(" Invalid empty node in getObject");
+          }
+          //makeNodeId(nodeStr); // above is enough
+        } catch (err) {
+          node_error(err);
+          return;
+        }
+
+        try {
+          monitoredItem = opcua.ClientMonitoredItem.create(subscription, {
+            nodeId: nodeStr,
+            attributeId: opcua.AttributeIds.Value
+          }, {
+            samplingInterval: interval,
+            queueSize: queueSize,
+            discardOldest: true
+          },
+            TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
+          );
+          verbose_log("Storing monitoredItem: " + nodeStr + " ItemId: " + monitoredItem.toString());
+          monitoredItems.set(nodeStr, monitoredItem);
+        } catch (err) {
+          node_error("Check topic format for nodeId:" + msg.topic)
+          node_error('subscription.monitorItem:' + err);
+        }
+
+        monitoredItem.on("initialized", function () {
+          verbose_log("initialized monitoredItem on " + nodeStr);
+        });
+
+        monitoredItem.on("changed", function (dataValue) {
+          let msgToSend = JSON.parse(JSON.stringify(msg)); // clone original msg if it contains other needed properties {};
+
+          set_node_status_to("active subscribed");
+          // if (dataValue.statusCode != opcua.StatusCodes.Good) {
+          // Skip Overflow and limitLow, limitHigh and constant bits
+          if (dataValue.statusCode.isGoodish() === false) {
+            verbose_warn("StatusCode: " + dataValue.statusCode.toString(16) + " " + dataValue.statusCode.description);
+          }
+
+          msgToSend.statusCode = dataValue.statusCode;
+          msgToSend.topic = msg.topic;
+
+          // Check if timestamps exists otherwise simulate them
+          if (dataValue.serverTimestamp != null) {
+            msgToSend.serverTimestamp = dataValue.serverTimestamp;
+            msgToSend.serverPicoseconds = dataValue.serverPicoseconds;
+          } else {
+            msgToSend.serverTimestamp = new Date().getTime();;
+            msgToSend.serverPicoseconds = 0;
+          }
+
+          if (dataValue.sourceTimestamp != null) {
+            msgToSend.sourceTimestamp = dataValue.sourceTimestamp;
+            msgToSend.sourcePicoseconds = dataValue.sourcePicoseconds;
+          } else {
+            msgToSend.sourceTimestamp = new Date().getTime();;
+            msgToSend.sourcePicoseconds = 0;
+          }
+
+          msgToSend.payload = dataValue.value.value;
+          node.send([msgToSend, null]);
+
+        });
+
+        monitoredItem.on("keepalive", function () {
+          verbose_log("keepalive monitoredItem on " + nodeStr);
+        });
+
+        monitoredItem.on("terminated", function () {
+          verbose_log("terminated monitoredItem on " + nodeStr);
+          if (monitoredItems.has(nodeStr)) {
+            monitoredItems.delete(nodeStr);
+          }
+        });
+      }
+
+      return monitoredItem;
+    }
+
+    async function monitor_monitoredItem(subscription, msg) {
+      verbose_log("Session subscriptionId: " + subscription.subscriptionId);
+      let nodeStr = msg.topic;
+      if (msg?.topic) {
         let dTypeIndex = nodeStr.indexOf(";datatype=");
         if (dTypeIndex > 0) {
           nodeStr = nodeStr.substring(0, dTypeIndex);
         }
       }
-    }
-    let monitoredItem = monitoredItems.get(msg.topic);
-
-    if (!monitoredItem) {
-      verbose_log("Msg " + stringify(msg));
-      // Set as default if no payload
-      let queueSize = 10;
-      let interval = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit); // Use value given at client node
-      // Interval from the payload (old existing feature still supported), but do not accept timestamp, it is too big
-      if (msg.payload && parseInt(msg.payload) > 100 && parseInt(msg.payload) < 1608935031227) {
-        interval = convertAndCheckInterval(msg.payload);
-      }
-      if (msg.interval && parseInt(msg.interval) > 100) {
-        interval = convertAndCheckInterval(msg.interval);
-      }
-      if (msg.queueSize && parseInt(msg.queueSize) > 0) {
-        queueSize = msg.queueSize;
-      }
-
-      verbose_log(msg.topic + " samplingInterval " + interval + " queueSize " + queueSize);
-      verbose_log("Monitoring value: " + msg.topic + ' by interval of ' + interval.toString() + " ms");
-
-      // Validate nodeId
-      try {
-        let nodeId = opcua.coerceNodeId(nodeStr);
-        if (nodeId?.isEmpty()) {
-          node_error(" Invalid empty node in getObject");
+      let monitoredItem = monitoredItems.get(msg.topic);
+      if (!monitoredItem) {
+        verbose_log("Msg " + stringify(msg));
+        let interval = 100; // Set as default if no payload
+        let queueSize = 10;
+        // Interval from the payload (old existing feature still supported)
+        if (msg.payload && parseInt(msg.payload) > 100) {
+          interval = convertAndCheckInterval(msg.payload);
         }
-        //makeNodeId(nodeStr); // above is enough
-      } catch (err) {
-        node_error(err);
-        return;
-      }
-
-      try {
-        monitoredItem = opcua.ClientMonitoredItem.create(subscription, {
-          nodeId: nodeStr,
-          attributeId: opcua.AttributeIds.Value
-        }, {
-          samplingInterval: interval,
-          queueSize: queueSize,
-          discardOldest: true
-        },
+        if (msg.interval && parseInt(msg.interval) > 100) {
+          interval = convertAndCheckInterval(msg.interval);
+        }
+        if (msg.queueSize && parseInt(msg.queueSize) > 0) {
+          queueSize = msg.queueSize;
+        }
+        verbose_log("Monitoring " + msg.topic + " samplingInterval " + interval + "ms, queueSize " + queueSize);
+        // Validate nodeId
+        try {
+          let nodeId = opcua.coerceNodeId(nodeStr);
+          if (nodeId?.isEmpty()) {
+            node_error(" Invalid empty node in getObject");
+          }
+          //makeNodeId(nodeStr); // above is enough
+        } catch (err) {
+          node_error(err);
+          return;
+        }
+        let deadbandtype = opcua.DeadbandType.Absolute;
+        // NOTE differs from standard subscription monitor
+        if (node.deadbandType == "a") {
+          deadbandtype = opcua.DeadbandType.Absolute;
+        }
+        if (node.deadbandType == "p") {
+          deadbandtype = opcua.DeadbandType.Percent;
+        }
+        // Check if msg contains deadbandtype, use it instead of value given in client node
+        if (msg.deadbandType && msg.deadbandType == "a") {
+          deadbandtype = opcua.DeadbandType.Absolute;
+        }
+        if (msg.deadbandType && msg.deadbandType == "p") {
+          deadbandtype = opcua.DeadbandType.Percent;
+        }
+        let deadbandvalue = node.deadbandvalue;
+        // Check if msg contains deadbandValue, use it instead of value given in client node
+        if (msg.deadbandValue) {
+          deadbandvalue = msg.deadbandValue;
+        }
+        verbose_log("Deadband type (a==absolute, p==percent) " + deadbandtype + " deadband value " + deadbandvalue);
+        let dataChangeFilter = new opcua.DataChangeFilter({
+          trigger: opcua.DataChangeTrigger.StatusValue,
+          deadbandType: deadbandtype,
+          deadbandValue: deadbandvalue
+        });
+        const group = await subscription.monitorItems(
+          [{
+            nodeId: nodeStr,
+            attributeId: opcua.AttributeIds.Value
+          }],
+          {
+            samplingInterval: interval,
+            queueSize: queueSize,
+            discardOldest: true,
+            filter: dataChangeFilter
+          },
           TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
         );
-        verbose_log("Storing monitoredItem: " + nodeStr + " ItemId: " + monitoredItem.toString());
         monitoredItems.set(nodeStr, monitoredItem);
-      } catch (err) {
-        node_error("Check topic format for nodeId:" + msg.topic)
-        node_error('subscription.monitorItem:' + err);
-      }
 
-      monitoredItem.on("initialized", function () {
-        verbose_log("initialized monitoredItem on " + nodeStr);
-      });
+        group.on("err", () => {
+          node.error("Monitored items error!");
+        });
 
-      monitoredItem.on("changed", function (dataValue) {
-        let msgToSend = JSON.parse(JSON.stringify(msg)); // clone original msg if it contains other needed properties {};
+        group.on("changed", (monitoredItem, dataValue, index) => {
+          verbose_log(chalk.green("Received changes: " + monitoredItem + " value: " + dataValue + " index: " + index));
+          set_node_status_to("active monitoring");
+          verbose_log(dataValue.toString());
 
-        set_node_status_to("active subscribed");
-        // if (dataValue.statusCode != opcua.StatusCodes.Good) {
-        // Skip Overflow and limitLow, limitHigh and constant bits
-        if (dataValue.statusCode.isGoodish() === false) {
-          verbose_warn("StatusCode: " + dataValue.statusCode.toString(16) + " " + dataValue.statusCode.description);
-        }
-
-        msgToSend.statusCode = dataValue.statusCode;
-        msgToSend.topic = msg.topic;
-
-        // Check if timestamps exists otherwise simulate them
-        if (dataValue.serverTimestamp != null) {
-          msgToSend.serverTimestamp = dataValue.serverTimestamp;
-          msgToSend.serverPicoseconds = dataValue.serverPicoseconds;
-        } else {
-          msgToSend.serverTimestamp = new Date().getTime();;
-          msgToSend.serverPicoseconds = 0;
-        }
-
-        if (dataValue.sourceTimestamp != null) {
-          msgToSend.sourceTimestamp = dataValue.sourceTimestamp;
-          msgToSend.sourcePicoseconds = dataValue.sourcePicoseconds;
-        } else {
-          msgToSend.sourceTimestamp = new Date().getTime();;
-          msgToSend.sourcePicoseconds = 0;
-        }
-
-        msgToSend.payload = dataValue.value.value;
-        node.send([msgToSend, null]);
-
-      });
-
-      monitoredItem.on("keepalive", function () {
-        verbose_log("keepalive monitoredItem on " + nodeStr);
-      });
-
-      monitoredItem.on("terminated", function () {
-        verbose_log("terminated monitoredItem on " + nodeStr);
-        if (monitoredItems.has(nodeStr)) {
-          monitoredItems.delete(nodeStr);
-        }
-      });
-    }
-
-    return monitoredItem;
-  }
-
-  async function monitor_monitoredItem(subscription, msg) {
-    verbose_log("Session subscriptionId: " + subscription.subscriptionId);
-    let nodeStr = msg.topic;
-    if (msg?.topic) {
-      let dTypeIndex = nodeStr.indexOf(";datatype=");
-      if (dTypeIndex > 0) {
-        nodeStr = nodeStr.substring(0, dTypeIndex);
-      }
-    }
-    let monitoredItem = monitoredItems.get(msg.topic);
-    if (!monitoredItem) {
-      verbose_log("Msg " + stringify(msg));
-      let interval = 100; // Set as default if no payload
-      let queueSize = 10;
-      // Interval from the payload (old existing feature still supported)
-      if (msg.payload && parseInt(msg.payload) > 100) {
-        interval = convertAndCheckInterval(msg.payload);
-      }
-      if (msg.interval && parseInt(msg.interval) > 100) {
-        interval = convertAndCheckInterval(msg.interval);
-      }
-      if (msg.queueSize && parseInt(msg.queueSize) > 0) {
-        queueSize = msg.queueSize;
-      }
-      verbose_log("Monitoring " + msg.topic + " samplingInterval " + interval + "ms, queueSize " + queueSize);
-      // Validate nodeId
-      try {
-        let nodeId = opcua.coerceNodeId(nodeStr);
-        if (nodeId?.isEmpty()) {
-          node_error(" Invalid empty node in getObject");
-        }
-        //makeNodeId(nodeStr); // above is enough
-      } catch (err) {
-        node_error(err);
-        return;
-      }
-      let deadbandtype = opcua.DeadbandType.Absolute;
-      // NOTE differs from standard subscription monitor
-      if (node.deadbandType == "a") {
-        deadbandtype = opcua.DeadbandType.Absolute;
-      }
-      if (node.deadbandType == "p") {
-        deadbandtype = opcua.DeadbandType.Percent;
-      }
-      // Check if msg contains deadbandtype, use it instead of value given in client node
-      if (msg.deadbandType && msg.deadbandType == "a") {
-        deadbandtype = opcua.DeadbandType.Absolute;
-      }
-      if (msg.deadbandType && msg.deadbandType == "p") {
-        deadbandtype = opcua.DeadbandType.Percent;
-      }
-      let deadbandvalue = node.deadbandvalue;
-      // Check if msg contains deadbandValue, use it instead of value given in client node
-      if (msg.deadbandValue) {
-        deadbandvalue = msg.deadbandValue;
-      }
-      verbose_log("Deadband type (a==absolute, p==percent) " + deadbandtype + " deadband value " + deadbandvalue);
-      let dataChangeFilter = new opcua.DataChangeFilter({
-        trigger: opcua.DataChangeTrigger.StatusValue,
-        deadbandType: deadbandtype,
-        deadbandValue: deadbandvalue
-      });
-      const group = await subscription.monitorItems(
-        [{
-          nodeId: nodeStr,
-          attributeId: opcua.AttributeIds.Value
-        }],
-        {
-          samplingInterval: interval,
-          queueSize: queueSize,
-          discardOldest: true,
-          filter: dataChangeFilter
-        },
-        TimestampsToReturn.Both, // Other valid values: Source | Server | Neither | Both
-      );
-      monitoredItems.set(nodeStr, monitoredItem);
-
-      group.on("err", () => {
-        node.error("Monitored items error!");
-      });
-
-      group.on("changed", (monitoredItem, dataValue, index) => {
-        verbose_log(chalk.green("Received changes: " + monitoredItem + " value: " + dataValue + " index: " + index));
-        set_node_status_to("active monitoring");
-        verbose_log(dataValue.toString());
-
-        if (dataValue.statusCode.isGoodish() === false) {
-          verbose_warn("StatusCode: " + dataValue.statusCode.toString(16) + " " + dataValue.statusCode.description);
-        }
-        let msgToSend = {};
-        msgToSend.statusCode = dataValue.statusCode;
-        msgToSend.topic = msg.topic;
-
-        // Check if timestamps exists otherwise simulate them
-        if (dataValue.serverTimestamp != null) {
-          msgToSend.serverTimestamp = dataValue.serverTimestamp;
-          msgToSend.serverPicoseconds = dataValue.serverPicoseconds;
-        } else {
-          msgToSend.serverTimestamp = new Date().getTime();
-          msgToSend.serverPicoseconds = 0;
-        }
-        if (dataValue.sourceTimestamp != null) {
-          msgToSend.sourceTimestamp = dataValue.sourceTimestamp;
-          msgToSend.sourcePicoseconds = dataValue.sourcePicoseconds;
-        } else {
-          msgToSend.sourceTimestamp = new Date().getTime();
-          msgToSend.sourcePicoseconds = 0;
-        }
-        msgToSend.payload = dataValue.value.value;
-        node.send([msgToSend, null]);
-      });
-    }
-  }
-
-
-  function unsubscribe_monitoredItem(subscription, msg) {
-    verbose_log("Session subscriptionId: " + subscription.subscriptionId);
-    let nodeStr = msg.topic; // nodeId needed as topic
-    if (msg?.topic) {
-      let dTypeIndex = nodeStr.indexOf(";datatype=");
-      if (dTypeIndex > 0) {
-        nodeStr = nodeStr.substring(0, dTypeIndex);
-      }
-    }
-    let monitoredItem = monitoredItems.get(msg.topic);
-    if (monitoredItem) {
-      verbose_log("Got ITEM: " + monitoredItem);
-      verbose_log("Unsubscribing monitored item: " + msg.topic + " item:" + monitoredItem.toString());
-      monitoredItem.terminate();
-      monitoredItems.delete(msg.topic);
-    }
-    else {
-      node_error("NodeId " + nodeStr + " is not subscribed!");
-    }
-  }
-
-  function delete_subscription_action_input(msg) {
-    verbose_log("delete subscription msg= " + stringify(msg));
-    if (!subscription) {
-      verbose_warn("Cannot delete, no subscription existing!");
-    } else if (subscription.isActive) {
-      // otherwise check if its terminated start to renew the subscription
-      
-      node.session.deleteSubscriptions({
-        subscriptionIds: [subscription.subscriptionId]
-      }, function (err, response) {
-        if (err) {
-          node_error("Delete subscription error " + err);
-        }
-        else {
-          verbose_log("Subscription deleted, response:" + stringify(response));
-          subscription.terminate(); // Added to allow new subscription
-        }
-      });
-    }
-  }
-
-  // OLD
-  async function browse_action_input(msg) {
-    verbose_log("browsing");
-    let allInOne = []; 
-
-    if (node.session) {
-      const crawler = new NodeCrawler(node.session);
-      set_node_status_to("active browsing");
-      crawler.on("browsed", function (element) {
-        if (msg.collect === undefined || (msg.collect && msg.collect === false)) {
-          let item = {};
-          item.payload = { ...element }; // Clone element
-          let dataType = "";
-          item.topic = element.nodeId.toString();
-          if (element?.dataType) {
-            dataType = opcuaBasics.convertToString(element.dataType.toString());
+          if (dataValue.statusCode.isGoodish() === false) {
+            verbose_warn("StatusCode: " + dataValue.statusCode.toString(16) + " " + dataValue.statusCode.description);
           }
-          if (dataType && dataType.length > 0) {
-            item.datatype = dataType;
+          let msgToSend = {};
+          msgToSend.statusCode = dataValue.statusCode;
+          msgToSend.topic = msg.topic;
+
+          // Check if timestamps exists otherwise simulate them
+          if (dataValue.serverTimestamp != null) {
+            msgToSend.serverTimestamp = dataValue.serverTimestamp;
+            msgToSend.serverPicoseconds = dataValue.serverPicoseconds;
+          } else {
+            msgToSend.serverTimestamp = new Date().getTime();
+            msgToSend.serverPicoseconds = 0;
           }
-          node.send([item, null]);
+          if (dataValue.sourceTimestamp != null) {
+            msgToSend.sourceTimestamp = dataValue.sourceTimestamp;
+            msgToSend.sourcePicoseconds = dataValue.sourcePicoseconds;
+          } else {
+            msgToSend.sourceTimestamp = new Date().getTime();
+            msgToSend.sourcePicoseconds = 0;
+          }
+          msgToSend.payload = dataValue.value.value;
+          node.send([msgToSend, null]);
+        });
+      }
+    }
+
+
+    function unsubscribe_monitoredItem(subscription, msg) {
+      verbose_log("Session subscriptionId: " + subscription.subscriptionId);
+      let nodeStr = msg.topic; // nodeId needed as topic
+      if (msg?.topic) {
+        let dTypeIndex = nodeStr.indexOf(";datatype=");
+        if (dTypeIndex > 0) {
+          nodeStr = nodeStr.substring(0, dTypeIndex);
         }
-        else {
-          let item = { ...element }; // Clone element
-          allInOne.push(item);
-        }
-      });
-      // Browse from given topic
-      const nodeId = msg.topic;
-      crawler.read(nodeId, function (err, obj) {
-        if (!err) {
-          // Crawling done
-          if (msg.collect && msg.collect === true) {
-            verbose_log("Send all in one, items: " + allInOne.length);
-            let all = {};
-            all.topic = "AllInOne";
-            all.payload = allInOne;
-            all.objects = JSON.stringify(obj); // Added extra result
+      }
+      let monitoredItem = monitoredItems.get(msg.topic);
+      if (monitoredItem) {
+        verbose_log("Got ITEM: " + monitoredItem);
+        verbose_log("Unsubscribing monitored item: " + msg.topic + " item:" + monitoredItem.toString());
+        monitoredItem.terminate();
+        monitoredItems.delete(msg.topic);
+      }
+      else {
+        node_error("NodeId " + nodeStr + " is not subscribed!");
+      }
+    }
+
+    function delete_subscription_action_input(msg) {
+      verbose_log("delete subscription msg= " + stringify(msg));
+      if (!subscription) {
+        verbose_warn("Cannot delete, no subscription existing!");
+      } else if (subscription.isActive) {
+        // otherwise check if its terminated start to renew the subscription
+
+        node.session.deleteSubscriptions({
+          subscriptionIds: [subscription.subscriptionId]
+        }, function (err, response) {
+          if (err) {
+            node_error("Delete subscription error " + err);
+          }
+          else {
+            verbose_log("Subscription deleted, response:" + stringify(response));
+            subscription.terminate(); // Added to allow new subscription
+          }
+        });
+      }
+    }
+
+    // OLD
+    async function browse_action_input(msg) {
+      verbose_log("browsing");
+      let allInOne = [];
+
+      if (node.session) {
+        const crawler = new NodeCrawler(node.session);
+        set_node_status_to("active browsing");
+        crawler.on("browsed", function (element) {
+          if (msg.collect === undefined || (msg.collect && msg.collect === false)) {
+            let item = {};
+            item.payload = { ...element }; // Clone element
+            let dataType = "";
+            item.topic = element.nodeId.toString();
+            if (element?.dataType) {
+              dataType = opcuaBasics.convertToString(element.dataType.toString());
+            }
+            if (dataType && dataType.length > 0) {
+              item.datatype = dataType;
+            }
+            node.send([item, null]);
+          }
+          else {
+            let item = { ...element }; // Clone element
+            allInOne.push(item);
+          }
+        });
+        // Browse from given topic
+        const nodeId = msg.topic;
+        crawler.read(nodeId, function (err, obj) {
+          if (!err) {
+            // Crawling done
+            if (msg.collect && msg.collect === true) {
+              verbose_log("Send all in one, items: " + allInOne.length);
+              let all = {};
+              all.topic = "AllInOne";
+              all.payload = allInOne;
+              all.objects = JSON.stringify(obj); // Added extra result
+              set_node_status_to("browse done");
+              node.send([all, null]);
+              return;
+            }
+
             set_node_status_to("browse done");
-            node.send([all, null]);
-            return;
+          }
+          crawler.dispose();
+        });
+      } else {
+        node_error("Session is not active!");
+        set_node_status_to("invalid session");
+        reset_opcua_client(connect_opcua_client);
+      }
+    }
+
+    function subscribe_monitoredEvent(subscription, msg) {
+      verbose_log("Session subscriptionId: " + subscription.subscriptionId);
+
+      let monitoredItem = monitoredItems.get(msg.topic);
+      if (monitoredItem === undefined) {
+        verbose_log("Msg " + stringify(msg));
+        let interval = convertAndCheckInterval(msg.payload);
+        verbose_log(msg.topic + " samplingInterval " + interval);
+        verbose_log("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
+        // TODO read nodeId to validate it before subscription
+        try {
+          monitoredItem = opcua.ClientMonitoredItem.create(subscription,
+            {
+              nodeId: msg.topic, // serverObjectId
+              attributeId: AttributeIds.EventNotifier
+            }, {
+            samplingInterval: interval,
+            queueSize: 100000,
+            filter: msg.eventFilter,
+            discardOldest: true
+          },
+            TimestampsToReturn.Neither
+          );
+        } catch (err) {
+          node_error('subscription.monitorEvent:' + err);
+          // No actual error session exists, this case cause connections to server
+          // reset_opcua_client(connect_opcua_client);
+        }
+        monitoredItems.set(msg.topic, monitoredItem.monitoredItemId);
+        monitoredItem.on("initialized", async function () {
+          if (node.session && subscription) {
+            await opcua.callConditionRefresh(node.session, subscription.subscriptionId); // FIXED
+            verbose_log("monitored Event initialized");
+            set_node_status_to("initialized");
+          }
+          else {
+            set_node_status_to("invalid session");
+          }
+        });
+
+        monitoredItem.on("changed", function (eventFields) {
+          dumpEvent(node, node.session, msg.eventFields, eventFields, function () { });
+          set_node_status_to("changed");
+        });
+
+        monitoredItem.on("error", function (err_message) {
+          verbose_log("error monitored Event on " + msg.topic);
+          if (monitoredItems.has(msg.topic)) {
+            monitoredItems.delete(msg.topic);
           }
 
-          set_node_status_to("browse done");
-        }
-        crawler.dispose();
-      });
-    } else {
-      node_error("Session is not active!");
-      set_node_status_to("invalid session");
-      reset_opcua_client(connect_opcua_client);
-    }
-  }
+          node_error("monitored Event " + msg.eventTypeId + " ERROR" + err_message);
+          set_node_error_status_to("error", err_message);
+        });
 
-  function subscribe_monitoredEvent(subscription, msg) {
-    verbose_log("Session subscriptionId: " + subscription.subscriptionId);
+        monitoredItem.on("keepalive", function () {
+          verbose_log("keepalive monitored Event on " + msg.topic);
+        });
 
-    let monitoredItem = monitoredItems.get(msg.topic);
-    if (monitoredItem === undefined) {
-      verbose_log("Msg " + stringify(msg));
-      let interval = convertAndCheckInterval(msg.payload);
-      verbose_log(msg.topic + " samplingInterval " + interval);
-      verbose_log("Monitoring Event: " + msg.topic + ' by interval of ' + interval + " ms");
-      // TODO read nodeId to validate it before subscription
-      try {
-        monitoredItem = opcua.ClientMonitoredItem.create(subscription,
-          {
-            nodeId: msg.topic, // serverObjectId
-            attributeId: AttributeIds.EventNotifier
-          }, {
-          samplingInterval: interval,
-          queueSize: 100000,
-          filter: msg.eventFilter,
-          discardOldest: true
-        },
-          TimestampsToReturn.Neither
-        );
-      } catch (err) {
-        node_error('subscription.monitorEvent:' + err);
-        // No actual error session exists, this case cause connections to server
-        // reset_opcua_client(connect_opcua_client);
+        monitoredItem.on("terminated", function () {
+          verbose_log("terminated monitored Event on " + msg.topic);
+          if (monitoredItems.has(msg.topic)) {
+            monitoredItems.delete(msg.topic);
+          }
+        });
       }
-      monitoredItems.set(msg.topic, monitoredItem.monitoredItemId);
-      monitoredItem.on("initialized", async function () {
-        if (node.session && subscription) {
-          await opcua.callConditionRefresh(node.session, subscription.subscriptionId); // FIXED
-          verbose_log("monitored Event initialized");
-          set_node_status_to("initialized");
-        }
-        else {
-          set_node_status_to("invalid session");
-        }
-      });
 
-      monitoredItem.on("changed", function (eventFields) {
-        dumpEvent(node, node.session, msg.eventFields, eventFields, function () { });
-        set_node_status_to("changed");
-      });
-
-      monitoredItem.on("error", function (err_message) {
-        verbose_log("error monitored Event on " + msg.topic);
-        if (monitoredItems.has(msg.topic)) {
-          monitoredItems.delete(msg.topic);
-        }
-
-        node_error("monitored Event " + msg.eventTypeId + " ERROR" + err_message);
-        set_node_error_status_to("error", err_message);
-      });
-
-      monitoredItem.on("keepalive", function () {
-        verbose_log("keepalive monitored Event on " + msg.topic);
-      });
-
-      monitoredItem.on("terminated", function () {
-        verbose_log("terminated monitored Event on " + msg.topic);
-        if (monitoredItems.has(msg.topic)) {
-          monitoredItems.delete(msg.topic);
-        }
-      });
+      return monitoredItem;
     }
 
-    return monitoredItem;
-  }
+    async function subscribe_events_async(msg) {
+      verbose_log("subscribing events for " + msg.eventTypeIds);
+      let eventTypeId = opcua.resolveNodeId(msg.eventTypeIds);
+      let fields = await opcua.extractConditionFields(node.session, eventTypeId); // works with all eventTypes
 
-  async function subscribe_events_async(msg) {
-    verbose_log("subscribing events for " + msg.eventTypeIds);
-    let eventTypeId = opcua.resolveNodeId(msg.eventTypeIds);
-    let fields = await opcua.extractConditionFields(node.session, eventTypeId); // works with all eventTypes
+      // FIX for issue #623
+      if (msg.hasOwnProperty("customEventFields")) {
+        if (Array.isArray(msg.customEventFields)) {
+          verbose_log("customEventFields: " + msg.customEventFields);
+          fields = fields.concat(msg.customEventFields);
+        } else {
+          verbose_log("customEventFields is NOT Array!"); // Good to show
+        }
+      }
+      else {
+        verbose_log("msg object does not have customEventFields!");
+      }
 
-    // FIX for issue #623
-    if (msg.hasOwnProperty("customEventFields")) {
-      if (Array.isArray(msg.customEventFields)) {
-        verbose_log("customEventFields: " + msg.customEventFields);
-        fields = fields.concat(msg.customEventFields);
+      msg.eventFilter = opcua.constructEventFilter(fields, opcua.ofType(eventTypeId));
+      msg.eventFields = fields;
+      verbose_log("EventFields: " + msg.eventFields);
+
+      if (!subscription) {
+        // first build and start subscription and subscribe on its started event by callback
+        let timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
+        subscription = make_subscription(subscribe_monitoredEvent, msg, opcuaBasics.getEventSubscriptionParameters(timeMilliseconds));
+      } else if (subscription.subscriptionId != "terminated") {
+        // otherwise check if its terminated start to renew the subscription
+        set_node_status_to("active subscribing");
+        subscribe_monitoredEvent(subscription, msg);
       } else {
-        verbose_log("customEventFields is NOT Array!"); // Good to show
+        subscription = null;
+        monitoredItems.clear();
+        set_node_status_to("terminated");
       }
     }
-    else {
-      verbose_log("msg object does not have customEventFields!");
+
+    function subscribe_events_input(msg) {
+      subscribe_events_async(msg);
     }
 
-    msg.eventFilter = opcua.constructEventFilter(fields, opcua.ofType(eventTypeId));
-    msg.eventFields = fields;
-    verbose_log("EventFields: " + msg.eventFields);
+    function reconnect(msg) {
+      if (msg?.OpcUaEndpoint) {
+        // Remove listeners if existing
+        if (node.client) {
+          verbose_log("Cleanup old listener events... before connecting to new client");
+          verbose_log("All event names:" + node.client.eventNames());
+          verbose_log("Connection_reestablished event count:" + node.client.listenerCount("connection_reestablished"));
+          node.client.removeListener("connection_reestablished", reestablish);
+          verbose_log("Backoff event count:" + node.client.listenerCount("backoff"));
+          node.client.removeListener("backoff", backoff);
+          verbose_log("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
+          node.client.removeListener("start_reconnection", reconnection);
+        }
+        let opcuaEndpoint = msg.OpcUaEndpoint; // Check all parameters!
+        connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy]; // || opcua.SecurityPolicy.None;
+        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode]; // || opcua.MessageSecurityMode.None;
+        verbose_log("NEW connectionOption security parameters, policy: " + connectionOption.securityPolicy + " mode: " + connectionOption.securityMode);
+        if (opcuaEndpoint.login === true) {
+          let userIdentity = {
+            userName: opcuaEndpoint.user,
+            password: opcuaEndpoint.password,
+            type: opcua.UserTokenType.UserName
+          };
+          verbose_log("NEW UserIdentity: " + JSON.stringify(userIdentity));
+        }
+        verbose_log("Using new endpoint:" + stringify(opcuaEndpoint));
+      } else {
+        verbose_log("Using endpoint:" + stringify(opcuaEndpoint));
+      }
+      // First close subscriptions etc.
+      if (subscription?.isActive) {
+        subscription.terminate();
+      }
 
-    if (!subscription) {
-      // first build and start subscription and subscribe on its started event by callback
-      let timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
-      subscription = make_subscription(subscribe_monitoredEvent, msg, opcuaBasics.getEventSubscriptionParameters(timeMilliseconds));
-    } else if (subscription.subscriptionId != "terminated") {
-      // otherwise check if its terminated start to renew the subscription
-      set_node_status_to("active subscribing");
-      subscribe_monitoredEvent(subscription, msg);
-    } else {
+      // Now reconnect and use msg parameters
       subscription = null;
       monitoredItems.clear();
-      set_node_status_to("terminated");
+      if (node.session) {
+        node.session.close(function (err) {
+          if (err) {
+            node_error("Session close error: " + err);
+          }
+          else {
+            verbose_log("Session closed!");
+          }
+        });
+      }
+      else {
+        verbose_warn("No session to close!");
+      }
+      set_node_status_to("reconnect");
+      create_opcua_client(connect_opcua_client);
     }
-  }
 
-  function subscribe_events_input(msg) {
-    subscribe_events_async(msg);
-  }
+    node.on("close", async (done) => {
+      if (subscription?.isActive) {
+        subscription.terminate();
+        // subscription becomes null by its terminated event
+      }
 
-  function reconnect(msg) {
-    if (msg?.OpcUaEndpoint) {
-      // Remove listeners if existing
+      if (node.session) {
+        try {
+          await node.session.close();
+          verbose_log("Session closed");
+          set_node_status_to("session closed");
+        } catch (err) {
+          node_error(node.name + " " + err);
+        }
+      }
+
+      node.session = null;
+      close_opcua_client("closed", 0);
+      done();
+    });
+
+    node.on("error", function () {
+      if (subscription?.isActive) {
+        subscription.terminate();
+        // subscription becomes null by its terminated event
+      }
+
+      if (node.session) {
+        node.session.close(function (err) {
+          verbose_log("Session closed on error emit");
+          if (err) {
+            node_error(node.name + " " + err);
+          }
+
+          set_node_status_to("session closed");
+          node.session = null;
+          close_opcua_client("node error", err);
+        });
+
+      } else {
+        node.session = null;
+        close_opcua_client("node error", 0);
+      }
+
+
+      verbose_log("Disconnecting...");
+
+      verbose_warn(`node.client == null ?  ${node.client == null}`)
       if (node.client) {
-        verbose_log("Cleanup old listener events... before connecting to new client");
-        verbose_log("All event names:" + node.client.eventNames());
-        verbose_log("Connection_reestablished event count:" + node.client.listenerCount("connection_reestablished"));
+        verbose_warn("Node CLient Error")
         node.client.removeListener("connection_reestablished", reestablish);
         verbose_log("Backoff event count:" + node.client.listenerCount("backoff"));
         node.client.removeListener("backoff", backoff);
         verbose_log("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
         node.client.removeListener("start_reconnection", reconnection);
+        node.client.disconnect(function () {
+          verbose_log("Client disconnected!");
+          set_node_status_to("disconnected");
+        });
+        close_opcua_client("node error", 0);
+        node.client = null;
       }
-      let opcuaEndpoint = msg.OpcUaEndpoint; // Check all parameters!
-      connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy]; // || opcua.SecurityPolicy.None;
-      connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode]; // || opcua.MessageSecurityMode.None;
-      verbose_log("NEW connectionOption security parameters, policy: " + connectionOption.securityPolicy + " mode: " + connectionOption.securityMode);
-      if (opcuaEndpoint.login === true) {
-        let userIdentity = {
-          userName: opcuaEndpoint.user,
-          password: opcuaEndpoint.password,
-          type: opcua.UserTokenType.UserName
-        };
-        verbose_log("NEW UserIdentity: " + JSON.stringify(userIdentity));
-      }
-      verbose_log("Using new endpoint:" + stringify(opcuaEndpoint));
-    } else {
-      verbose_log("Using endpoint:" + stringify(opcuaEndpoint));
-    }
-    // First close subscriptions etc.
-    if (subscription?.isActive) {
-      subscription.terminate();
-    }
-
-    // Now reconnect and use msg parameters
-    subscription = null;
-    monitoredItems.clear();
-    if (node.session) {
-      node.session.close(function (err) {
-        if (err) {
-          node_error("Session close error: " + err);
-        }
-        else {
-          verbose_log("Session closed!");
-        }
-      });
-    }
-    else {
-      verbose_warn("No session to close!");
-    }
-    set_node_status_to("reconnect");
-    create_opcua_client(connect_opcua_client);
+    });
   }
+  
+  RED.nodes.registerType("OpcUa-Client", OpcUaClientNode);
 
-  node.on("close", async (done) => {
-    if (subscription?.isActive) {
-      subscription.terminate();
-      // subscription becomes null by its terminated event
-    }
-
-    if (node.session) {
-      try {
-        await node.session.close();
-        verbose_log("Session closed");
-        set_node_status_to("session closed");
-      } catch (err) {
-        node_error(node.name + " " + err);
-      }
-    }
-
-    node.session = null;
-    close_opcua_client("closed", 0);
-    done();
-  });
-
-  node.on("error", function () {
-    if (subscription?.isActive) {
-      subscription.terminate();
-      // subscription becomes null by its terminated event
-    }
-
-    if (node.session) {
-      node.session.close(function (err) {
-        verbose_log("Session closed on error emit");
-        if (err) {
-          node_error(node.name + " " + err);
-        }
-
-        set_node_status_to("session closed");
-        node.session = null;
-        close_opcua_client("node error", err);
-      });
-
-    } else {
-      node.session = null;
-      close_opcua_client("node error", 0);
-    }
-
-
-    verbose_log("Disconnecting...");
-
-    verbose_warn(`node.client == null ?  ${node.client == null}`)
-    if (node.client) {
-      verbose_warn("Node CLient Error")
-      node.client.removeListener("connection_reestablished", reestablish);
-      verbose_log("Backoff event count:" + node.client.listenerCount("backoff"));
-      node.client.removeListener("backoff", backoff);
-      verbose_log("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
-      node.client.removeListener("start_reconnection", reconnection);
-      node.client.disconnect(function () {
-        verbose_log("Client disconnected!");
-        set_node_status_to("disconnected");
-      });
-      close_opcua_client("node error", 0);
-      node.client = null;
-    }
-  });
 }
-
-RED.nodes.registerType("OpcUa-Client", OpcUaClientNode);
