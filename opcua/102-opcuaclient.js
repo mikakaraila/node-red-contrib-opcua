@@ -40,7 +40,6 @@ module.exports = function (RED) {
   const { stringify } = require('flatted');
 
   function OpcUaClientNode(n) {
-    debugger;
     RED.nodes.createNode(this, n);
     this.name = n.name;
     this.action = n.action;
