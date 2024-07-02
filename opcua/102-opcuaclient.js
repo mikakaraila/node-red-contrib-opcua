@@ -35,12 +35,12 @@ module.exports = function (RED) {
   let AttributeIds = opcua.AttributeIds;
   let TimestampsToReturn = opcua.TimestampsToReturn;
 
-
   const { createClientCertificateManager } = require("./utils");
 
   const { stringify } = require('flatted');
 
   function OpcUaClientNode(n) {
+    debugger;
     RED.nodes.createNode(this, n);
     this.name = n.name;
     this.action = n.action;
@@ -71,6 +71,8 @@ module.exports = function (RED) {
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
     let userCertificate = opcuaEndpoint.userCertificate;
     let userPrivatekey = opcuaEndpoint.userPrivatekey;
+
+    connectionOption.automaticallyAcceptUnknownCertificate = true;
 
     connectionOption.clientCertificateManager = createClientCertificateManager();
 
@@ -321,6 +323,7 @@ module.exports = function (RED) {
           clientName: node.name, // Fix for #664 sessionName
           keepSessionAlive: true, // TODO later make it possible to disable NOTE: commented out: issue #599, code back active needed!!
           requestedSessionTimeout: 60000 * 5, // 5min, default 1min
+          automaticallyAcceptUnknownCertificate: true
           // transportSettings: transportSettings // Some 
         };
         if (node.useTransport === true) {
@@ -530,7 +533,7 @@ module.exports = function (RED) {
         verbose_warn("        using securityPolicy: " + stringify(connectionOption.securityPolicy));
         verbose_warn("Case B: UserName & password does not match to server (needed by Sign or SignAndEncrypt), check username: " + userIdentity.userName + " and password: " + userIdentity.password);
         verbose_warn("Case C: With Sign you cannot use SecurityPolicy None!!");
-        verbose_error("Invalid endpoint parameters: ", err);
+        // verbose_error("Invalid endpoint parameters: ", err);
         node_error("Wrong endpoint parameters: " + JSON.stringify(opcuaEndpoint));
         set_node_status_to("invalid endpoint");
         let msg = {};
@@ -1859,40 +1862,40 @@ module.exports = function (RED) {
         set_node_status_to("invalid session");
         node_error("Write multiple items session is not active!")
       }
-    }
 
-    // OLD original way to use payload
-    if (node.session && !node.session.isReconnecting && node.session.isChannelValid()) {
-      if (Array.isArray(msg.payload)) {
-        const nodesToWrite = msg.payload.map(function (msgToWrite) {
-          let opcuaDataValue = opcuaBasics.build_new_dataValue(msgToWrite.datatype || msg.datatype, msgToWrite.value);
-          const nodeToWrite = {
-            nodeId: msgToWrite.nodeId || (node && node.toString()),
-            attributeId: opcua.AttributeIds.Value,
-            indexRange: null,
-            value: new opcua.DataValue({ value: opcuaDataValue })
-          };
-          if (msgToWrite.timestamp || msg.timestamp) {
-            nodeToWrite.value.sourceTimestamp = new Date(msgToWrite.timestamp || msg.timestamp).getTime();
-          }
-          return nodeToWrite;
-        });
-        verbose_log("Writing nodes with values:" + stringify(nodesToWrite));
+      // OLD original way to use payload
+      if (node.session && !node.session.isReconnecting && node.session.isChannelValid()) {
+        if (Array.isArray(msg.payload)) {
+          const nodesToWrite = msg.payload.map(function (msgToWrite) {
+            let opcuaDataValue = opcuaBasics.build_new_dataValue(msgToWrite.datatype || msg.datatype, msgToWrite.value);
+            const nodeToWrite = {
+              nodeId: msgToWrite.nodeId || (node && node.toString()),
+              attributeId: opcua.AttributeIds.Value,
+              indexRange: null,
+              value: new opcua.DataValue({ value: opcuaDataValue })
+            };
+            if (msgToWrite.timestamp || msg.timestamp) {
+              nodeToWrite.value.sourceTimestamp = new Date(msgToWrite.timestamp || msg.timestamp).getTime();
+            }
+            return nodeToWrite;
+          });
+          verbose_log("Writing nodes with values:" + stringify(nodesToWrite));
 
-        node.session.write(nodesToWrite, function (err, statusCode) {
-          if (err) {
-            set_node_error_status_to("error", err);
-            node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
-            node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
-          } else {
-            set_node_status_to("active writing");
-            verbose_log("Values written!");
-            node.send([{ payload: statusCode }, null]);
-          }
-        });
+          node.session.write(nodesToWrite, function (err, statusCode) {
+            if (err) {
+              set_node_error_status_to("error", err);
+              node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
+              node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+            } else {
+              set_node_status_to("active writing");
+              verbose_log("Values written!");
+              node.send([{ payload: statusCode }, null]);
+            }
+          });
+        }
+      } else {
+        set_node_status_to("invalid session");
       }
-    } else {
-      set_node_status_to("invalid session");
       node_error("Write multiple as array session is not active!")
     }
 
@@ -2564,7 +2567,7 @@ module.exports = function (RED) {
       }
     });
   }
-  
+
   RED.nodes.registerType("OpcUa-Client", OpcUaClientNode);
 
 }
