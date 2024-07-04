@@ -70,9 +70,7 @@ module.exports = function (RED) {
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
     let userCertificate = opcuaEndpoint.userCertificate;
     let userPrivatekey = opcuaEndpoint.userPrivatekey;
-
-    connectionOption.automaticallyAcceptUnknownCertificate = true;
-
+    
     connectionOption.clientCertificateManager = createClientCertificateManager();
 
     if (node.certificate === "l" && node.localfile) {
