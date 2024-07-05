@@ -28,12 +28,14 @@ module.exports = function (RED) {
 
         this.item = config.item; // OPC UA address: ns=2;i=4 OR ns=3;s=MyVariable
         this.datatype = config.datatype; // String;
-        this.topic = config.topic; // ns=3;s=MyVariable from input
+        this.topic = config.topic;
         this.items = config.items;
         this.name = config.name;
+
+        const objectsFolderNodeId = "ns=0;i=85"; // Default root, server Objects
+
         var node = this;
         // node.name = "OPC UA Browser";
-        var browseTopic = "ns=0;i=85"; // Default root, server Objects
 
         var opcuaEndpoint = RED.nodes.getNode(config.endpoint);
 
@@ -82,7 +84,10 @@ module.exports = function (RED) {
             node.error("Browse node error!", err);
         }
 
-        async function setupClient(url, callback) {
+        async function setupClient(url, nodeIdToBrowse, callback) {
+
+            if(!nodeIdToBrowse) return;
+
             // new OPC UA Client and browse from Objects ns=0;s=Objects
             const client = opcua.OPCUAClient.create(connectionOption);
             try 
@@ -96,9 +101,10 @@ module.exports = function (RED) {
                 node.debug("start browse session on " + opcuaEndpoint.endpoint);
                 
                 // step 3 : browse
-                node.debug("browseTopic:" + browseTopic);
-                const browseResult = await session.browse(browseTopic);
+                node.debug("nodeIdBrowse:" + nodeIdToBrowse);
+                const browseResult = await session.browse(nodeIdToBrowse);
         
+                
                 // step 4 : Read Value and Datatypes
                 for(const reference of browseResult.references)
                 {
@@ -115,15 +121,10 @@ module.exports = function (RED) {
                             source: { id: node.id, type: node.type, name: "OPC UA Browser"}
                         });
                         
-                //step 5 close session
-                node.debug("sending items " + node.items.length);
-                var msg = {
-                        payload: node.items,
-                        endpoint: opcuaEndpoint.endpoint
-                    };
-                node.send(msg);
+                //step 5 close session                
                 node.debug("close browse session");
                 await session.close();
+
                 // Set status notification browse done
                 node.status({
                     fill: "green",
@@ -131,6 +132,8 @@ module.exports = function (RED) {
                     text: "Done",
                     source: { id: node.id, type: node.type, name: "OPC UA Browser"}
                 });
+
+                return node.items;
             }
             catch(err)
             {
@@ -141,7 +144,7 @@ module.exports = function (RED) {
             }
         }
 
-        setupClient(opcuaEndpoint.endpoint, function (err) {
+        setupClient(opcuaEndpoint.endpoint, null, function (err) {
             if (err) {
                 node_error(err);
                 node.status({
@@ -157,47 +160,15 @@ module.exports = function (RED) {
         });
 
         node.on("input", function (msg) {
-            browseTopic = null;
             node.debug("input browser");
             
-            if (msg.payload.hasOwnProperty('actiontype')) {
-                switch (msg.payload.actiontype) {
-                    case 'browse':
-                        if (msg.payload.hasOwnProperty('root')) {
-                            if (msg.payload.root && msg.payload.root.hasOwnProperty('item')) {
-                                if (msg.payload.root.item.hasOwnProperty('nodeId')) {
-                                    browseTopic = browse_by_item(msg.payload.root.item.nodeId);
-                                }
-                            }
-                        }
-                        break;
-                    case 'endpointBrowse':
-                        node.warn("endpointBrowse");
-                        if (msg.hasOwnProperty('OpcUaEndpoint')) {
-                            [opcuaEndpoint,connectionOption,userIdentity]=setEndpoint(msg,opcuaEndpoint,connectionOption,userIdentity);
-                            browseTopic = msg.topic;
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            } else {
-                if (!node.topic && msg.topic) {
-                    if (msg.topic) {
-                        browseTopic = msg.topic;
-                    }
-                } else {
-                    browseTopic = node.topic;
-                }
-            }
+            let nodeToBrowse = msg.topic ? msg.topic : node.topic;
+            if(!nodeToBrowse) nodeToBrowse = objectsFolderNodeId;
+            
+            var validNodeId = opcua.isValidNodeId(opcua.resolveNodeId(nodeToBrowse));
+            if(!validNodeId) return;
 
-            node.items = []; // clear items
-
-            if (!browseTopic) {
-                browseTopic = browse_to_root();
-            }
-
-            setupClient(opcuaEndpoint.endpoint, function (err) {
+            setupClient(opcuaEndpoint.endpoint, nodeToBrowse, function (err) {
                 if (err) {
                     node_error(err);
                     node.status({
@@ -210,39 +181,13 @@ module.exports = function (RED) {
                 else {
                     node.debug("Browse loading Items done ...");
                 }
+            }).then((items) =>{
+                node.items = items;
+                msg.endpoint = opcuaEndpoint.endpoint;
+                msg.payload = items;
+                node.send(msg);
             });
-            msg.endpoint = opcuaEndpoint.endpoint;
-            msg.payload = node.items;
-            node.send(msg);
         });
-
-        function browse_by_item(nodeId) {
-            node.debug("Browse to root " + nodeId);
-            return nodeId;
-        }
-
-        function browse_to_root() {
-            node.warn("Browse to root Objects");
-            return "ns=0;i=85"; // OPC UA Root Folder Objects
-        }
-
-        function setEndpoint(msg,opcuaEndpoint,connectionOption,userIdentity) {//Used for "endpointBrowse"
-            if (msg && msg.OpcUaEndpoint) {
-              opcuaEndpoint = {}; // Clear old endpoint
-              opcuaEndpoint = msg.OpcUaEndpoint; // Check all parameters!
-              connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy]; // || opcua.SecurityPolicy.None;
-              connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode]; // || opcua.MessageSecurityMode.None;
-              //verbose_log("NEW connectionOption security parameters, policy: " + connectionOption.securityPolicy + " mode: " + connectionOption.securityMode);
-              if (opcuaEndpoint.login === true) {
-                userIdentity.userName = opcuaEndpoint.user;
-                userIdentity.password = opcuaEndpoint.password;
-                userIdentity.type = opcua.UserTokenType.UserName;
-                //verbose_log("NEW UserIdentity: " + JSON.stringify(userIdentity));
-              }
-            }
-            node.warn("setEndpoint:" + JSON.stringify(opcuaEndpoint));
-            return [opcuaEndpoint,connectionOption,userIdentity];
-          }
     }
 
     RED.nodes.registerType("OpcUa-Browser", OpcUaBrowserNode);
