@@ -209,6 +209,9 @@
             if (methodArgType === "UInt32") {
                 return opcua.DataType.UInt32;
             }
+            if (methodArgType === "UInt64") {
+                return opcua.DataType.UInt64;
+            }
             if (methodArgType === "Int16") {
                 return opcua.DataType.Int32;
             }
@@ -1023,6 +1026,9 @@
                         }
                         if (datatype == "UInt32") {
                             opcuaDataType = opcua.DataType.UInt32;
+                        }
+                        if (datatype == "UInt64") {
+                            opcuaDataType = opcua.DataType.UInt64;
                         }
                         if (datatype == "UInt16") {
                             opcuaDataType = opcua.DataType.UInt16;
