@@ -170,7 +170,9 @@ module.exports = function (RED) {
     }
 
     function verbose_warn(logMessage) {
-      console.warn(chalk.cyan(`${opcuaEndpoint.name}`) + chalk.yellow(":") + chalk.cyan(node.name) ? chalk.cyan(node.name) + chalk.yellow(': ') + chalk.cyan(logMessage) : chalk.yellow('OpcUaClientNode: ') + chalk.cyan(logMessage));
+      if (opcuaEndpoint.name && node.name) {
+        console.warn(chalk.cyan(`${opcuaEndpoint.name}`) + chalk.yellow(":") + chalk.cyan(node.name) ? chalk.cyan(node.name) + chalk.yellow(': ') + chalk.cyan(logMessage) : chalk.yellow('OpcUaClientNode: ') + chalk.cyan(logMessage));
+      }
       node.warn(logMessage);
     }
 
