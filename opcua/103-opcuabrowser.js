@@ -161,7 +161,9 @@ module.exports = function (RED) {
 
         node.on("input", function (msg) {
             node.debug("input browser");
-            
+
+            node.items = [];
+         
             let nodeToBrowse = msg.topic ? msg.topic : node.topic;
             if(!nodeToBrowse) nodeToBrowse = objectsFolderNodeId;
             
