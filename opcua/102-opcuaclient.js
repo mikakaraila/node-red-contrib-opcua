@@ -1676,7 +1676,7 @@ module.exports = function (RED) {
         }
         else {
           // console.log("Writing datatype: " + opcuaDataValue.dataType + " value: " + opcuaDataValue.value);
-          // Added overflow/underflow check Int32, Int16, UInt32, UInt16, Byte, SByte
+          // Added overflow/underflow check Int32, Int16, UInt64, UInt32, UInt16, Byte, SByte
           if (opcuaDataValue.dataType === opcua.DataType.Int32) {
             if (opcuaDataValue.value > 2147483647) {
               // See note below, some servers will NOT accept statusCode write
@@ -1701,6 +1701,30 @@ module.exports = function (RED) {
               set_node_error_status_to("error", "underflow");
               node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: underflow Writing min Int16");
               opcuaDataValue.value = -32768;
+            }
+          }
+          if (opcuaDataValue.dataType === opcua.DataType.UInt64) {
+            if (Array.isArray(opcuaDataValue.value)){ //64 bit ints are sometimes passed as arrays of 32 bit ints
+              if(!isNaN(opcuaDataValue.value[0]) && !isNaN(opcuaDataValue.value[1])){
+                opcuaDataValue.value = opcuaDataValue.value[0] * (2**32) + opcuaDataValue.value[1];
+              } else if(!isNaN(opcuaDataValue.value[0])){
+                opcuaDataValue.value = opcuaDataValue.value[0];
+              } else if(!isNaN(opcuaDataValue.value[1])){
+                opcuaDataValue.value = opcuaDataValue.value[1];
+              } else {
+                node.warn("Input to UInt64 write is array of null values")
+              }
+            }
+            if (opcuaDataValue.value > 2**64 - 1) {
+              // See note below, some servers will NOT accept statusCode write
+              set_node_error_status_to("error", "overflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: overflow Writing max Int32");
+              opcuaDataValue.value = 2**64 - 1;
+            }
+            if (opcuaDataValue.value < 0) {
+              set_node_error_status_to("error", "underflow");
+              node_error(node.name + " Cannot write value " + opcuaDataValue.value + ") to nodeId:" + nodeid.toString() + " error: underflow Writing min Int32");
+              opcuaDataValue.value = 0;
             }
           }
           if (opcuaDataValue.dataType === opcua.DataType.UInt32) {
