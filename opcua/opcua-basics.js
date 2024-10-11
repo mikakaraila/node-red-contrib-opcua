@@ -813,7 +813,29 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
             break;
         case "ExtensionObject":
             uaType = opcua.DataType.ExtensionObject;
-            nValue = JSON.parse(value);
+            if (typeof value === "string") {
+                nValue = JSON.parse(value); // value should be valid string
+            }
+            else {
+                // Here we expect that value is already extension object, not a JSON object
+                nValue = value;
+                /* TEST
+                let test = {
+                    dataType: opcua.DataType.ExtensionObject,
+                    value: value,
+                    arrayType: opcua.VariantArrayType.Array
+                };
+                console.log("TEST: " + JSON.stringify(test));
+                // Next Variant constructor will fail if value / test is not an extensionObject
+                nodeToWrite = {
+                    nodeId: "ns=1;s=TEST",
+                    attributeId: opcua.AttributeIds.Value,
+                    value: new opcua.DataValue({
+                      value: new opcua.Variant(test),
+                    })
+                  };
+                */
+            }
             break;
         default:
             // uaType = null;

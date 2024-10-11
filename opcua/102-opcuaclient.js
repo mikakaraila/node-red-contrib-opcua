@@ -58,7 +58,7 @@ module.exports = function (RED) {
     this.sendBufferSize = n.sendBufferSize;
 
     let node = this;
-    let opcuaEndpoint = RED.nodes.getNode(n.endpoint);
+    let opcuaEndpoint = RED.nodes.getNode(n.endpoint); // Use as global for the node
     let userIdentity = { type: opcua.UserTokenType.Anonymous }; // Initialize with Anonymous
     let connectionOption = {};
     let cmdQueue = []; // queue msgs which can currently not be handled because session is not established, yet and currentStatus is 'connecting'
@@ -298,12 +298,10 @@ module.exports = function (RED) {
       try {
         // Use empty 0.0.0.0 address as "no client" initial value
         if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") == 0) {
-
           verbose_warn(`close opcua client ${node.client} userIdentity ${userIdentity.type}`);
           if (node.client) {
             close_opcua_client("connection error: no session", 0);
           }
-
           items = [];
           node.items = items;
           set_node_status_to("no client");
@@ -392,7 +390,7 @@ module.exports = function (RED) {
       let statusParameter = opcuaBasics.get_node_status(statusValue);
       currentStatus = statusValue;
       let endpoint = "";
-      if (opcuaEndpoint?.endpoint) {
+      if (opcuaEndpoint && opcuaEndpoint.endpoint) {
         endpoint = opcuaEndpoint.endpoint
       }
       node.status({
@@ -691,7 +689,6 @@ module.exports = function (RED) {
           reset_opcua_client(connect_opcua_client);
         }
         node.send([null, { error: "can't work without OPC UA client", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
-
         return;
       }
 
@@ -1041,8 +1038,9 @@ module.exports = function (RED) {
     }
 
     async function connect_action_input(msg) {
+      console.log("#1 ACTION Connect!");
       verbose_log("Connecting...");
-      if (msg?.OpcUaEndpoint) {
+      if (msg && msg.OpcUaEndpoint) {
         // Remove listeners if existing
         if (node.client) {
           verbose_log("Cleanup old listener events... before connecting to new client");
@@ -1071,6 +1069,7 @@ module.exports = function (RED) {
       } else {
         verbose_log("Using endpoint:" + stringify(opcuaEndpoint));
       }
+      console.log("#2 Create client");
       if (!node.client) {
         create_opcua_client(connect_opcua_client);
       }
@@ -1078,9 +1077,7 @@ module.exports = function (RED) {
 
     function disconnect_action_input(msg) {
       verbose_log("Closing session...");
-
       if (node.session) {
-
         node.session.close(function (err) {
           if (err) {
             node_error("Session close error: " + err);
@@ -1644,12 +1641,36 @@ module.exports = function (RED) {
           };
         } else {
           // datatype is extension object
-          let extensionObject = Object.assign(defaultExtensionObject, payload); // MERGE payload over default values
-
+          verbose_log("payload: " + JSON.stringify(payload));
+          let extensionObject;
+          if (!defaultExtensionObject) {
+            extensionObject = payload; // use payload directly, payload must be ExtensionObject ready/like not a JSON object
+          }
+          else {
+            extensionObject = Object.assign(defaultExtensionObject, payload); // MERGE payload over default values
+          }
+          /* TEST
           nValue = {
             dataType: opcua.DataType.ExtensionObject,
-            value: extensionObject
+            value: extensionObject,
+            arrayType: opcua.VariantArrayType.Array // Quick FIX
           };
+          console.log("New nValue: " + JSON.stringify(nValue));
+          */
+          if (extensionObject && extensionObject.isArray() === true) {
+            nValue = {
+              dataType: opcua.DataType.ExtensionObject,
+              value: extensionObject,
+              arrayType: opcua.VariantArrayType.Array // Quick FIX
+            };
+            // console.log("New nValue: " + JSON.stringify(nValue));
+          }
+          else {
+            nValue = {
+              dataType: opcua.DataType.ExtensionObject,
+              value: extensionObject
+            };
+          }
         }
 
         return nValue
@@ -1823,7 +1844,7 @@ module.exports = function (RED) {
       }
     }
 
-    function writemultiple_action_input(msg) {
+    async function writemultiple_action_input(msg) {
       verbose_log("writing multiple");
       // Store as with readmultiple item
       if (msg.topic && msg.topic !== "writemultiple" && !Array.isArray(msg.payload)) {
@@ -1860,15 +1881,15 @@ module.exports = function (RED) {
           return;
         }
       }
-      // node.session &&
-      if (!node.session.isReconnecting && node.session.isChannelValid() && msg.topic === "writemultiple") {
+      // node.session 
+      if (node.session && !node.session.isReconnecting && node.session.isChannelValid() && msg.topic === "writemultiple") {
         verbose_log("Writing items: " + stringify(writeMultipleItems));
         if (writeMultipleItems.length === 0) {
           node_error(node.name + " no items to write");
           set_node_status_to("no items to write");
           return;
         }
-        node.session.write(writeMultipleItems, function (err, statusCode) {
+        await node.session.write(writeMultipleItems, function (err, statusCode) {
           if (err) {
             set_node_error_status_to("error", err);
             node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
@@ -1881,12 +1902,13 @@ module.exports = function (RED) {
           }
         });
       }
-      else if (!Array.isArray(msg.payload)) {
+      else {
         set_node_status_to("invalid session");
         node_error("Write multiple items session is not active!")
       }
 
       // OLD original way to use payload
+      // console.log("OLD WRITE MULTIPLE")
       if (node.session && !node.session.isReconnecting && node.session.isChannelValid()) {
         if (Array.isArray(msg.payload)) {
           const nodesToWrite = msg.payload.map(function (msgToWrite) {
@@ -1918,8 +1940,8 @@ module.exports = function (RED) {
         }
       } else {
         set_node_status_to("invalid session");
+        node_error("Write multiple as array session is not active!")
       }
-      node_error("Write multiple as array session is not active!")
     }
 
     function subscribe_action_input(msg) {
@@ -1931,7 +1953,7 @@ module.exports = function (RED) {
           timeMilliseconds = parseInt(msg.interval); // Use this instead of node.time and node.timeUnit
         }
         verbose_log("Using subscription with publish interval: " + timeMilliseconds);
-        let subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
+        subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
         let message = { "topic": "subscriptionId", "payload": subscription.subscriptionId };
         // node.send(message); // Make it possible to store
         node.send([message, null]);
@@ -1951,7 +1973,7 @@ module.exports = function (RED) {
       if (!subscription) {
         // first build and start subscription and subscribe on its started event by callback
         let timeMilliseconds = opcuaBasics.calc_milliseconds_by_time_and_unit(node.time, node.timeUnit);
-        let subscription = make_subscription(monitor_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
+        subscription = make_subscription(monitor_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
       } else if (subscription.subscriptionId != "terminated") {
         // otherwise check if its terminated start to renew the subscription
         set_node_status_to("active monitoring");
@@ -2473,7 +2495,7 @@ module.exports = function (RED) {
     }
 
     function reconnect(msg) {
-      if (msg?.OpcUaEndpoint) {
+      if (msg && msg.OpcUaEndpoint) {
         // Remove listeners if existing
         if (node.client) {
           verbose_log("Cleanup old listener events... before connecting to new client");
@@ -2485,7 +2507,7 @@ module.exports = function (RED) {
           verbose_log("Start reconnection event count:" + node.client.listenerCount("start_reconnection"));
           node.client.removeListener("start_reconnection", reconnection);
         }
-        let opcuaEndpoint = msg.OpcUaEndpoint; // Check all parameters!
+        opcuaEndpoint = msg.OpcUaEndpoint; // Use global variable! Check all parameters!
         connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy]; // || opcua.SecurityPolicy.None;
         connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode]; // || opcua.MessageSecurityMode.None;
         verbose_log("NEW connectionOption security parameters, policy: " + connectionOption.securityPolicy + " mode: " + connectionOption.securityMode);
@@ -2502,10 +2524,9 @@ module.exports = function (RED) {
         verbose_log("Using endpoint:" + stringify(opcuaEndpoint));
       }
       // First close subscriptions etc.
-      if (subscription?.isActive) {
+      if (subscription && subscription.isActive) {
         subscription.terminate();
       }
-
       // Now reconnect and use msg parameters
       subscription = null;
       monitoredItems.clear();

@@ -324,8 +324,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.332",
-                buildDate: "2024-09-10T13:21:00"
+                buildNumber: "0.2.333",
+                buildDate: "2024-10-11T11:54:00"
             };
             
             var hostname = os.hostname();
@@ -800,6 +800,7 @@
                         browseName = msg.topic.substring(d + 11);
                         if (browseName.indexOf(";") >= 0) {
                             browseName = browseName.substring(0, browseName.indexOf(";"));
+                            verbose_log("Folder browseName: " + browseName);
                         }
                     }                    
                     verbose_log("Adding Folder: ".concat(nodeId)); // Example topic format ns=4;s=FolderName
@@ -835,7 +836,7 @@
                             userAccessLevel: userAccessLevel, // TEST more
                             rolePermissions: [].concat(permissions),
                             accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
-                            browseName: browseName || nodeId.substring(7)
+                            browseName: browseName // || nodeId.substring(7) // Use only browseName
                         });
                     }
                     else {
