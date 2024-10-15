@@ -1608,7 +1608,7 @@ module.exports = function (RED) {
       // Less output
       // verbose_log("namespace=" + ns);
       // verbose_log("string=" + s);
-      verbose_log("NodeId= " + nodeid.toString + " type=" + msg.datatype);
+      // verbose_log("NodeId= " + nodeid.toString + " type=" + msg.datatype);
 
       let opcuaDataValue = msg.datatype && msg.datatype.indexOf("ExtensionObject") >= 0 && node.session
         ? await build_new_extensionObject_dataValue(msg.datatype, msg.topic, msg.payload, node.session)
@@ -1813,9 +1813,17 @@ module.exports = function (RED) {
             })
           };
         }
-
         if (msg.timestamp) {
+          verbose_log("NEW sourceTimestamp: " + new Date(msg.timestamp).toISOString());
           nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();
+        }
+        if (msg.sourceTimestamp) {
+          verbose_log("NEW sourceTimestamp: " + new Date(msg.sourceTimestamp).toISOString());
+          nodeToWrite.value.sourceTimestamp = new Date(msg.sourceTimestamp).getTime();
+        }
+        if (msg.statusCode) {
+          verbose_log("NEW statusCode: " + opcua.StatusCode.makeStatusCode(msg.statusCode));
+          nodeToWrite.value.statusCode = msg.statusCode;
         }
         verbose_log("VALUE TO WRITE: " + JSON.stringify(nodeToWrite));
         set_node_status_to("writing");
@@ -1848,6 +1856,7 @@ module.exports = function (RED) {
       verbose_log("writing multiple");
       // Store as with readmultiple item
       if (msg.topic && msg.topic !== "writemultiple" && !Array.isArray(msg.payload)) {
+        console.log("#NEW WRITE!");
         // Topic value: ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT
         let dIndex = msg.topic.indexOf("datatype=");
 
@@ -1881,15 +1890,14 @@ module.exports = function (RED) {
           return;
         }
       }
-      // node.session 
-      if (node.session && !node.session.isReconnecting && node.session.isChannelValid() && msg.topic === "writemultiple") {
+      if (node.session && !node.session.isReconnecting && node.session.isChannelValid()  && msg.topic === "writemultiple") {
         verbose_log("Writing items: " + stringify(writeMultipleItems));
         if (writeMultipleItems.length === 0) {
           node_error(node.name + " no items to write");
           set_node_status_to("no items to write");
           return;
         }
-        await node.session.write(writeMultipleItems, function (err, statusCode) {
+        node.session.write(writeMultipleItems, function (err, statusCode) {
           if (err) {
             set_node_error_status_to("error", err);
             node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
@@ -1899,19 +1907,24 @@ module.exports = function (RED) {
             set_node_status_to("active writing");
             verbose_log("Values written!");
             node.send([{ payload: statusCode }, null]);
+            return; // Do not try to run old way
           }
         });
       }
       else {
-        set_node_status_to("invalid session");
-        node_error("Write multiple items session is not active!")
+        console.log("#WRONG ELSE!!!");
+        if (!node.session || node.session.isReconnecting || !node.session.isChannelValid()) {
+          set_node_status_to("invalid session");
+          node_error("Write multiple items session is not active!")
+        }
       }
 
       // OLD original way to use payload
-      // console.log("OLD WRITE MULTIPLE")
+      console.log("#OLD WRITE MULTIPLE!")
+      let nodesToWrite; // Define here so it can write array of values
       if (node.session && !node.session.isReconnecting && node.session.isChannelValid()) {
         if (Array.isArray(msg.payload)) {
-          const nodesToWrite = msg.payload.map(function (msgToWrite) {
+          nodesToWrite = msg.payload.map(function (msgToWrite) {
             let opcuaDataValue = opcuaBasics.build_new_dataValue(msgToWrite.datatype || msg.datatype, msgToWrite.value);
             const nodeToWrite = {
               nodeId: msgToWrite.nodeId || (node && node.toString()),
