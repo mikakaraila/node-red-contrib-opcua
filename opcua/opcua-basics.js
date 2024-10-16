@@ -283,6 +283,7 @@ module.exports.get_node_status = function (statusValue) {
         case "active":
         case "active reading":
         case "value written":
+        case "values written":
         case "active multiple reading":
         case "active writing":
         case "writing":

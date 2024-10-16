@@ -1856,7 +1856,6 @@ module.exports = function (RED) {
       verbose_log("writing multiple");
       // Store as with readmultiple item
       if (msg.topic && msg.topic !== "writemultiple" && !Array.isArray(msg.payload)) {
-        console.log("#NEW WRITE!");
         // Topic value: ns=2;s=1:PST-007-Alarm-Level@Training?SETPOINT
         let dIndex = msg.topic.indexOf("datatype=");
 
@@ -1907,12 +1906,12 @@ module.exports = function (RED) {
             set_node_status_to("active writing");
             verbose_log("Values written!");
             node.send([{ payload: statusCode }, null]);
+            set_node_status_to("values written");
             return; // Do not try to run old way
           }
         });
       }
       else {
-        console.log("#WRONG ELSE!!!");
         if (!node.session || node.session.isReconnecting || !node.session.isChannelValid()) {
           set_node_status_to("invalid session");
           node_error("Write multiple items session is not active!")
@@ -1920,7 +1919,6 @@ module.exports = function (RED) {
       }
 
       // OLD original way to use payload
-      console.log("#OLD WRITE MULTIPLE!")
       let nodesToWrite; // Define here so it can write array of values
       if (node.session && !node.session.isReconnecting && node.session.isChannelValid()) {
         if (Array.isArray(msg.payload)) {
@@ -1948,6 +1946,7 @@ module.exports = function (RED) {
               set_node_status_to("active writing");
               verbose_log("Values written!");
               node.send([{ payload: statusCode }, null]);
+              set_node_status_to("values written");
             }
           });
         }
