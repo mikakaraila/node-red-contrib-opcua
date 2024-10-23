@@ -1657,7 +1657,7 @@ module.exports = function (RED) {
           };
           console.log("New nValue: " + JSON.stringify(nValue));
           */
-          if (extensionObject && extensionObject.isArray() === true) {
+          if (extensionObject && extensionObject.length !== undefined) {
             nValue = {
               dataType: opcua.DataType.ExtensionObject,
               value: extensionObject,
@@ -1890,13 +1890,16 @@ module.exports = function (RED) {
         }
       }
       if (node.session && !node.session.isReconnecting && node.session.isChannelValid()  && msg.topic === "writemultiple") {
+        if (Array.isArray(msg.payload)) {
+          writeMultipleItems = msg.payload; // expecting payload format is correct
+        }
         verbose_log("Writing items: " + stringify(writeMultipleItems));
         if (writeMultipleItems.length === 0) {
           node_error(node.name + " no items to write");
           set_node_status_to("no items to write");
           return;
         }
-        node.session.write(writeMultipleItems, function (err, statusCode) {
+        await node.session.write(writeMultipleItems, function (err, statusCode) {
           if (err) {
             set_node_error_status_to("error", err);
             node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
@@ -1910,6 +1913,7 @@ module.exports = function (RED) {
             return; // Do not try to run old way
           }
         });
+        return;
       }
       else {
         if (!node.session || node.session.isReconnecting || !node.session.isChannelValid()) {
@@ -1937,7 +1941,7 @@ module.exports = function (RED) {
           });
           verbose_log("Writing nodes with values:" + stringify(nodesToWrite));
 
-          node.session.write(nodesToWrite, function (err, statusCode) {
+          await node.session.write(nodesToWrite, function (err, statusCode) {
             if (err) {
               set_node_error_status_to("error", err);
               node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
