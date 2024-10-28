@@ -258,7 +258,7 @@ module.exports = function (RED) {
       }
 
       verbose_log(chalk.yellow("Event message topic: ") + chalk.cyan(msg.topic));
-      node.send([msg, null]);
+      node.send([msg, null, null]);
 
       _callback();
     }
@@ -399,7 +399,7 @@ module.exports = function (RED) {
         text: statusParameter.status,
         endpoint: `${endpoint}`
       });
-      node.send([null, { error: null, endpoint: `${endpoint}`, status: currentStatus }])
+      node.send([null, { error: null, endpoint: `${endpoint}`, status: currentStatus }, null])
 
     }
 
@@ -417,7 +417,7 @@ module.exports = function (RED) {
         text: statusParameter.status + " " + message,
         endpoint: `${endpoint}`
       });
-      node.send([null, { error: null, endpoint: `${endpoint}`, status: currentStatus }])
+      node.send([null, { error: null, endpoint: `${endpoint}`, status: currentStatus }, null]);
     }
 
     function set_node_error_status_to(statusValue, error) {
@@ -437,7 +437,7 @@ module.exports = function (RED) {
         text: statusParameter.status + " " + error,
         endpoint: `${endpoint}`
       });
-      node.send([null, { error: error, endpoint: `${endpoint}`, status: currentStatus }])
+      node.send([null, { error: error, endpoint: `${endpoint}`, status: currentStatus }, null]);
     }
 
     async function connect_opcua_client() {
@@ -672,7 +672,7 @@ module.exports = function (RED) {
       if (!node.action) {
         verbose_warn("Can't work without action (read, write, browse ...)");
         //node.send(msg); // do not send in case of error
-        node.send([null, { error: "Can't work without action (read, write, browse ...)", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+        node.send([null, { error: "Can't work without action (read, write, browse ...)", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
 
         return;
       }
@@ -688,7 +688,7 @@ module.exports = function (RED) {
           verbose_warn(`can't work without OPC UA client ${node.client} client ${node.session}`);
           reset_opcua_client(connect_opcua_client);
         }
-        node.send([null, { error: "can't work without OPC UA client", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+        node.send([null, { error: "can't work without OPC UA client", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
         return;
       }
 
@@ -696,7 +696,7 @@ module.exports = function (RED) {
         verbose_warn("terminated OPC UA Session");
         reset_opcua_client(connect_opcua_client);
 
-        node.send([null, { error: "terminated OPC UA Session", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+        node.send([null, { error: "terminated OPC UA Session", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
 
         return;
       }
@@ -706,7 +706,7 @@ module.exports = function (RED) {
         msg.action = "";
       } else if (!msg.topic) {
         verbose_warn("can't work without OPC UA NodeId - msg.topic empty");
-        node.send([null, { error: "can't work without OPC UA NodeId", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+        node.send([null, { error: "can't work without OPC UA NodeId", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
         return;
       }
 
@@ -877,7 +877,7 @@ module.exports = function (RED) {
         catch (err) {
           node_error(node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err);
           set_node_error_status_to("error", err.toString());
-          node.send([null, { error: node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+          node.send([null, { error: node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
 
         }
       }
@@ -1030,7 +1030,7 @@ module.exports = function (RED) {
         } catch (err) {
           set_node_status_to("execute method error");
           node.error("Method execution error: " + err.message);
-          node.send([null, { error: "Method execution error: " + err.message, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+          node.send([null, { error: "Method execution error: " + err.message, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
 
           return opcua.StatusCodes.BadMethodInvalid;
         }
@@ -1238,10 +1238,10 @@ module.exports = function (RED) {
                       node_error("Bad read: " + (dataValue.statusCode.toString(16)));
                       node_error("Message:" + msg.topic + " dataType:" + msg.datatype);
                       node_error("Data:" + stringify(dataValue));
-                      node.send([null, { error: "Bad read: " + (dataValue.statusCode.toString(16)), endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+                      node.send([null, { error: "Bad read: " + (dataValue.statusCode.toString(16)), endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
                     } else {
                       node_error(e.message);
-                      node.send([null, { error: e.message, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+                      node.send([null, { error: e.message, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
                     }
                   }
 
@@ -1309,7 +1309,7 @@ module.exports = function (RED) {
             opcua.AggregateFunction.Maximum,
             processingInterval);
           msg.payload = resultMax;
-          node.send([msg, null]);
+          node.send([msg, null, null]);
 
           if (resultMax.statusCode === opcua.StatusCodes.Good) {
             verbose_log(chalk.green("History max: ") + chalk.cyan(resultMax.historyData.dataValues[0].value.value));
@@ -1323,7 +1323,7 @@ module.exports = function (RED) {
             opcua.AggregateFunction.Minimum,
             processingInterval);
           msg.payload = resultMin;
-          node.send([msg, null]);
+          node.send([msg, null, null]);
 
           if (resultMin.statusCode === opcua.StatusCodes.Good) {
             verbose_log(chalk.green("History min: ") + chalk.cyan(resultMin.historyData.dataValues[0].value.value));
@@ -1337,7 +1337,7 @@ module.exports = function (RED) {
             opcua.AggregateFunction.Average,
             processingInterval);
           msg.payload = resultAve;
-          node.send([msg, null]);
+          node.send([msg, null, null]);
 
           if (resultAve.statusCode === opcua.StatusCodes.Good) {
             verbose_log(chalk.green("History ave: ") + chalk.cyan(resultAve.historyData.dataValues[0].value.value));
@@ -1351,7 +1351,7 @@ module.exports = function (RED) {
             opcua.AggregateFunction.Interpolative,
             processingInterval);
           msg.payload = resultInter;
-          node.send([msg, null]);
+          node.send([msg, null, null]);
 
           if (resultInter.statusCode === opcua.StatusCodes.Good) {
             verbose_log(chalk.green("History interpolative: ") + chalk.cyan(resultInter.historyData.dataValues[0].value.value));
@@ -1430,7 +1430,7 @@ module.exports = function (RED) {
               set_node_status_to("active multiple reading");
 
               if (msg.payload === "ALL") {
-                node.send([{ "topic": "ALL", "payload": dataValues, "items": multipleItems }, null]);
+                node.send([{ "topic": "ALL", "payload": dataValues, "items": multipleItems }, null, null]);
                 return;
               }
 
@@ -1462,24 +1462,36 @@ module.exports = function (RED) {
                       : dataValue.value.value;
 
                     // Use nodeId in topic, arrays are same length
+                    // Output pin 1 for each value by value
+                    // verbose_log("Output pin1, topic: " + JSON.stringify(multipleItems[i]) + " payload: " + value);
                     node.send([{
                       topic: multipleItems[i],
                       payload: value,
                       statusCode: dataValue.statusCode,
                       serverTimestamp: serverTs,
                       sourceTimestamp: sourceTs
-                    }, null]);
+                    }, null, null]);
                   } catch (e) {
                     if (dataValue != null) {
                       node_error("Bad read, statusCode: " + (dataValue.statusCode.toString(16)));
                       node_error("Data:" + stringify(dataValue));
                     } else {
                       node_error(e.message);
-                      node.send([null, { error: e.message, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+                      // Output pin 2 for errors
+                      // verbose_log("Output pin2, error: " + e.message);
+                      node.send([null, { error: e.message, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+                      return;
                     }
                   }
                 }
               }
+              // Send all values in one msg to output 3
+              // verbose_log("Output pin3, topic: " + multipleItems + " payload: " + dataValues);
+              node.send([null, null, 
+                {
+                  topic: multipleItems,
+                  payload: dataValues
+                }]); 
             }
           });
       } else {
@@ -1513,7 +1525,7 @@ module.exports = function (RED) {
         node.session.readAllAttributes(opcua.coerceNodeId(items[0]), function (err, result) {
           if (!err) {
             let newMsg = Object.assign(msg, result);
-            node.send([newMsg, null]);
+            node.send([newMsg, null, null]);
           }
           else {
             set_node_status_to("error");
@@ -1567,7 +1579,7 @@ module.exports = function (RED) {
           newmsg.topic = msg.topic;
           newmsg.payload = JSON.parse(JSON.stringify(ExtensionData)); //  JSON.stringify(ExtensionData); // New value with default values
           verbose_log("Extension Object msg: " + stringify(newmsg))
-          node.send([newmsg, null]);
+          node.send([newmsg, null, null]);
         }
         catch (err) {
           if (err) {
@@ -1579,7 +1591,7 @@ module.exports = function (RED) {
         set_node_status_to("invalid session");
         node_error("Session is not active!")
 
-        node.send([null, { error: "Session is not active!", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+        node.send([null, { error: "Session is not active!", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
 
       }
     }
@@ -1843,7 +1855,7 @@ module.exports = function (RED) {
               set_node_error_status_to("error", statusCode.description);
             }
             msg.payload = statusCode;
-            node.send([msg, null]);
+            node.send([msg, null, null]);
           }
         });
       } else {
@@ -1903,12 +1915,12 @@ module.exports = function (RED) {
           if (err) {
             set_node_error_status_to("error", err);
             node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
-            node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+            node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
 
           } else {
             set_node_status_to("active writing");
             verbose_log("Values written!");
-            node.send([{ payload: statusCode }, null]);
+            node.send([{ payload: statusCode }, null, null]);
             set_node_status_to("values written");
             return; // Do not try to run old way
           }
@@ -1945,11 +1957,11 @@ module.exports = function (RED) {
             if (err) {
               set_node_error_status_to("error", err);
               node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
-              node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+              node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
             } else {
               set_node_status_to("active writing");
               verbose_log("Values written!");
-              node.send([{ payload: statusCode }, null]);
+              node.send([{ payload: statusCode }, null, null]);
               set_node_status_to("values written");
             }
           });
@@ -1972,7 +1984,7 @@ module.exports = function (RED) {
         subscription = make_subscription(subscribe_monitoredItem, msg, opcuaBasics.getSubscriptionParameters(timeMilliseconds));
         let message = { "topic": "subscriptionId", "payload": subscription.subscriptionId };
         // node.send(message); // Make it possible to store
-        node.send([message, null]);
+        node.send([message, null, null]);
       } else if (subscription.subscriptionId != "terminated") {
         // otherwise check if its terminated start to renew the subscription
         set_node_status_to("active subscribing");
@@ -2067,7 +2079,7 @@ module.exports = function (RED) {
             let msg = {};
             msg.topic = nodeId;
             msg.payload = value; // if users want to get dataValue.value.value example contains function node
-            node.send([msg, null]);
+            node.send([msg, null, null]);
 
           }
         });
@@ -2169,7 +2181,7 @@ module.exports = function (RED) {
           }
 
           msgToSend.payload = dataValue.value.value;
-          node.send([msgToSend, null]);
+          node.send([msgToSend, null, null]);
 
         });
 
@@ -2297,7 +2309,7 @@ module.exports = function (RED) {
             msgToSend.sourcePicoseconds = 0;
           }
           msgToSend.payload = dataValue.value.value;
-          node.send([msgToSend, null]);
+          node.send([msgToSend, null, null]);
         });
       }
     }
@@ -2365,7 +2377,7 @@ module.exports = function (RED) {
             if (dataType && dataType.length > 0) {
               item.datatype = dataType;
             }
-            node.send([item, null]);
+            node.send([item, null, null]);
           }
           else {
             let item = { ...element }; // Clone element
@@ -2384,7 +2396,7 @@ module.exports = function (RED) {
               all.payload = allInOne;
               all.objects = JSON.stringify(obj); // Added extra result
               set_node_status_to("browse done");
-              node.send([all, null]);
+              node.send([all, null, null]);
               return;
             }
 
