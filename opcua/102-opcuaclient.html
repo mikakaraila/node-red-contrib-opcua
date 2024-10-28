@@ -41,7 +41,7 @@ limitations under the License.
             name: {value: ""}
         },
         inputs: 1,
-        outputs: 2,
+        outputs: 3,
         align: "right",
         icon: "opcuanodeLogo.png",
         label: function () {
@@ -139,16 +139,16 @@ limitations under the License.
         <label for="node-input-location"><i class="icon-time"></i> Certificate</label>
         <select id="node-input-certificate" style="width:72%;">
             <option value="n">None, use generated self-signed certificate</option>
-            <option value="l">Local certificate file, give path with filename (pem)</option>
+            <option value="l">Local certificate file, fixed path (pem)</option>
         </select>
     </div>
 	<div class="form-row">
-        <label for="node-input-path"><i class="icon-tasks"></i> Local certificate file with absolute path</label>
-        <input type="text" id="node-input-localfile" placeholder="Not used anymore! selfSigned.pem">
+        <label for="node-input-path"><i class="icon-tasks"></i> Local certificate file, fixed path</label>
+        <input type="text" id="node-input-localfile" placeholder="Path is not used anymore! Example: selfSigned.pem">
     </div>
 	<div class="form-row">
-        <label for="node-input-path"><i class="icon-tasks"></i> Local private key file with absolute path</label>
-        <input type="text" id="node-input-localkeyfile" placeholder="Not used anymore! private_key.pem">
+        <label for="node-input-path"><i class="icon-tasks"></i> Local private key file, fixed path</label>
+        <input type="text" id="node-input-localkeyfile" placeholder="Path is not used anymore! Example: private_key.pem">
     </div>
     <div class="form-row">
         <label for="node-input-useTransport"><i class="icon-tasks"></i> Use transport settings</label>
@@ -214,8 +214,9 @@ limitations under the License.
          </ul>
     </p>
     <p>Certificate is not needed if security is None.</p>
-    <p>Client will try to load server certificate from endpoint if server can provide it (copy server certificate under pki folder).</p>
-    <p>Local file with relative path and certificate filename can be then used to use server certificate (.pem ending file).</p>
+    <p>Client will try to load server certificate from endpoint if server can provide it, copy server certificate under pki folder: 
+    <p>USER-HOME-FOLDER/.config/node-opcua-default-nodejs/PKI/</p>
+    <p>Local file must be above folder and certificate filename can be then used to use server certificate (.pem ending file).</p>
     <p>User can manually copy server certificate.</p>
     <p>Inject your OPC UA address (NodeId) by the <strong>Topic</strong> of an Inject node or with the OpcUa-Item cotrolled by an Inject node.</p>
     <p>To Read/Write inject the Topic for every operation.</p>
