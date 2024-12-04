@@ -88,6 +88,8 @@
         var equipment;
         var physicalAssets;
         var vendorName;
+        var myVar2;
+        var freeMem;
         var equipmentNotFound = true;
         var initialized = false;
         var folder = null;
@@ -324,8 +326,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.337",
-                buildDate: "2024-10-28T12:41:00"
+                buildNumber: "0.2.339",
+                buildDate: "2024-12-04T09:54:00"
             };
             
             var hostname = os.hostname();
@@ -355,64 +357,75 @@
             });
 
             verbose_log('Server: add MyVariable2 ...');
-
             var variable2 = 10.0;
-
-            addressSpace.getOwnNamespace().addVariable({
-                componentOf: vendorName,
-                nodeId: "ns=1;s=MyVariable2",
-                browseName: "MyVariable2",
-                dataType: "Double",
-                minimumSamplingInterval: 500,
-                value: {
-                    get: function () {
-                        return new opcua.Variant({
-                            dataType: "Double",
-                            value: variable2
-                        });
-                    },
-                    set: function (variant) {
-                        variable2 = parseFloat(variant.value);
-                        return opcua.StatusCodes.Good;
+            try {
+                myVar2 = new opcua.Variant({dataType: opcua.DataType.Double, value: variable2});
+                addressSpace.getOwnNamespace().addVariable({
+                    componentOf: vendorName,
+                    nodeId: "ns=1;s=MyVariable2",
+                    browseName: "MyVariable2",
+                    dataType: "Double",
+                    minimumSamplingInterval: 500,
+                    value: {
+                        get: () => {
+                            return myVar2;
+                        },
+                        set: function (variant) {
+                            myVar2.value = parseFloat(variant.value);
+                            return opcua.StatusCodes.Good;
+                        }
                     }
-                }
-            });
-
+                });
+            }
+            catch(error) {
+                node_error("Cannot add variable; MyVariable2, error: " + error);
+            }
             verbose_log('Server: add FreeMemory ...');
-            addressSpace.getOwnNamespace().addVariable({
-                componentOf: vendorName,
-                nodeId: "ns=1;s=FreeMemory",
-                browseName: "FreeMemory",
-                dataType: "Double",
-                minimumSamplingInterval: 500,
-                value: {
-                    get: function () {
-                        return new opcua.Variant({
-                            dataType: opcua.DataType.Double,
-                            value: available_memory()
-                        });
+            try {
+                freeMem = new opcua.Variant({
+                    dataType: opcua.DataType.Double,
+                    value: available_memory()
+                });
+                node.freeMem = addressSpace.getOwnNamespace().addVariable({
+                    componentOf: vendorName,
+                    nodeId: "ns=1;s=FreeMemory",
+                    browseName: "FreeMemory",
+                    dataType: "Double",
+                    minimumSamplingInterval: 500,
+                    value: {
+                        get: function () {
+                            freeMem.value = available_memory();
+                            return freeMem;
+                        }
                     }
-                }
-            });
-
+                });
+            }
+            catch (error) {
+                node_error("Cannot add variable; freeMem, error: " + error)
+            }
             verbose_log('Server: add Counter ...');
-            node.vendorName = addressSpace.getOwnNamespace().addVariable({
-                componentOf: vendorName,
-                nodeId: "ns=1;s=Counter",
-                browseName: "Variables Counter",
-                displayName: "Variables Counter",
-                dataType: "UInt16",
-                minimumSamplingInterval: 500,
-                value: {
-                    get: function () {
-                        return new opcua.Variant({
-                            dataType: opcua.DataType.UInt16,
-                            value: Object.keys(variables).length // Counter will show amount of created variables
-                        });
+            try {
+                node.vendorName = addressSpace.getOwnNamespace().addVariable({
+                    componentOf: vendorName,
+                    nodeId: "ns=1;s=Counter",
+                    browseName: "Variables Counter",
+                    displayName: "Variables Counter",
+                    dataType: "UInt16",
+                    minimumSamplingInterval: 500,
+                    value: {
+                        get: function () {
+                            return new opcua.Variant({
+                                dataType: opcua.DataType.UInt16,
+                                value: Object.keys(variables).length // Counter will show amount of created variables
+                            });
+                        }
                     }
-                }
-            });
-
+                });
+            }
+            catch (error) {
+                node_error("Cannot add variable; Counter, error: " + error);
+            }
+             
             var method = addressSpace.getOwnNamespace().addMethod(
                 vendorName, {
                     browseName: "Bark",
@@ -796,7 +809,8 @@
                     var browseName = "";
                     var d = msg.topic.indexOf("browseName=");
                     if (d > 0) {
-                        nodeId = nodeId.substring(0, d - 1); // format is msg.topic="ns=1;s=Main.Test;browseName=Test"
+                        nodeId = msg.topic.substring(0, d - 1); 
+                        // format is msg.topic="ns=1;s=Main.Test;browseName=Test"
                         browseName = msg.topic.substring(d + 11);
                         if (browseName.indexOf(";") >= 0) {
                             browseName = browseName.substring(0, browseName.indexOf(";"));
@@ -828,15 +842,23 @@
                     
                     // Own namespace
                     if (nodeId.indexOf("ns=1;") >= 0) {
+                        parentFolder = node.server.engine.addressSpace.rootFolder.objects;
+                        if (folder) {
+                            parentFolder = folder; // Use previously created folder as parentFolder or setFolder() can be used to set parentFolder
+                        }
+                        if (browseName.length === 0) {
+                            browseName = nodeId.substring(7);
+                        }
+                        console.log("### nodeId: " + nodeId + " parent: " + parentFolder.nodeId + " description: '" + description + "' browseName: '" + browseName + "'");
                         folder = addressSpace.getOwnNamespace().addObject({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
                             nodeId: nodeId, // msg.topic,
-                            description: description,
+                            description: description || "",
                             accessLevel: accessLevel, // TEST more
                             userAccessLevel: userAccessLevel, // TEST more
                             rolePermissions: [].concat(permissions),
                             accessRestrictions: opcua.AccessRestrictionsFlag.None, // TODO from msg
-                            browseName: browseName // || nodeId.substring(7) // Use only browseName
+                            browseName: browseName // || nodeId.substring(7) // browseName cannot be empty
                         });
                     }
                     else {
