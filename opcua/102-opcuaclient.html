@@ -38,6 +38,8 @@ limitations under the License.
             maxMessageSize: {value: 8192, required: false}, // should be at least 8192
             receiveBufferSize: {value: 8192, required: false},
             sendBufferSize: {value: 8192, required: false},
+            setstatusandtime: {value: false, required: true},
+            keepsessionalive: {value: false, required: true},
             name: {value: ""}
         },
         inputs: 1,
@@ -51,10 +53,10 @@ limitations under the License.
             return this.name ? "node_label_italic" : "";
         },
         oneditprepare: function () {
-
             var node = this;
-
             try {
+                var keepsessionaliveCheckbox = $("#node-input-keepsessionalive");
+                keepsessionaliveCheckbox.prop('checked', node.keepsessionalive);
                 var inputAction = $('#node-input-action');
                 var inputTime = $('#node-input-timerow');
                 var inputDeadband = $('#node-input-deadband');
@@ -151,25 +153,34 @@ limitations under the License.
         <input type="text" id="node-input-localkeyfile" placeholder="Path is not used anymore! Example: private_key.pem">
     </div>
     <div class="form-row">
-        <label for="node-input-useTransport"><i class="icon-tasks"></i> Use transport settings</label>
-        <input type="checkbox" id="node-input-useTransport" placeholder="">
+        <label for="node-input-useTransport" style="width:72%;"><i class="icon-tasks"></i> Use transport settings</label>
+        <input type="checkbox" id="node-input-useTransport" style="width:20%;">
     </div>
     <div class="form-row">
-        <label for="node-input-maxChunkCount"><i class="icon-tasks"></i> Max ChunkCount</label>
+        <label for="node-input-maxChunkCount" style="width:80%;"><i class="icon-tasks"></i> Max ChunkCount</label>
         <input type="number" id="node-input-maxChunkCount" placeholder=1 style="width:20%;">
     </div>
     <div class="form-row">
-        <label for="node-input-maxMessageSize"><i class="icon-tasks"></i> Max MessageSize</label>
+        <label for="node-input-maxMessageSize" style="width:80%;"><i class="icon-tasks"></i> Max MessageSize</label>
         <input type="number" id="node-input-maxMessageSize" placeholder=8192 style="width:20%;">
     </div>
     <div class="form-row">
-        <label for="node-input-receiveBufferSize"><i class="icon-tasks"></i> Receive BufferSize</label>
+        <label for="node-input-receiveBufferSize" style="width:80%;"><i class="icon-tasks"></i> Receive BufferSize</label>
         <input type="number" id="node-input-receiveBufferSize" placeholder=8192 style="width:20%;">
     </div>
     <div class="form-row">
-        <label for="node-input-sendBufferSize"><i class="icon-tasks"></i> Send BufferSize</label>
+        <label for="node-input-sendBufferSize" style="width:80%;"><i class="icon-tasks"></i> Send BufferSize</label>
         <input type="number" id="node-input-sendBufferSize" placeholder=8192 style="width:20%;">
     </div>
+    <div class="form-row">
+        <label for="node-input-setstatusandtime" style="width:72%;"><i class="icon-tasks"></i> Set statuscode and timestamp</label>
+        <input type="checkbox" id="node-input-setstatusandtime" style="width:20%">
+    </div>
+    <div class="form-row">
+        <label for="node-input-keepsessionalive" style="width:72%;"><i class="icon-tasks"></i> Keep session alive</label>
+        <input type="checkbox" id="node-input-keepsessionalive" style="width:20%">
+    </div>
+
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tasks"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="">
@@ -247,7 +258,8 @@ limitations under the License.
     <p>Write file will write msg.topic nodeId to the server File object, msg.payload will contain buffer OR msg.fileName path to local file to be written to server </p>
 
 
-
     <p>The second Output is for status monitoring purposes: allowing management of endpoints, their errors and statuses</p>
     <p>Second Output shall look like this: '{error: {error} , endpoint: {opcuaEndpoint}, status: {currentStatus} }'</p>
+
+    <p>The third Output is for raw values returned from the OPC UA response</p>
 </script>
