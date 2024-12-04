@@ -269,6 +269,8 @@ module.exports.get_node_status = function (statusValue) {
         case "keepalive":
         case "nodeId stored":
         case "clear items":
+        case "building method arguments":
+        case "call method":
         case "executing method":
             fillValue = "green";
             shapeValue = "ring";
