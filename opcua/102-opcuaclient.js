@@ -56,7 +56,8 @@ module.exports = function (RED) {
     this.maxMessageSize = n.maxMessageSize;
     this.receiveBufferSize = n.receiveBufferSize;
     this.sendBufferSize = n.sendBufferSize;
-
+    this.setstatusandtime = n.setstatusandtime;
+    this.keepsessionalive = n.keepsessionalive;
     let node = this;
     let opcuaEndpoint = RED.nodes.getNode(n.endpoint); // Use as global for the node
     let userIdentity = { type: opcua.UserTokenType.Anonymous }; // Initialize with Anonymous
@@ -311,6 +312,9 @@ module.exports = function (RED) {
           return;
         }
         // Normal client
+        if (!node.keepsessionalive) {
+          node.keepsessionalive = false;
+        }
         let options = {
           securityMode: connectionOption.securityMode,
           securityPolicy: connectionOption.securityPolicy,
@@ -318,11 +322,12 @@ module.exports = function (RED) {
           endpointMustExist: connectionOption.endpointMustExist,
           connectionStrategy: connectionOption.connectionStrategy,
           clientName: node.name, // Fix for #664 sessionName
-          keepSessionAlive: true, // TODO later make it possible to disable NOTE: commented out: issue #599, code back active needed!!
+          keepSessionAlive: node.keepsessionalive,
           requestedSessionTimeout: 60000 * 5, // 5min, default 1min
           automaticallyAcceptUnknownCertificate: true
           // transportSettings: transportSettings // Some 
         };
+        verbose_log(chalk.yellow("Keep session alive: ") + chalk.cyan(node.keepsessionalive));
         if (node.useTransport === true) {
           options["transportSettings"] = JSON.parse(JSON.stringify(connectionOption.transportSettings));
           verbose_log(chalk.red("NOTE: Using transport settings: " + chalk.cyan(JSON.stringify(options))));
@@ -355,7 +360,7 @@ module.exports = function (RED) {
     }
 
     function close_opcua_client(message, error) {
-      verbose_warn(`closing opcua client ${opcua.client == null} userIdentity ${JSON.stringify(userIdentity)}`)
+      // verbose_warn(`closing opcua client ${opcua.client == null} userIdentity ${JSON.stringify(userIdentity)}`)
       if (node.client) {
         node.client.removeListener("connection_reestablished", reestablish);
         node.client.removeListener("backoff", backoff);
@@ -556,7 +561,7 @@ module.exports = function (RED) {
       // STEP 3
       // verbose_log("Create session...");
       try {
-        verbose_warn(`Create session with userIdentity node.client ${node.client == null} userIdentity ${JSON.stringify(userIdentity)}`)
+        // verbose_warn(`Create session with userIdentity node.client ${node.client == null} userIdentity ${JSON.stringify(userIdentity)}`)
         verbose_log(chalk.green("3) Create session with userIdentity at: ") + chalk.cyan(JSON.stringify(userIdentity)));
         //  {"clientName": "Node-red OPC UA Client node " + node.name},
         // sessionName = "Node-red OPC UA Client node " + node.name;
@@ -930,7 +935,9 @@ module.exports = function (RED) {
               text: "Method executed"
             });
           }
-
+          else {
+            node.error("Failed, method result: ", status.description);
+          }
         }
         catch (err) {
           node.error(chalk.red("Cannot call method, error: " + err.message));
@@ -945,39 +952,60 @@ module.exports = function (RED) {
       if (msg.methodId && msg.inputArguments) {
         verbose_log("Calling method: " + JSON.stringify(msg.methodId));
         verbose_log("InputArguments: " + JSON.stringify(msg.inputArguments));
-        verbose_log("OutputArguments: " + JSON.stringify(msg.outputArguments));
-
+        if (msg.outputArguments) {
+          verbose_log("OutputArguments: " + JSON.stringify(msg.outputArguments));
+        }
+        let args=[];
+        let i = 0;
+        let tmp;
+        set_node_status_to("building method arguments");
         try {
-          let i = 0;
-          let arg;
           while (i < msg.inputArguments.length) {
-            arg = msg.inputArguments[i];
-            if (arg.dataType === "NodeId") {
-              arg.value = opcua.coerceNodeId(arg.value);
+            tmp = msg.inputArguments[i];
+            if (tmp.dataType === "NodeId") {
+              tmp.value = opcua.coerceNodeId(tmp.value);
             }
-            if (arg.dataType === "ExtensionObject") {
+            if (tmp.dataType === "ExtensionObject") {
               let extensionobject = null;
-              if (arg.typeid) {
-                extensionobject = await node.session.constructExtensionObject(opcua.coerceNodeId(arg.typeid), {}); // TODO make while loop to enable await
+              // tmp = {dataType: "ExtensionObject", typeid: tmp.typeid, value: tmp.value};
+              if (tmp.typeid) {
+                extensionobject = await node.session.constructExtensionObject(opcua.coerceNodeId(tmp.typeid), tmp.value); // TODO make while loop to enable await
+                tmp.value = extensionobject;
               }
-              verbose_log("ExtensionObject=" + stringify(extensionobject));
-              Object.assign(extensionobject, arg.value);
-              arg.value = new opcua.Variant({
+              // verbose_log("ExtensionObject: " + extensionobject);
+              // Object.assign(extensionobject, tmp.value);
+              /*
+              verbose_log(chalk.green("ExtensionObject value: ") + JSON.stringify(tmp.value));
+              tmp.value = new opcua.Variant({
                 dataType: opcua.DataType.ExtensionObject,
-                value: extensionobject
+                value: tmp.value // JSON.stringify(tmp.value) // extensionobject
               });
+              */
+              verbose_log(chalk.green("ExtensionObject: ") + JSON.stringify(tmp));
             }
+            else {
+              if (tmp.valueRank && tmp.valueRank >= 1) {
+                tmp = {dataType: tmp.dataType, valueRank: tmp.valueRank, arrayDimensions: 1, value: tmp.value};
+              }
+              else {
+                tmp = {dataType: tmp.dataType, value: tmp.value};
+              }
+              verbose_log("Basic type: " + JSON.stringify(tmp));
+            }
+            args.push(tmp);
             i++;
           }
         } catch (err) {
+          console.log(chalk.red("Error: "), err);
           let msg = {};
           msg.error = {};
           msg.error.message = "Invalid NodeId: " + err;
           msg.error.source = this;
-          node.error("Invalid NodeId: ", msg);
+          node.error("Invalid argument: ", tmp);
           return opcua.StatusCodes.BadNodeIdUnknown;
         }
-        verbose_log("Updated InputArguments: " + JSON.stringify(msg.inputArguments));
+        // verbose_log("Updated InputArguments: " + stringify(msg.inputArguments));
+        verbose_log("Updated InputArguments: " + JSON.stringify(args));
         let callMethodRequest;
         let diagInfo;
         try {
@@ -985,23 +1013,26 @@ module.exports = function (RED) {
             objectId: opcua.coerceNodeId(msg.objectId),
             methodId: opcua.coerceNodeId(msg.methodId),
             inputArgumentDiagnosticInfos: diagInfo,
-            inputArguments: msg.inputArguments,
+            inputArguments: args,
+            // inputArguments: msg.inputArguments,
             outputArguments: msg.outputArguments
           });
         } catch (err) {
           set_node_status_to("call method error");
           node.error("Build method request failed, error: " + err.message);
         }
-
         verbose_log("Call request: " + callMethodRequest.toString());
         verbose_log("Calling: " + callMethodRequest);
         try {
+          set_node_status_to("call method");
           const result = await node.session.call(callMethodRequest);
           if (diagInfo) {
-            verbose_log("Diagn. info: " + JSON.stringify(diagInfo));
+            verbose_log("Diagn. info: " + stringify(diagInfo));
           }
-          verbose_log("Output args: " + JSON.stringify(msg.outputArguments));
-          verbose_log("Results:     " + JSON.stringify(result));
+          if (msg.outputArguments) {
+            verbose_log("Output args: " + stringify(msg.outputArguments));
+          }
+          verbose_log("Results:     " + stringify(result));
           msg.result = result;
           if (result && result.statusCode === opcua.StatusCodes.Good) {
             let i = 0;
@@ -1653,7 +1684,7 @@ module.exports = function (RED) {
           };
         } else {
           // datatype is extension object
-          verbose_log("payload: " + JSON.stringify(payload));
+          verbose_log("payload: " + stringify(payload));
           let extensionObject;
           if (!defaultExtensionObject) {
             extensionObject = payload; // use payload directly, payload must be ExtensionObject ready/like not a JSON object
@@ -1825,15 +1856,15 @@ module.exports = function (RED) {
             })
           };
         }
-        if (msg.timestamp) {
+        if (node.setatatusandtime && msg.timestamp) {
           verbose_log("NEW sourceTimestamp: " + new Date(msg.timestamp).toISOString());
           nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();
         }
-        if (msg.sourceTimestamp) {
+        if (node.setstatusandtime && msg.sourceTimestamp) {
           verbose_log("NEW sourceTimestamp: " + new Date(msg.sourceTimestamp).toISOString());
           nodeToWrite.value.sourceTimestamp = new Date(msg.sourceTimestamp).getTime();
         }
-        if (msg.statusCode) {
+        if (node.setstatusandtime && msg.statusCode) {
           verbose_log("NEW statusCode: " + opcua.StatusCode.makeStatusCode(msg.statusCode));
           nodeToWrite.value.statusCode = msg.statusCode;
         }
