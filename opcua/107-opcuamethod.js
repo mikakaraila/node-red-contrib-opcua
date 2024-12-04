@@ -74,6 +74,9 @@ module.exports = function (RED) {
       node.inputArguments.push({dataType: n.arg0type, typeid: n.arg0typeid, value: JSON.parse(n.arg0value)});
     } else if (n.arg0type === "String") {
       node.inputArguments.push({dataType: n.arg0type, value: n.arg0value});
+    } else if (n.out0type === "LocalizedText") {
+      // ValueRank="1" ArrayDimensions="1"
+      node.inputArguments.push({dataType: n.arg0type, valueRank: 1, arrayDimensions: 1, value: [n.arg0value]});
     } else if (n.arg0type === "ScanData") {
       node.inputArguments.push({dataType: n.arg0type, value: new ScanData(n.arg0value)});
     }
@@ -97,10 +100,12 @@ module.exports = function (RED) {
     } else if (n.arg1type === "NodeId") {
       node.inputArguments.push({dataType: n.arg1type, value: opcua.coerceNodeId(n.arg1value)});
     } else if (n.arg1type === "ExtensionObject") {
-      node.inputArguments.push({dataType: n.arg12type, typeid: n.arg1typeid, value: JSON.parse(n.arg1value)});
+      node.inputArguments.push({dataType: n.arg1type, typeid: n.arg1typeid, value: JSON.parse(n.arg1value)});
     } else if (n.arg1type === "String") {
       node.inputArguments.push({dataType: n.arg1type, value: n.arg1value});
-    } else if (n.arg1type === "Double" || n.arg1type === "Float" ) {
+    } else if (n.arg1type === "LocalizedText") {
+      node.inputArguments.push({dataType: n.arg1type, valueRank: 1, arrayDimensions: 1, value: [n.arg1value]});
+    }else if (n.arg1type === "Double" || n.arg1type === "Float" ) {
       node.inputArguments.push({dataType: n.arg1type, value: parseFloat(n.arg1value)});
     } else {
       node.inputArguments.push({dataType: n.arg1type, value: parseInt(n.arg1value)});
@@ -123,7 +128,9 @@ module.exports = function (RED) {
       node.inputArguments.push({dataType: n.arg2type, typeid: n.arg0typeid, value: JSON.parse(n.arg2value)});
     } else if (n.arg2type === "String") {
       node.inputArguments.push({dataType: n.arg2type, value: n.arg2value});
-    } else if (n.arg2type === "Double" || n.arg2type === "Float" ) {
+    } else if (n.arg2type === "LocalizedText") {
+      node.inputArguments.push({dataType: n.arg2type, valueRank: 1, arrayDimensions: 1, value: [n.arg2value]});
+    }else if (n.arg2type === "Double" || n.arg2type === "Float" ) {
       node.inputArguments.push({dataType: n.arg2type, value: parseFloat(n.arg2value)});
     } else {
       node.inputArguments.push({dataType: n.arg2type, value: parseInt(n.arg2value)});
@@ -146,7 +153,10 @@ module.exports = function (RED) {
       node.outputArguments.push({dataType: n.out0type, typeid: n.out0typeid, value: JSON.parse(n.out0value)});
     } else if (n.out0type === "String") {
       node.outputArguments.push({dataType: n.out0type, value: n.out0value});
-    } else if (n.out0type === "ScanData") {
+    } else if (n.out0type === "LocalizedText") {
+      node.outputArguments.push({dataType: n.out0type, value: n.out0value});
+    }
+    else if (n.out0type === "ScanData") {
       node.outputArguments.push({dataType: n.out0type, value: new ScanData(n.out0value)});
     }
     else if (n.out0type === "Double" || n.out0type === "Float" ) {
@@ -254,9 +264,9 @@ module.exports = function (RED) {
           // step 3: call method
           for (const cmd of cmdQueue) {
             verbose_log("Call method: " + JSON.stringify(cmd));
-            var status = await callMethod(cmd);  
-            if (status !== opcua.StatusCodes.Good) {
-              node.error("Could not run method: ", cmd);
+            var result = await callMethod(cmd);  
+            if (result.statusCode !== opcua.StatusCodes.Good) {
+              verbose_warn("Could not run method: " + result);
             }
           }
 
@@ -374,6 +384,7 @@ module.exports = function (RED) {
         var callMethodRequest;
         var diagInfo;
         try {
+          set_node_status_to("call method");
           callMethodRequest = new opcua.CallMethodRequest({
             objectId: opcua.coerceNodeId(msg.objectId),
             methodId: opcua.coerceNodeId(msg.methodId),
@@ -393,7 +404,7 @@ module.exports = function (RED) {
         verbose_log("Call request: " + callMethodRequest.toString());
         verbose_log("Calling: " + callMethodRequest);
         try {
-          const result = await node.session.call(callMethodRequest);
+          let result = await node.session.call(callMethodRequest);
           if (diagInfo) {
             verbose_log("Diagn. info: " + JSON.stringify(diagInfo));
           }
@@ -417,10 +428,11 @@ module.exports = function (RED) {
           } else {
             set_node_status_to("error: " + result.statusCode.description)
             node.error("Execute method result, error:" + result.statusCode.description);
-            return result.statusCode;
+            return result;
           }
+          set_node_status_to("method executed");
           node.send(msg);
-          return opcua.StatusCodes.Good;
+          return result; // opcua.StatusCodes.Good;
         } catch (err) {
           set_node_status_to("Method execution error: " + err);
           var msg = {};
