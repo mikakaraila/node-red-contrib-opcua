@@ -135,7 +135,7 @@ module.exports = function (RED) {
       userIdentity = {
         type: opcua.UserTokenType.UserName,
         userName: opcuaEndpoint.credentials.user.toString(),
-        password: opcuaEndpoint.credentials.password.toString()
+        password: opcuaEndpoint.credentials.password ? opcuaEndpoint.credentials.password.toString() : ""
       };
       verbose_log(chalk.green("Using UserName & password: ") + chalk.cyan(JSON.stringify(userIdentity)));
     }
