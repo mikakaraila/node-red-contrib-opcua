@@ -1856,7 +1856,7 @@ module.exports = function (RED) {
             })
           };
         }
-        if (node.setatatusandtime && msg.timestamp) {
+        if (node.setstatusandtime && msg.timestamp) {
           verbose_log("NEW sourceTimestamp: " + new Date(msg.timestamp).toISOString());
           nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();
         }
