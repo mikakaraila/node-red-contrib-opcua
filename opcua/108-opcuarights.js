@@ -58,7 +58,7 @@ module.exports = function (RED) {
     this.permissionAddNode = n.permissionAddNode;
     var node = this;
     
-    node.debug("Node parameters: " + JSON.stringify(node));
+    node.debug(chalk.yellow("Node parameters: ") + chalk.cyan(JSON.stringify(node)));
     
     node.on("input", function (msg) {
       // This node will extend new field to msg so addVariable can set needed access level and permissions

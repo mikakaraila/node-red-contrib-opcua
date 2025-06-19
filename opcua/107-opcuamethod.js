@@ -47,7 +47,7 @@ module.exports = function (RED) {
     node.outputArguments = [];
 
     function set_node_status_to(statusValue, message = "") {
-      verbose_log("Client status: " + statusValue);
+      verbose_log(chalk.yellow("Client status: ") + chalk.cyan(statusValue));
       var statusParameter = opcuaBasics.get_node_status(statusValue);
       currentStatus = statusValue;
       node.status({
@@ -192,14 +192,15 @@ module.exports = function (RED) {
       userIdentity.password = opcuaEndpoint.credentials.password;
       userIdentity.type = uaclient.UserTokenType.UserName; // New TypeScript API parameter
     }
-    node.debug("Input arguments:" + JSON.stringify(node.inputArguments));
+    node.debug(chalk.yellow("Input arguments: ") + chalk.cyan(JSON.stringify(node.inputArguments)));
     
     const backoff = function (attempt, delay) {
       var msg = {};
       msg.error = {};
       msg.error.message = "reconnect";
       msg.error.source = this;
-      node.error("reconnect", msg);
+      // node.error("reconnect", msg);
+      verbose_log(chalk.red("reconnect") + chalk.cyan(msg));
       set_node_status_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
     };
 
@@ -244,7 +245,7 @@ module.exports = function (RED) {
 
         const statuses = ['initialized', 'method executed'];
 
-        verbose_log("Queued Message: " + JSON.stringify(message));
+        verbose_log(chalk.yellow("Queued Message: ") + chalk.cyan(JSON.stringify(message)));
         cmdQueue.push(message);
 
         if (statuses.includes(currentStatus)) {
@@ -258,15 +259,15 @@ module.exports = function (RED) {
 
           // step 2 : createSession
           node.session = await node.client.createSession(userIdentity);
-          verbose_log("start session on " + opcuaEndpoint.endpoint);
+          verbose_log(chalk.yellow("start session on ") + chalk.cyan(opcuaEndpoint.endpoint));
           set_node_status_to("session active");
 
           // step 3: call method
           for (const cmd of cmdQueue) {
-            verbose_log("Call method: " + JSON.stringify(cmd));
+            verbose_log(chalk.yellow("Call method: ") + chalk.cyan(JSON.stringify(cmd)));
             var result = await callMethod(cmd);  
             if (result.statusCode !== opcua.StatusCodes.Good) {
-              verbose_warn("Could not run method: " + result);
+              verbose_warn(chalk.red("Could not run method: ") + chalk.cyan(result));
             }
           }
 
@@ -276,7 +277,7 @@ module.exports = function (RED) {
           // step 4: close session & disconnect client
           if (node.session) {
             await node.session.close();
-            verbose_log("Session closed");
+            verbose_log(chalk.yellow("Session closed"));
             node.session = null;
             await node.client.disconnect();
           }
@@ -305,7 +306,7 @@ module.exports = function (RED) {
           if(!node.client.isReconnecting){
             node.client.disconnect(function () {
               node.client = null;
-              verbose_log("Client disconnected!");
+              verbose_log(chalk.yellow("Client disconnected!"));
               if (error === 0) {
                 set_node_status_to("closed");
               }
@@ -350,9 +351,9 @@ module.exports = function (RED) {
 
     async function callMethod(msg) {
       if (msg.methodId && msg.inputArguments) {
-        verbose_log("Calling method: " + JSON.stringify(msg.methodId));
-        verbose_log("InputArguments: " + JSON.stringify(msg.inputArguments));
-        verbose_log("OutputArguments: " + JSON.stringify(msg.outputArguments));
+        verbose_log(chalk.yellow("Calling method: ") + chalk.cyan(JSON.stringify(msg.methodId)));
+        verbose_log(chalk.yellow("InputArguments: ") + chalk.cyan(JSON.stringify(msg.inputArguments)));
+        verbose_log(chalk.yellow("OutputArguments: ") + chalk.cyan(JSON.stringify(msg.outputArguments)));
 
         try {
           var i = 0;
@@ -367,7 +368,7 @@ module.exports = function (RED) {
               if (arg.typeid) {
                 extensionobject = await node.session.constructExtensionObject(opcua.coerceNodeId(arg.typeid), arg.value); // TODO make while loop to enable await
               }
-              verbose_log("ExtensionObject=" + stringify(extensionobject));
+              verbose_log(chalk.yellow("ExtensionObject=") + chalk.cyan(stringify(extensionobject)));
               arg.value = extensionobject;
             }
             i++;
@@ -380,7 +381,7 @@ module.exports = function (RED) {
           node.error("Invalid NodeId: ", msg);
           return opcua.StatusCodes.BadNodeIdUnknown;
         }
-        verbose_log("Updated InputArguments: " + JSON.stringify(msg.inputArguments));
+        verbose_log(chalk.yellow("Updated InputArguments: ") + chalk.cyan(JSON.stringify(msg.inputArguments)));
         var callMethodRequest;
         var diagInfo;
         try {
@@ -401,26 +402,26 @@ module.exports = function (RED) {
           node.error("Build method request failed, error: ", msg);
         }
 
-        verbose_log("Call request: " + callMethodRequest.toString());
-        verbose_log("Calling: " + callMethodRequest);
+        verbose_log(chalk.yellow("Call request: ") + chalk.cyan(callMethodRequest.toString()));
+        verbose_log(chalk.yellow("Calling: ") + chalk.cyan(callMethodRequest));
         try {
           let result = await node.session.call(callMethodRequest);
           if (diagInfo) {
-            verbose_log("Diagn. info: " + JSON.stringify(diagInfo));
+            verbose_log(chalk.red("Diagn. info: ") + chalk.cyan(JSON.stringify(diagInfo)));
           }
-          verbose_log("Output args: " + JSON.stringify(msg.outputArguments));
-          verbose_log("Results:     " + JSON.stringify(result));
+          verbose_log(chalk.yellow("Output args: ") + JSON.stringify(msg.outputArguments));
+          verbose_log(chalk.yellow("Results:     ") + JSON.stringify(result));
           msg.result = result;
           if (result && result.statusCode === opcua.StatusCodes.Good) {
             var i = 0;
             msg.output = result.outputArguments; // Original outputArguments
             msg.payload = []; // Store values back to array
             if (result.outputArguments.length == 1) {
-              verbose_log("Value: " + result.outputArguments[i].value);
+              verbose_log(chalk.yellow("Value: ") + chalk.cyan(result.outputArguments[i].value));
               msg.payload = result.outputArguments[0].value; // Return only if one output argument
             } else {
               while (result.outputArguments.length > i) {
-                verbose_log("Value[" + i + "]:" + result.outputArguments[i].toString());
+                verbose_log(chalk.yellow("Value[") + chalk.cyan(i) + chalk.yellow("]: ") + chalk.cyan(result.outputArguments[i].toString()));
                 msg.payload.push(result.outputArguments[i].value); // Just copy result value to payload[] array, actual value needed mostly
                 i++;
               }
@@ -463,7 +464,7 @@ module.exports = function (RED) {
         return;
       }
       if (!message.inputArguments) {
-        verbose_warn("No Input Arguments for Method");
+        verbose_warn(chalk.yellow("No Input Arguments for Method"));
         return
       }
 

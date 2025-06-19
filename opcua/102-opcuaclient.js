@@ -25,7 +25,7 @@ module.exports = function (RED) {
   let opcua = require('node-opcua');
   const { NodeCrawler } = require("node-opcua-client-crawler"); // Legacy support
   let opcuaBasics = require('./opcua-basics');
-  let crypto_utils = opcua.crypto_utils;
+  let crypto_utils = require("node-opcua-crypto"); // opcua.crypto_utils;
   let fileTransfer = require("node-opcua-file-transfer");
   let async = require("async");
   let fs = require("fs");
@@ -172,7 +172,7 @@ module.exports = function (RED) {
 
     function verbose_warn(logMessage) {
       if (opcuaEndpoint.name && node.name) {
-        console.warn(chalk.cyan(`${opcuaEndpoint.name}`) + chalk.yellow(":") + chalk.cyan(node.name) ? chalk.cyan(node.name) + chalk.yellow(': ') + chalk.cyan(logMessage) : chalk.yellow('OpcUaClientNode: ') + chalk.cyan(logMessage));
+        console.warn(chalk.cyan(`${opcuaEndpoint?.name}`) + chalk.yellow(":") + chalk.cyan(node.name) ? chalk.cyan(node.name) + chalk.yellow(': ') + chalk.cyan(logMessage) : chalk.yellow('OpcUaClientNode: ') + chalk.cyan(logMessage));
       }
       node.warn(logMessage);
     }
@@ -287,7 +287,8 @@ module.exports = function (RED) {
       msg.error = {};
       msg.error.message = "reconnect";
       msg.error.source = this;
-      node.error("reconnect", msg);
+      // node.error("reconnect", msg);
+      verbose_log(chalk.red("reconnect")) //  + chalk.cyan(stringify(msg))); // msg is TOO big to show
       set_node_status2_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
     };
     const reconnection = function () {
@@ -296,9 +297,21 @@ module.exports = function (RED) {
 
     function create_opcua_client(callback) {
       node.client = null;
+      let options = {
+          securityMode: connectionOption.securityMode,
+          securityPolicy: connectionOption.securityPolicy,
+          defaultSecureTokenLifetime: connectionOption.defaultSecureTokenLifetime,
+          endpointMustExist: connectionOption.endpointMustExist,
+          connectionStrategy: connectionOption.connectionStrategy,
+          clientName: node.name, // Fix for #664 sessionName
+          keepSessionAlive: node.keepsessionalive,
+          requestedSessionTimeout: 60000 * 5, // 5min, default 1min
+          automaticallyAcceptUnknownCertificate: true
+          // transportSettings: transportSettings // Some 
+      };
       try {
         // Use empty 0.0.0.0 address as "no client" initial value
-        if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") == 0) {
+        if (opcuaEndpoint?.endpoint?.indexOf("opc.tcp://0.0.0.0") == 0) {
           verbose_warn(`close opcua client ${node.client} userIdentity ${userIdentity.type}`);
           if (node.client) {
             close_opcua_client("connection error: no session", 0);
@@ -315,18 +328,6 @@ module.exports = function (RED) {
         if (!node.keepsessionalive) {
           node.keepsessionalive = false;
         }
-        let options = {
-          securityMode: connectionOption.securityMode,
-          securityPolicy: connectionOption.securityPolicy,
-          defaultSecureTokenLifetime: connectionOption.defaultSecureTokenLifetime,
-          endpointMustExist: connectionOption.endpointMustExist,
-          connectionStrategy: connectionOption.connectionStrategy,
-          clientName: node.name, // Fix for #664 sessionName
-          keepSessionAlive: node.keepsessionalive,
-          requestedSessionTimeout: 60000 * 5, // 5min, default 1min
-          automaticallyAcceptUnknownCertificate: true
-          // transportSettings: transportSettings // Some 
-        };
         verbose_log(chalk.yellow("Keep session alive: ") + chalk.cyan(node.keepsessionalive));
         if (node.useTransport === true) {
           options["transportSettings"] = JSON.parse(JSON.stringify(connectionOption.transportSettings));
@@ -426,7 +427,7 @@ module.exports = function (RED) {
     }
 
     function set_node_error_status_to(statusValue, error) {
-      verbose_log("Client status: " + statusValue);
+      verbose_log(chalk.yellow("Client status: ") + chalk.cyan(statusValue));
       let statusParameter = opcuaBasics.get_node_status(statusValue);
       currentStatus = statusValue;
       let endpoint = "";
@@ -446,26 +447,26 @@ module.exports = function (RED) {
     }
 
     async function connect_opcua_client() {
-      if (opcuaEndpoint.login === true) {
+      if (opcuaEndpoint?.login === true) {
         verbose_log(chalk.green("Using UserName & password: ") + chalk.cyan(JSON.stringify(userIdentity)));
         if (opcuaEndpoint.credentials && opcuaEndpoint['user'] && opcuaEndpoint['password']) {
           userIdentity = {
             type: opcua.UserTokenType.UserName,
-            userName: opcuaEndpoint.credentials.user.toString(),
-            password: opcuaEndpoint.credentials.password.toString()
+            userName: opcuaEndpoint?.credentials?.user?.toString(),
+            password: opcuaEndpoint?.credentials?.password?.toString()
           };
         }
         else if (opcuaEndpoint['user'] && opcuaEndpoint['password']) {
           userIdentity = {
             type: opcua.UserTokenType.UserName,
-            userName: opcuaEndpoint.user.toString(),
-            password: opcuaEndpoint.password.toString()
+            userName: opcuaEndpoint?.user?.toString(),
+            password: opcuaEndpoint?.password?.toString()
           };
         } else {
           node_error("Please enter user or password in credentials or same level as login")
         }
       }
-      else if (opcuaEndpoint.usercert === true) {
+      else if (opcuaEndpoint?.usercert === true) {
         if (!fs.existsSync(userCertificate)) {
           node.error("User certificate file not found: " + userCertificate);
         }
@@ -481,7 +482,7 @@ module.exports = function (RED) {
         };
       }
       else {
-        verbose_warn("userIdentity is ANONYMOUS ")
+        verbose_warn(chalk.red("userIdentity is ANONYMOUS "));
         userIdentity = { type: opcua.UserTokenType.Anonymous };
       }
 
@@ -490,14 +491,14 @@ module.exports = function (RED) {
       // STEP 1
       // First connect to server´s endpoint
       if (opcuaEndpoint?.endpoint) {
-        verbose_log(chalk.yellow("Connecting to endpoint: ") + chalk.cyan(opcuaEndpoint.endpoint));
+        verbose_log(chalk.yellow("Connecting to endpoint: ") + chalk.cyan(opcuaEndpoint?.endpoint));
       }
       else {
         node_error("No client endpoint listed! Waiting...");
         return;
       }
 
-      if (opcuaEndpoint.endpoint.indexOf("opc.tcp://0.0.0.0") === 0) {
+      if (opcuaEndpoint?.endpoint?.indexOf("opc.tcp://0.0.0.0") === 0) {
         set_node_status_to("no client")
       }
       else {
@@ -507,7 +508,7 @@ module.exports = function (RED) {
         verbose_log("No client to connect...");
         return;
       }
-      verbose_log(chalk.yellow("Exact endpointUrl: ") + chalk.cyan(opcuaEndpoint.endpoint) + chalk.yellow(" hostname: ") + chalk.cyan(os.hostname()));
+      verbose_log(chalk.yellow("Exact endpointUrl: ") + chalk.cyan(opcuaEndpoint?.endpoint) + chalk.yellow(" hostname: ") + chalk.cyan(os.hostname()));
       try {
         await node.client.clientCertificateManager.initialize();
       }
@@ -519,17 +520,17 @@ module.exports = function (RED) {
         msg.error.source = this;
         node.error("Certificate error", msg);
       }
-      node.debug(chalk.yellow("Trusted folder:      ") + chalk.cyan(node.client.clientCertificateManager.trustedFolder));
-      node.debug(chalk.yellow("Rejected folder:     ") + chalk.cyan(node.client.clientCertificateManager.rejectedFolder));
-      node.debug(chalk.yellow("Crl folder:          ") + chalk.cyan(node.client.clientCertificateManager.crlFolder));
-      node.debug(chalk.yellow("Issuers Cert folder: ") + chalk.cyan(node.client.clientCertificateManager.issuersCertFolder));
-      node.debug(chalk.yellow("Issuers Crl folder:  ") + chalk.cyan(node.client.clientCertificateManager.issuersCrlFolder));
+      node.debug(chalk.yellow("Trusted folder:      ") + chalk.cyan(node.client?.clientCertificateManager?.trustedFolder));
+      node.debug(chalk.yellow("Rejected folder:     ") + chalk.cyan(node.client?.clientCertificateManager?.rejectedFolder));
+      node.debug(chalk.yellow("Crl folder:          ") + chalk.cyan(node.client?.clientCertificateManager?.crlFolder));
+      node.debug(chalk.yellow("Issuers Cert folder: ") + chalk.cyan(node.client?.clientCertificateManager?.issuersCertFolder));
+      node.debug(chalk.yellow("Issuers Crl folder:  ") + chalk.cyan(node.client?.clientCertificateManager?.issuersCrlFolder));
 
       try {
-        verbose_log(chalk.green("2) Connecting using endpoint: ") + chalk.cyan(opcuaEndpoint.endpoint) +
+        verbose_log(chalk.green("2) Connecting using endpoint: ") + chalk.cyan(opcuaEndpoint?.endpoint) +
           chalk.green(" securityMode: ") + chalk.cyan(connectionOption.securityMode) +
           chalk.green(" securityPolicy: ") + chalk.cyan(connectionOption.securityPolicy));
-        await node.client.connect(opcuaEndpoint.endpoint);
+        await node.client.connect(opcuaEndpoint?.endpoint);
       } catch (err) {
         verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt, using securityMode: " + stringify(connectionOption.securityMode));
         verbose_warn("        using securityPolicy: " + stringify(connectionOption.securityPolicy));
@@ -545,7 +546,7 @@ module.exports = function (RED) {
         node.error("Invalid endpoint", msg);
         return;
       }
-      verbose_log(chalk.green("Connected to endpoint: ") + chalk.cyan(opcuaEndpoint.endpoint));
+      verbose_log(chalk.green("Connected to endpoint: ") + chalk.cyan(opcuaEndpoint?.endpoint));
 
       // STEP 2
       // This will succeed first time only if security policy and mode are None
@@ -693,7 +694,7 @@ module.exports = function (RED) {
           verbose_warn(`can't work without OPC UA client ${node.client} client ${node.session}`);
           reset_opcua_client(connect_opcua_client);
         }
-        node.send([null, { error: "can't work without OPC UA client", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+        node.send([null, { error: "can't work without OPC UA client", endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
         return;
       }
 
@@ -701,7 +702,7 @@ module.exports = function (RED) {
         verbose_warn("terminated OPC UA Session");
         reset_opcua_client(connect_opcua_client);
 
-        node.send([null, { error: "terminated OPC UA Session", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+        node.send([null, { error: "terminated OPC UA Session", endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
 
         return;
       }
@@ -711,7 +712,7 @@ module.exports = function (RED) {
         msg.action = "";
       } else if (!msg.topic) {
         verbose_warn("can't work without OPC UA NodeId - msg.topic empty");
-        node.send([null, { error: "can't work without OPC UA NodeId", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+        node.send([null, { error: "can't work without OPC UA NodeId", endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
         return;
       }
 
@@ -872,7 +873,7 @@ module.exports = function (RED) {
             msg.payload = "";
             node_error(node.name + " failed to read file, nodeId: " + msg.topic + " error: " + err);
             set_node_error_status_to("error", "Cannot read file!");
-            node.send([null, { error: node.name + " failed to read file, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+            node.send([null, { error: node.name + " failed to read file, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }]);
 
           }
 
@@ -882,7 +883,7 @@ module.exports = function (RED) {
         catch (err) {
           node_error(node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err);
           set_node_error_status_to("error", err.toString());
-          node.send([null, { error: node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+          node.send([null, { error: node.name + " failed to read fileTransfer, nodeId: " + msg.topic + " error: " + err, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
 
         }
       }
@@ -1051,7 +1052,7 @@ module.exports = function (RED) {
           } else {
             set_node_status_to("execute method error");
             node.error("Execute method result, error:" + result.statusCode.description);
-            node.send([null, { error: "Execute method result, error:" + result.statusCode.description, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }]);
+            node.send([null, { error: "Execute method result, error:" + result.statusCode.description, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }]);
 
             return result.statusCode;
           }
@@ -1061,7 +1062,7 @@ module.exports = function (RED) {
         } catch (err) {
           set_node_status_to("execute method error");
           node.error("Method execution error: " + err.message);
-          node.send([null, { error: "Method execution error: " + err.message, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+          node.send([null, { error: "Method execution error: " + err.message, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
 
           return opcua.StatusCodes.BadMethodInvalid;
         }
@@ -1085,13 +1086,13 @@ module.exports = function (RED) {
         }
         opcuaEndpoint = {}; // Clear
         opcuaEndpoint = msg.OpcUaEndpoint; // Check all parameters!
-        connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy]; // || opcua.SecurityPolicy.None;
-        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode]; // || opcua.MessageSecurityMode.None;
+        connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint?.securityPolicy]; // || opcua.SecurityPolicy.None;
+        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint?.securityMode]; // || opcua.MessageSecurityMode.None;
         verbose_log("NEW connectionOption security parameters, policy: " + connectionOption.securityPolicy + " mode: " + connectionOption.securityMode);
         if (opcuaEndpoint.login === true) {
           userIdentity = {
-            userName: opcuaEndpoint.user,
-            password: opcuaEndpoint.password,
+            userName: opcuaEndpoint?.user,
+            password: opcuaEndpoint?.password,
             type: opcua.UserTokenType.UserName
           };
           verbose_log("NEW UserIdentity: " + JSON.stringify(userIdentity));
@@ -1269,10 +1270,10 @@ module.exports = function (RED) {
                       node_error("Bad read: " + (dataValue.statusCode.toString(16)));
                       node_error("Message:" + msg.topic + " dataType:" + msg.datatype);
                       node_error("Data:" + stringify(dataValue));
-                      node.send([null, { error: "Bad read: " + (dataValue.statusCode.toString(16)), endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+                      node.send([null, { error: "Bad read: " + (dataValue.statusCode.toString(16)), endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
                     } else {
                       node_error(e.message);
-                      node.send([null, { error: e.message, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+                      node.send([null, { error: e.message, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
                     }
                   }
 
@@ -1510,7 +1511,7 @@ module.exports = function (RED) {
                       node_error(e.message);
                       // Output pin 2 for errors
                       // verbose_log("Output pin2, error: " + e.message);
-                      node.send([null, { error: e.message, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+                      node.send([null, { error: e.message, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
                       return;
                     }
                   }
@@ -1622,7 +1623,7 @@ module.exports = function (RED) {
         set_node_status_to("invalid session");
         node_error("Session is not active!")
 
-        node.send([null, { error: "Session is not active!", endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+        node.send([null, { error: "Session is not active!", endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
 
       }
     }
@@ -1856,7 +1857,7 @@ module.exports = function (RED) {
             })
           };
         }
-        if (node.setatatusandtime && msg.timestamp) {
+        if (node.setstatusandtime && msg.timestamp) {
           verbose_log("NEW sourceTimestamp: " + new Date(msg.timestamp).toISOString());
           nodeToWrite.value.sourceTimestamp = new Date(msg.timestamp).getTime();
         }
@@ -1870,25 +1871,31 @@ module.exports = function (RED) {
         }
         verbose_log("VALUE TO WRITE: " + JSON.stringify(nodeToWrite));
         set_node_status_to("writing");
-        node.session.write(nodeToWrite, function (err, statusCode) {
-          if (err) {
-            set_node_error_status_to("error", err);
-            node_error(node.name + " Cannot write value (" + stringify(msg.payload) + ") to msg.topic:" + msg.topic + " error:" + err);
-            // No actual error session existing, this case cause connections to server
-            // reset_opcua_client(connect_opcua_client);
-            msg.payload = err;
-            node.send([msg, null]);
-          } else {
-            set_node_status_to("value written");
-            verbose_log("Value written! Result:" + statusCode + " " + statusCode.description);
-            if (statusCode.isGoodish() === false) {
-              verbose_warn("StatusCode: " + statusCode.toString(16) + " " + statusCode.description);
-              set_node_error_status_to("error", statusCode.description);
+        try {
+          node.session.write(nodeToWrite, function (err, statusCode) {
+            if (err) {
+              set_node_error_status_to("error", err);
+              node_error(node.name + " Cannot write value (" + stringify(msg.payload) + ") to msg.topic:" + msg.topic + " error:" + err);
+              // No actual error session existing, this case cause connections to server
+              // reset_opcua_client(connect_opcua_client);
+              msg.payload = err;
+              node.send([msg, null]);
+            } else {
+              set_node_status_to("value written");
+              verbose_log("Value written! Result:" + statusCode + " " + statusCode.description);
+              if (statusCode.isGoodish() === false) {
+                verbose_warn("StatusCode: " + statusCode.toString(16) + " " + statusCode.description);
+                set_node_error_status_to("error", statusCode.description);
+              }
+              msg.payload = statusCode;
+              node.send([msg, null, null]);
             }
-            msg.payload = statusCode;
-            node.send([msg, null, null]);
-          }
-        });
+          });
+        }
+        catch(error) {
+          set_node_status_to("error");
+          node_error("Write failed, error: " + error);
+        }
       } else {
         set_node_status_to("invalid session");
         node_error("Session is not active!")
@@ -1946,7 +1953,7 @@ module.exports = function (RED) {
           if (err) {
             set_node_error_status_to("error", err);
             node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
-            node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+            node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
 
           } else {
             set_node_status_to("active writing");
@@ -1988,7 +1995,7 @@ module.exports = function (RED) {
             if (err) {
               set_node_error_status_to("error", err);
               node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
-              node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint.endpoint}`, status: currentStatus }, null]);
+              node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
             } else {
               set_node_status_to("active writing");
               verbose_log("Values written!");
@@ -2567,13 +2574,13 @@ module.exports = function (RED) {
           node.client.removeListener("start_reconnection", reconnection);
         }
         opcuaEndpoint = msg.OpcUaEndpoint; // Use global variable! Check all parameters!
-        connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint.securityPolicy]; // || opcua.SecurityPolicy.None;
-        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode]; // || opcua.MessageSecurityMode.None;
+        connectionOption.securityPolicy = opcua.SecurityPolicy[opcuaEndpoint?.securityPolicy]; // || opcua.SecurityPolicy.None;
+        connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint?.securityMode]; // || opcua.MessageSecurityMode.None;
         verbose_log("NEW connectionOption security parameters, policy: " + connectionOption.securityPolicy + " mode: " + connectionOption.securityMode);
         if (opcuaEndpoint.login === true) {
           let userIdentity = {
-            userName: opcuaEndpoint.user,
-            password: opcuaEndpoint.password,
+            userName: opcuaEndpoint?.user,
+            password: opcuaEndpoint?.password,
             type: opcua.UserTokenType.UserName
           };
           verbose_log("NEW UserIdentity: " + JSON.stringify(userIdentity));

@@ -88,8 +88,8 @@
         var equipment;
         var physicalAssets;
         var vendorName;
-        var myVar2;
-        var freeMem;
+        var myVar2 = new opcua.Variant({dataType: opcua.DataType.Double, value: 0.0});
+        var freeMem = new opcua.Variant({dataType: opcua.DataType.Double, value: 0.0});
         var equipmentNotFound = true;
         var initialized = false;
         var folder = null;
@@ -98,15 +98,34 @@
         let savedAddressSpace = "";
 
         if (node.users && node.users.length > 0) {
-            verbose_log("Trying to load default users from file: " + node.users + " (current folder: " + __dirname + ")");
+            verbose_log(chalk.yellow("Trying to load default users from file: ") + chalk.cyan(node.users) + chalk.yellow(" folder: ") + chalk.cyan(__dirname));
             if (fs.existsSync(node.users)) {
                 users = JSON.parse(fs.readFileSync(node.users));
-                verbose_log("Loaded users: " + JSON.stringify(users));
+                verbose_log(chalk.green("Loaded users: ") + chalk.cyan(JSON.stringify(users)));
                 setUsers(users);
             }
             else {
-                verbose_log(chalk.red("File: " + node.users + " not found! You can inject users to server or add file to current folder: " + __dirname));
-                node.error("File: " + node.users + " not found! You can inject users to server or add file to current folder: " + __dirname);
+                // Current working directory
+                let fileName = path.join(process.cwd(), node.users);
+                verbose_log(chalk.yellow("Trying to load default users from file: ") + chalk.cyan(node.users) + chalk.yellow(" folder: ") + chalk.cyan(fileName));
+                if (fs.existsSync(fileName)) {
+                    users = JSON.parse(fs.readFileSync(fileName));
+                    verbose_log(chalk.green("Loaded users: ") + chalk.cyan(JSON.stringify(users)));
+                    setUsers(users);
+                }
+                else {
+                    let fileName = path.join(process.cwd(), ".node-red", node.users);
+                    verbose_log(chalk.yellow("Trying to load default users from file: ") + chalk.cyan(node.users) + chalk.yellow(" folder: ") + chalk.cyan(fileName));
+                    if (fs.existsSync(fileName)) {
+                        users = JSON.parse(fs.readFileSync(fileName));
+                        verbose_log(chalk.green("Loaded users: ") + chalk.cyan(JSON.stringify(users)));
+                        setUsers(users);
+                    }
+                    else {
+                        verbose_log(chalk.red("File: " + node.users + " not found! You can inject users to server or add file to folder: " + fileName));
+                        node.error("File: " + node.users + " not found! You can inject users to server or add file to folder: " + fileName);
+                    }
+                }
             }
         }
 
@@ -251,22 +270,22 @@
                 };
             });
         }
-        verbose_log("NodeSet:" + xmlFiles.toString());
+        verbose_log(chalk.yellow("NodeSet: ") + chalk.cyan(xmlFiles.toString()));
         
         async function initNewServer() {
             initialized = false;
-            verbose_log("Create Server from XML...");
+            verbose_log(chalk.yellow("Create Server from XML..."));
             // DO NOT USE "%FQDN%" anymore, hostname is OK
             const applicationUri =  opcua.makeApplicationUrn(os.hostname(), "node-red-contrib-opcua-server");
-            verbose_log("ApplicationUrn: " + applicationUri);
-            verbose_log("Server certificate manager");
+            verbose_log(chalk.yellow("ApplicationUrn: ") + chalk.cyan(applicationUri));
+            verbose_log(chalk.yellow("Server certificate manager"));
             const serverCertificateManager = createServerCertificateManager();
-            verbose_log("User Certificate manager");
+            verbose_log(chalk.yellow("User Certificate manager"));
             const userCertificateManager = createUserCertificateManager();
-            verbose_log("Initialize certificate managers");
+            verbose_log(chalk.yellow("Initializing certificate managers"));
             await serverCertificateManager.initialize();
             await userCertificateManager.initialize();
-            verbose_log("Certificate managers initialized");
+            verbose_log(chalk.green("Certificate managers initialized"));
             var registerMethod = null;
             if (node.registerToDiscovery === true) {
                 registerMethod = opcua.RegisterServerMethod.LDS;
@@ -326,8 +345,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.339",
-                buildDate: "2024-12-04T09:54:00"
+                buildNumber: "0.2.340",
+                buildDate: "2025-06-19T07:37:00"
             };
             
             var hostname = os.hostname();
@@ -338,7 +357,7 @@
         }
 
         function construct_my_address_space(addressSpace) {
-            verbose_log("Server: add VendorName ...");
+            verbose_log(chalk.yellow("Server: add VendorName ..."));
             vendorName = addressSpace.getOwnNamespace().addObject({
                 organizedBy: addressSpace.rootFolder.objects,
                 nodeId: "ns=1;s=VendorName",
@@ -356,7 +375,7 @@
                 browseName: "Physical Assets"
             });
 
-            verbose_log('Server: add MyVariable2 ...');
+            verbose_log(chalk.yellow('Server: add MyVariable2 ...'));
             var variable2 = 10.0;
             try {
                 myVar2 = new opcua.Variant({dataType: opcua.DataType.Double, value: variable2});
@@ -366,21 +385,25 @@
                     browseName: "MyVariable2",
                     dataType: "Double",
                     minimumSamplingInterval: 500,
-                    value: {
+                    value: new opcua.Variant({ dataType: opcua.DataType.Double, value: variable2 })
+                    /*
+                    {
                         get: () => {
-                            return myVar2;
+                            // return myVar2;
+                            return new opcua.Variant({ dataType: opcua.DataType.Double, value: variable2 });
                         },
                         set: function (variant) {
                             myVar2.value = parseFloat(variant.value);
                             return opcua.StatusCodes.Good;
                         }
                     }
+                    */
                 });
             }
             catch(error) {
                 node_error("Cannot add variable; MyVariable2, error: " + error);
             }
-            verbose_log('Server: add FreeMemory ...');
+            verbose_log(chalk.yellow('Server: add FreeMemory ...'));
             try {
                 freeMem = new opcua.Variant({
                     dataType: opcua.DataType.Double,
@@ -392,18 +415,28 @@
                     browseName: "FreeMemory",
                     dataType: "Double",
                     minimumSamplingInterval: 500,
-                    value: {
+                    value: new opcua.Variant({
+                                dataType: opcua.DataType.Double,
+                                value: available_memory()
+                    })
+                    /*
+                    {
                         get: function () {
                             freeMem.value = available_memory();
-                            return freeMem;
+                            // return freeMem;
+                            return new opcua.Variant({
+                                dataType: opcua.DataType.Double,
+                                value: available_memory()
+                            });
                         }
                     }
+                    */
                 });
             }
             catch (error) {
                 node_error("Cannot add variable; freeMem, error: " + error)
             }
-            verbose_log('Server: add Counter ...');
+            verbose_log(chalk.yellow('Server: add Counter ...'));
             try {
                 node.vendorName = addressSpace.getOwnNamespace().addVariable({
                     componentOf: vendorName,
@@ -412,7 +445,12 @@
                     displayName: "Variables Counter",
                     dataType: "UInt16",
                     minimumSamplingInterval: 500,
-                    value: {
+                    value:  new opcua.Variant({
+                                dataType: opcua.DataType.UInt16,
+                                value: Object.keys(variables).length // Counter will show amount of created variables
+                    })
+                    /*
+                    {
                         get: function () {
                             return new opcua.Variant({
                                 dataType: opcua.DataType.UInt16,
@@ -420,6 +458,7 @@
                             });
                         }
                     }
+                    */
                 });
             }
             catch (error) {
@@ -495,11 +534,11 @@
                 }
                 await node.server.start();
 
-                verbose_log("Using server certificate    " + node.server.certificateFile);
-                verbose_log("Using PKI folder            " + node.server.serverCertificateManager.rootDir);
-                verbose_log("Using UserPKI folder        " + node.server.userCertificateManager.rootDir);
-                verbose_log("Trusted certificate folder  " + node.server.serverCertificateManager.trustedFolder);
-                verbose_log("Rejected certificate folder " + node.server.serverCertificateManager.rejectedFolder);
+                verbose_log(chalk.yellow("Using server certificate    ") + chalk.cyan(node.server.certificateFile));
+                verbose_log(chalk.yellow("Using PKI folder            ") + chalk.cyan(node.server.serverCertificateManager.rootDir));
+                verbose_log(chalk.yellow("Using UserPKI folder        ") + chalk.cyan(node.server.userCertificateManager.rootDir));
+                verbose_log(chalk.yellow("Trusted certificate folder  ") + chalk.cyan(node.server.serverCertificateManager.trustedFolder));
+                verbose_log(chalk.yellow("Rejected certificate folder ") + chalk.cyan(node.server.serverCertificateManager.rejectedFolder));
 
                 // Needed for Alarms and Conditions
                 node.server.engine.addressSpace.installAlarmsAndConditionsService();
@@ -522,7 +561,7 @@
                 });
                 // Client disconnected
                 node.server.on("session_closed", function(session, reason) {
-                    node.debug("Reason: " + reason);
+                    node.debug(chalk.yellow("Reason: ") + chalk.cyan(reason));
                     var msg = {};
                     msg.topic="Client-disconnected";
                     msg.payload = session.sessionName.toString(); // session.clientDescription.applicationName.toString() + " " + session.sessionName ? session.sessionName.toString() : "<null>";
@@ -761,7 +800,7 @@
                     break;
 
                 case "addEquipment":
-                    verbose_log("Adding node: ".concat(payload.nodeName));
+                    verbose_log(chalk.cyan("Adding node: ".concat(payload.nodeName)));
                     equipmentCounter++;
                     name = payload.nodeName.concat(equipmentCounter);
 
@@ -773,7 +812,7 @@
                     break;
 
                 case "addPhysicalAsset":
-                    verbose_log("Adding node: ".concat(payload.nodeName));
+                    verbose_log(chalk.cyan("Adding node: ".concat(payload.nodeName)));
                     physicalAssetCounter++;
                     name = payload.nodeName.concat(physicalAssetCounter);
 
@@ -785,13 +824,13 @@
                     break;
 
                 case "setFolder":
-                    verbose_log("Set Folder: ".concat(msg.topic)); // Example topic format ns=4;s=FolderName
+                    verbose_log(chalk.cyan("Set Folder: ".concat(msg.topic))); // Example topic format ns=4;s=FolderName
                     folder = addressSpace.findNode(msg.topic);
                     if (folder) {
-                        verbose_log("Found folder: " + folder);
+                        verbose_log(chalk.yellow("Found folder: ") + chalk.cyan(folder));
                     }
                     else {
-                        verbose_warn("Folder not found for topic: " + msg.topic);
+                        verbose_warn(chalk.red("Folder not found for topic: ") + chalk.cyan(msg.topic));
                     }
                     break;
 
@@ -1013,7 +1052,7 @@
 
                         const variableId = `${ns}:${browseName}`;
 
-                        verbose_log(`addVariable: variableId: ${variableId}`);
+                        verbose_log(chalk.cyan(`addVariable: variableId: ${variableId}`));
 
                         variables[variableId] = 0;
                         if (valueRank == 1) {
@@ -1089,7 +1128,7 @@
                             variables[variableId] = false; 
                         }
                         if (opcuaDataType === null) {
-                            verbose_warn("Cannot addVariable, datatype: " + datatype + " is not valid OPC UA datatype!");
+                            verbose_warn(chalk.red("Cannot addVariable, datatype: ") + chalk.cyan(datatype) + chalk.red(" is not valid OPC UA datatype!"));
                             break;
                         }
                         verbose_log("Datatype: " + datatype);
@@ -1143,7 +1182,7 @@
                         if (msg.permissions) {
                             permissions = msg.permissions;
                         }
-                        verbose_log("Using access level:" + accessLevel + " user access level: " + userAccessLevel + " permissions:" + JSON.stringify(permissions));
+                        verbose_log(chalk.yellow("Using access level: ") + chalk.cyan(accessLevel) + chalk.yellow(" user access level: ") + chalk.cyan(userAccessLevel) + chalk.yellow(" permissions: ") + chalk.cyan(JSON.stringify(permissions)));
                         var newVAR = namespace.addVariable({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
                             nodeId: name,
@@ -1215,7 +1254,7 @@
                                 },
                                 */
                                 set: function (variant) {
-                                    verbose_log("Server set new variable value : " + variables[variableId] + " browseName: " + ns + ":" + browseName + " new:" + stringify(variant));
+                                    verbose_log(chalk.yellow("Server set new variable value : ") + chalk.cyan(variables[variableId]) + chalk.yellow(" browseName: ") + chalk.cyan(ns) + ":" + chalk.cyan(browseName) + chalk.yellow(" new: ") + chalk.cyan(stringify(variant)));
                                     /*
                                     // TODO Array partial write need some more studies
                                     if (msg.payload.range) {
@@ -1235,9 +1274,9 @@
                                         variables[variableId] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
                                     // }
                                     // variables[variableId] = Object.assign(variables[variableId], opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value));
-                                    verbose_log("Server variable: " + variables[variableId] + " browseName: " + ns + ":" + browseName);
+                                    verbose_log(chalk.yellow("Server variable: ") + chalk.cyan(variables[variableId]) + chalk.yellow(" browseName: ") + chalk.cyan(ns) + ":" + chalk.cyan(browseName));
                                     var SetMsg = { "payload" : { "messageType" : "Variable", "variableName": ns + ":" + browseName, "variableValue": variables[variableId] }};
-                                    verbose_log("msg Payload:" + JSON.stringify(SetMsg));
+                                    verbose_log(chalk.yellow("msg Payload: ") + chalk.cyan(JSON.stringify(SetMsg)));
                                     node.send(SetMsg);
                                     return opcua.StatusCodes.Good;
                                 }
