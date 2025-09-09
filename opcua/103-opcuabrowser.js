@@ -62,6 +62,8 @@ module.exports = function (RED) {
           userIdentity.type = uaclient.UserTokenType.UserName; // New TypeScript API parameter
         }
      
+        connectionOption.clientCertificateManager = createClientCertificateManager();
+
         node.status({
             fill: "gray",
             shape: "dot",
@@ -90,8 +92,26 @@ module.exports = function (RED) {
 
             // new OPC UA Client and browse from Objects ns=0;s=Objects
             const client = opcua.OPCUAClient.create(connectionOption);
-            try 
+            try
             {
+                // step 0 : init clientCertificateManager
+                try {
+                    await client.clientCertificateManager.initialize();
+                }
+                catch (error1) {
+                    set_node_status_to("invalid certificate");
+                    let msg = {};
+                    msg.error = {};
+                    msg.error.message = "Certificate error: " + error1.message;
+                    msg.error.source = this;
+                    node.error("Certificate error", msg);
+                }
+                node.debug(chalk.yellow("Trusted folder:      ") + chalk.cyan(client?.clientCertificateManager?.trustedFolder));
+                node.debug(chalk.yellow("Rejected folder:     ") + chalk.cyan(client?.clientCertificateManager?.rejectedFolder));
+                node.debug(chalk.yellow("Crl folder:          ") + chalk.cyan(client?.clientCertificateManager?.crlFolder));
+                node.debug(chalk.yellow("Issuers Cert folder: ") + chalk.cyan(client?.clientCertificateManager?.issuersCertFolder));
+                node.debug(chalk.yellow("Issuers Crl folder:  ") + chalk.cyan(client?.clientCertificateManager?.issuersCrlFolder));
+
                 // step 1 : connect to
                 await client.connect(url);
                 node.debug("start browse client on " + opcuaEndpoint.endpoint);

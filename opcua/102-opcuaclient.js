@@ -303,6 +303,7 @@ module.exports = function (RED) {
           defaultSecureTokenLifetime: connectionOption.defaultSecureTokenLifetime,
           endpointMustExist: connectionOption.endpointMustExist,
           connectionStrategy: connectionOption.connectionStrategy,
+          clientCertificateManager: connectionOption.clientCertificateManager,
           clientName: node.name, // Fix for #664 sessionName
           keepSessionAlive: node.keepsessionalive,
           requestedSessionTimeout: 60000 * 5, // 5min, default 1min
@@ -532,19 +533,23 @@ module.exports = function (RED) {
           chalk.green(" securityPolicy: ") + chalk.cyan(connectionOption.securityPolicy));
         await node.client.connect(opcuaEndpoint?.endpoint);
       } catch (err) {
-        verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt, using securityMode: " + stringify(connectionOption.securityMode));
-        verbose_warn("        using securityPolicy: " + stringify(connectionOption.securityPolicy));
-        verbose_warn("Case B: UserName & password does not match to server (needed by Sign or SignAndEncrypt), check username: " + userIdentity.userName + " and password: " + userIdentity.password);
-        verbose_warn("Case C: With Sign you cannot use SecurityPolicy None!!");
-        // verbose_error("Invalid endpoint parameters: ", err);
-        node_error("Wrong endpoint parameters: " + JSON.stringify(opcuaEndpoint));
-        set_node_status_to("invalid endpoint");
-        let msg = {};
-        msg.error = {};
-        msg.error.message = "Invalid endpoint: " + err;
-        msg.error.source = this;
-        node.error("Invalid endpoint", msg);
-        return;
+          verbose_warn("Case A: Endpoint does not contain, 1==None 2==Sign 3==Sign&Encrypt, using securityMode: " + stringify(connectionOption.securityMode));
+          verbose_warn("        using securityPolicy: " + stringify(connectionOption.securityPolicy));
+          verbose_warn("Case B: UserName & password does not match to server (needed by Sign or SignAndEncrypt), check username: " + userIdentity.userName + " and password: " + userIdentity.password);
+          verbose_warn("Case C: With Sign you cannot use SecurityPolicy None!!");
+          verbose_warn("Case D: Certificate chain not valid, check server certificate chain against:");
+          verbose_warn("        CRL folder: " + node.client?.clientCertificateManager?.crlFolder);
+          verbose_warn("        Issuer folder: " + node.client?.clientCertificateManager?.issuersCertFolder);
+          verbose_warn("        Issuer CRL folder: " + node.client?.clientCertificateManager?.issuersCrlFolder);
+          // verbose_error("Invalid endpoint parameters: ", err);
+          node_error("Wrong endpoint parameters: " + JSON.stringify(opcuaEndpoint) + ", error: " + JSON.stringify(err));
+          set_node_status_to("invalid endpoint");
+          let msg = {};
+          msg.error = {};
+          msg.error.message = "Invalid endpoint: " + err;
+          msg.error.source = this;
+          node.error("Invalid endpoint", msg);
+          return;
       }
       verbose_log(chalk.green("Connected to endpoint: ") + chalk.cyan(opcuaEndpoint?.endpoint));
 

@@ -187,6 +187,8 @@ module.exports = function (RED) {
     };
     connectionOption.keepSessionAlive = false; // true;
 
+    connectionOption.clientCertificateManager = createClientCertificateManager();
+
     if (opcuaEndpoint.login) {
       userIdentity.userName = opcuaEndpoint.credentials.user;
       userIdentity.password = opcuaEndpoint.credentials.password;
@@ -237,6 +239,23 @@ module.exports = function (RED) {
     }
 
     create_opcua_client();
+
+    try {
+        node.client.clientCertificateManager.initialize();
+    }
+    catch (error1) {
+        set_node_status_to("invalid certificate");
+        let msg = {};
+        msg.error = {};
+        msg.error.message = "Certificate error: " + error1.message;
+        msg.error.source = this;
+        node.error("Certificate error", msg);
+    }
+    node.debug(chalk.yellow("Trusted folder:      ") + chalk.cyan(node.client?.clientCertificateManager?.trustedFolder));
+    node.debug(chalk.yellow("Rejected folder:     ") + chalk.cyan(node.client?.clientCertificateManager?.rejectedFolder));
+    node.debug(chalk.yellow("Crl folder:          ") + chalk.cyan(node.client?.clientCertificateManager?.crlFolder));
+    node.debug(chalk.yellow("Issuers Cert folder: ") + chalk.cyan(node.client?.clientCertificateManager?.issuersCertFolder));
+    node.debug(chalk.yellow("Issuers Crl folder:  ") + chalk.cyan(node.client?.clientCertificateManager?.issuersCrlFolder));
 
     set_node_status_to("initialized");
 
