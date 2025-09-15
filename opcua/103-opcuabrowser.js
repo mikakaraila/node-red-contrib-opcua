@@ -21,7 +21,7 @@ module.exports = function (RED) {
     var opcua = require('node-opcua');
     var uaclient = require('node-opcua-client');
     var path = require("path");
-
+    const { createClientCertificateManager } = require("./utils");
     function OpcUaBrowserNode(config) {
 
         RED.nodes.createNode(this, config);

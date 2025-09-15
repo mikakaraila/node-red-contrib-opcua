@@ -31,7 +31,7 @@ module.exports = function (RED) {
   // const dataTypeFactory = require("node-opcua-factory");
   // const ScanData = getOrCreateConstructor("ScanData", dataTypeFactory);
   var opcuaBasics = require('./opcua-basics');
-
+  const { createClientCertificateManager } = require("./utils");
   function OPCUAMethodNode(n) {
     RED.nodes.createNode(this, n)
     this.objectId = n.objectId;

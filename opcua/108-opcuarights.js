@@ -27,7 +27,7 @@
  */
 module.exports = function (RED) {
   var opcua = require('node-opcua');
-  
+  const  chalk = require("chalk");
   function OPCUARightsNode(n) {
     RED.nodes.createNode(this, n)
     this.name = n.name;
