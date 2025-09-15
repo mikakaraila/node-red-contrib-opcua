@@ -345,8 +345,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.341",
-                buildDate: "2025-09-99T14:26:00"
+                buildNumber: "0.2.342",
+                buildDate: "2025-09-15T16:18:00"
             };
             
             var hostname = os.hostname();
