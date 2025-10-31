@@ -40,7 +40,9 @@ limitations under the License.
             sendBufferSize: {value: 8192, required: false},
             setstatusandtime: {value: false, required: true},
             keepsessionalive: {value: false, required: true},
-            name: {value: ""}
+            name: {value: ""},
+            applicationName: {value: "", required: false},
+            applicationUri: {value: "", required: false}
         },
         inputs: 1,
         outputs: 3,
@@ -151,6 +153,14 @@ limitations under the License.
 	<div class="form-row">
         <label for="node-input-path"><i class="icon-tasks"></i> Local private key file, fixed path</label>
         <input type="text" id="node-input-localkeyfile" placeholder="Path is not used anymore! Example: private_key.pem">
+    </div>
+    <div class="form-row">
+        <label for="node-input-applicationName"><i class="icon-tasks"></i> Application Name</label>
+        <input type="text" id="node-input-applicationName" placeholder="NodeOPCUAClient">
+    </div>
+    <div class="form-row">
+        <label for="node-input-applicationUri"><i class="icon-tasks"></i> Application URI</label>
+        <input type="text" id="node-input-applicationUri" placeholder="urn:mycompany:NodeOPCUAClient">
     </div>
     <div class="form-row">
         <label for="node-input-useTransport" style="width:72%;"><i class="icon-tasks"></i> Use transport settings</label>
