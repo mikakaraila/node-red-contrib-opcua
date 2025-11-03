@@ -40,13 +40,13 @@ function createUserCertificateManager() {
 }
 
 let _g_ServerCertificateManager = null; // For all servers
-function createServerCertificateManager() {
+function createServerCertificateManager(autoAcceptUnknownCertificate = true) {
     if (_g_ServerCertificateManager) return _g_ServerCertificateManager;
     let folder = config;
     _g_ServerCertificateManager = new opcua.OPCUACertificateManager({
         name: "ServerPKI",
         rootFolder: path.join(folder, "ServerPKI"),
-        automaticallyAcceptUnknownCertificate: true
+        automaticallyAcceptUnknownCertificate: autoAcceptUnknownCertificate
     });
     return _g_ServerCertificateManager;
 }
