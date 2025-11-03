@@ -66,7 +66,7 @@
         this.maxSessions =  Math.max(10,n.maxSessions); // Always have minimum of 10 sessions.
         
 
-
+        var autoAcceptUnknownCertificate = n.autoAcceptUnknownCertificate;
         var maxConnectionsPerEndpoint = 20;
         if (n.maxConnectionsPerEndpoint > 20) {
             maxConnectionsPerEndpoint = n.maxConnectionsPerEndpoint;
@@ -282,7 +282,7 @@
             const applicationUri =  opcua.makeApplicationUrn(os.hostname(), "node-red-contrib-opcua-server");
             verbose_log(chalk.yellow("ApplicationUrn: ") + chalk.cyan(applicationUri));
             verbose_log(chalk.yellow("Server certificate manager"));
-            const serverCertificateManager = createServerCertificateManager();
+            const serverCertificateManager = createServerCertificateManager(autoAcceptUnknownCertificate);
             verbose_log(chalk.yellow("User Certificate manager"));
             const userCertificateManager = createUserCertificateManager();
             verbose_log(chalk.yellow("Initializing certificate managers"));
