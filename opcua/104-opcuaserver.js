@@ -271,7 +271,10 @@
             });
         }
         verbose_log(chalk.yellow("NodeSet: ") + chalk.cyan(xmlFiles.toString()));
-        
+        let serverPort = parseInt(n.port);
+        if (process.env.SERVER_PORT) {
+            serverPort = parseInt(process.env.SERVER_PORT);
+        }
         async function initNewServer() {
             initialized = false;
             verbose_log(chalk.yellow("Create Server from XML..."));
@@ -296,7 +299,7 @@
                 securityPolicies: policies,
                 securityModes: modes,
                 allowAnonymous: n.allowAnonymous,
-                port: parseInt(n.port),
+                port: serverPort,
                 resourcePath: "/" + node.endpoint, // Option was missing / can be 
                 // maxAllowedSessionNumber: 1000,
                 maxConnectionsPerEndpoint: maxConnectionsPerEndpoint,
@@ -345,8 +348,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.342",
-                buildDate: "2025-09-15T16:18:00"
+                buildNumber: "0.2.343",
+                buildDate: "2025-10-31T11:22:00"
             };
             
             var hostname = os.hostname();

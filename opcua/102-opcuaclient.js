@@ -58,6 +58,8 @@ module.exports = function (RED) {
     this.sendBufferSize = n.sendBufferSize;
     this.setstatusandtime = n.setstatusandtime;
     this.keepsessionalive = n.keepsessionalive;
+    this.applicationName = n.applicationName;
+    this.applicationUri = n.applicationUri;
     let node = this;
     let opcuaEndpoint = RED.nodes.getNode(n.endpoint); // Use as global for the node
     let userIdentity = { type: opcua.UserTokenType.Anonymous }; // Initialize with Anonymous
@@ -89,6 +91,8 @@ module.exports = function (RED) {
         node_error("Local private key file not found: " + keyfile)
       }
     }
+    if (node.applicationName) connectionOption.applicationName = node.applicationName;
+    if (node.applicationUri) connectionOption.applicationUri = node.applicationUri;
     // Moved needed options to client create
     connectionOption.requestedSessionTimeout = opcuaBasics.calc_milliseconds_by_time_and_unit(300, "s");
     // DO NOT USE must be NodeOPCUA-Client !! connectionOption.applicationName = node.name; // Application name
@@ -307,8 +311,10 @@ module.exports = function (RED) {
           clientName: node.name, // Fix for #664 sessionName
           keepSessionAlive: node.keepsessionalive,
           requestedSessionTimeout: 60000 * 5, // 5min, default 1min
-          automaticallyAcceptUnknownCertificate: true
+          automaticallyAcceptUnknownCertificate: true,
           // transportSettings: transportSettings // Some 
+          applicationName: connectionOption.applicationName,
+          applicationUri: connectionOption.applicationUri
       };
       try {
         // Use empty 0.0.0.0 address as "no client" initial value
