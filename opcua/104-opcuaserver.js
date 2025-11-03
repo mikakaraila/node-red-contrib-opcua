@@ -594,11 +594,17 @@
                 return false;
             }
             var payload = msg.payload;
-            // modify 5/03/2022
+            // Support both single object and array
             if (contains_necessaryProperties(msg)) {
-                read_message(payload);
-            }else {
-                node.warn('warning: properties like messageType, namespace, variableName or VariableValue is missing.');
+                // Always process as array - wrap single objects
+                var payloadArray = Array.isArray(payload) ? payload : [payload];
+                read_messages(payloadArray);
+            } else {
+                if (Array.isArray(payload)) {
+                    node.warn('warning: one or more items in the array are missing properties like messageType, namespace, variableName or variableValue.');
+                } else {
+                    node.warn('warning: properties like messageType, namespace, variableName or VariableValue is missing.');
+                }
             }
 
             if (contains_opcua_command(payload)) {
@@ -660,6 +666,17 @@
         }
 
         function contains_necessaryProperties(msg) {
+            // Check if payload is an array
+            if (Array.isArray(msg.payload)) {
+                // For arrays, check that all elements have necessary properties
+                return msg.payload.every(item => {
+                    return contains_messageType(item) &&
+                           contains_namespace(item) && 
+                           contains_variableName(item) && 
+                           contains_variableValue(item);
+                });
+            }
+            // Original single object logic
             if (contains_messageType(msg.payload)) {
                 return(contains_namespace(msg.payload) && 
                        contains_variableName(msg.payload) && 
@@ -681,108 +698,114 @@
             }
         }
 
-        function read_message(payload) {
-            switch (payload.messageType) {
-                case 'Variable':
-                    var ns = payload.namespace.toString();
-                    const variableId = `${ns}:${payload.variableName}`
+        function read_messages(payloadArray) {
+            if (!Array.isArray(payloadArray)) {
+                node.error("read_messages expects an array");
+                return;
+            }
 
-                    verbose_log("BEFORE: " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[variableId]));
-                    var value = payload.variableValue;
-                    if (payload.variableValue === "true" || payload.variableValue === true || payload.variableValue === 1) {
-                        value = true;
-                    }
-                    if (payload.variableValue === "false" || payload.variableValue === false || payload.variableValue === 0) {
-                        value = false;
-                    }
-                    variables[variableId] = value;
-                    // update server variable value if needed now variables[variableId]=value used
-                    
-                    var addressSpace = node.server.engine.addressSpace;
-                    // var vnode = addressSpace.findNode("ns="+ns+";s="+ payload.variableName);
-                    if(typeof(payload.variableName) === 'number') {
-                        verbose_log("findNode(ns="+ns+";i="+payload.variableName);
-                        var vnode = addressSpace.findNode("ns="+ns+";i="+payload.variableName);
-                        if(vnode === null) {
-                            verbose_warn("vnode is null, findNode did not succeeded");
+            var addressSpace = node.server.engine.addressSpace;
+            var nodesToWrite = [];
+
+            // Process all variable updates
+            for (var i = 0; i < payloadArray.length; i++) {
+                var payload = payloadArray[i];
+                
+                switch (payload.messageType) {
+                    case 'Variable':
+                        var ns = payload.namespace.toString();
+                        const variableId = `${ns}:${payload.variableName}`;
+
+                        verbose_log("BEFORE: " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[variableId]));
+                        
+                        var value = payload.variableValue;
+                        if (payload.variableValue === "true" || payload.variableValue === true || payload.variableValue === 1) {
+                            value = true;
                         }
-                    } 
-                    else { 
-                        // if( typeof(payload.variableName)==='string')
-                        // this must be string - a plain variable name
-                        // TODO opaque
-                        verbose_log("findNode ns="+ns+";s="+payload.variableName);
-                        var vnode = addressSpace.findNode("ns="+ns+";s="+payload.variableName);
-                    }
-                    if (vnode) {
-                        verbose_log("Found variable, nodeId: " + vnode.nodeId);
+                        if (payload.variableValue === "false" || payload.variableValue === false || payload.variableValue === 0) {
+                            value = false;
+                        }
+                        variables[variableId] = value;
 
-                        variables[variableId] = opcuaBasics.build_new_value_by_datatype(payload.datatype, payload.variableValue);
-                        // var newValue = opcuaBasics.build_new_variant(payload.datatype, payload.variableValue);
-                        var newValue = opcuaBasics.build_new_dataValue(payload.datatype, payload.variableValue);
-                        vnode.setValueFromSource(newValue); // This fixes if variable if not bound eq. bindVariables is not called
-                        if (payload.quality && payload.sourceTimestamp) {
-                            // var statusCode = opcua.StatusCodes.BadDeviceFailure;
-                            // var statusCode = opcua.StatusCodes.BadDataLost;
-                            // Bad 0x80000000
-                            if(typeof(payload.quality)==='string') { 
-                                // a name of Quality was given -> convert it to number
-                                verbose_log("Getting numeric status code of quality: " + payload.quality);
-                                payload.quality = opcua.StatusCodes[payload.quality].value;
-                                
+                        // Find the variable node
+                        var vnode = null;
+                        if(typeof(payload.variableName) === 'number') {
+                            verbose_log("findNode(ns="+ns+";i="+payload.variableName);
+                            vnode = addressSpace.findNode("ns="+ns+";i="+payload.variableName);
+                            if(vnode === null) {
+                                verbose_warn("vnode is null, findNode did not succeeded");
                             }
-                            // else // typeof(payload.quality)==='number', e.g. 2161770496
-                            var statusCode = opcua.StatusCode.makeStatusCode(payload.quality);
-                            verbose_log("StatusCode from value: " + payload.quality + " (0x" + payload.quality.toString(16) + ") description: " + statusCode.description);
-                            var ts = new Date(payload.sourceTimestamp);
-                            verbose_log("Timestamp: " + ts.toISOString());
-                            verbose_log("Set variable, newValue:" + JSON.stringify(newValue) + " statusCode: " + statusCode.description + " sourceTimestamp: " + ts);
-                            vnode.setValueFromSource(newValue, statusCode, ts);
-                            // Dummy & quick fix for statusCode & timeStamp, look timestamped_get
-                            variablesStatus[variableId] = statusCode;
-                            variablesTs[variableId] = ts;
-                            // console.log("Statuscode & sourceTimestamp, vnode: " + JSON.stringify(vnode));
-                            var session = new opcua.PseudoSession(addressSpace);
-                            const nodesToWrite = [
-                                {
+                        } 
+                        else { 
+                            // if( typeof(payload.variableName)==='string')
+                            // this must be string - a plain variable name
+                            // TODO opaque
+                            verbose_log("findNode ns="+ns+";s="+payload.variableName);
+                            vnode = addressSpace.findNode("ns="+ns+";s="+payload.variableName);
+                        }
+
+                        if (vnode) {
+                            verbose_log("Found variable, nodeId: " + vnode.nodeId);
+
+                            variables[variableId] = opcuaBasics.build_new_value_by_datatype(payload.datatype, payload.variableValue);
+                            // var newValue = opcuaBasics.build_new_variant(payload.datatype, payload.variableValue);
+                            var newValue = opcuaBasics.build_new_dataValue(payload.datatype, payload.variableValue);
+                            vnode.setValueFromSource(newValue); // This fixes if variable if not bound eq. bindVariables is not called
+
+                            // Check if this item has quality and timestamp
+                            if (payload.quality && payload.sourceTimestamp) {
+                                // var statusCode = opcua.StatusCodes.BadDeviceFailure;
+                                // var statusCode = opcua.StatusCodes.BadDataLost;
+                                // Bad 0x80000000
+                                if(typeof(payload.quality)==='string') { 
+                                    // a name of Quality was given -> convert it to number
+                                    verbose_log("Getting numeric status code of quality: " + payload.quality);
+                                    payload.quality = opcua.StatusCodes[payload.quality].value;
+                                }
+                                // else // typeof(payload.quality)==='number', e.g. 2161770496
+                                var statusCode = opcua.StatusCode.makeStatusCode(payload.quality);
+                                verbose_log("StatusCode from value: " + payload.quality + " (0x" + payload.quality.toString(16) + ") description: " + statusCode.description);
+                                var ts = new Date(payload.sourceTimestamp);
+                                verbose_log("Timestamp: " + ts.toISOString());
+                                verbose_log("Set variable, newValue:" + JSON.stringify(newValue) + " statusCode: " + statusCode.description + " sourceTimestamp: " + ts);
+                                vnode.setValueFromSource(newValue, statusCode, ts);
+                                // Dummy & quick fix for statusCode & timeStamp, look timestamped_get
+                                variablesStatus[variableId] = statusCode;
+                                variablesTs[variableId] = ts;
+
+                                // Add to batch write array
+                                nodesToWrite.push({
                                     nodeId: vnode.nodeId,
                                     attributeId: opcua.AttributeIds.Value,
-                                    value: new opcua.DataValue(
-                                    {
+                                    value: new opcua.DataValue({
                                         value: newValue,
                                         statusCode: statusCode,
                                         sourceTimestamp: ts
                                     })
-                                }
-                            ];
-                            // verbose_log("Write: " + JSON.stringify(nodesToWrite));
-                            session.write(nodesToWrite, function (err, statusCodes) {
-                                if (err) {
-                                    node.error("Write error: " + err);
-                                }
-                                else {
-                                    // verbose_log("Write succeeded, statusCode: " + JSON.stringify(statusCodes));
-                                }
-                            });
-                            
-                            /*
-                            // NOT WORKING SOLUTION EVEN IT WAS CLEAN
-                            else {
-                                verbose_log("Set variable, newValue:" + JSON.stringify(newValue) + " statusCode: " + statusCode.description);
-                                vnode.setValueFromSource(newValue, statusCode);
-                                console.log("Statuscode, vnode: " + JSON.stringify(vnode));
-                                vnode.setValueFromSource(newValue, statusCode);
+                                });
                             }
-                            */
+                            
+                            verbose_log("AFTER : " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[variableId]));
+                        } else {
+                            node.error("Variable not found from server address space: " + payload.namespace + ":" + payload.variableName);
                         }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            // Perform batch write if there are nodes with quality/timestamp
+            if (nodesToWrite.length > 0) {
+                var session = new opcua.PseudoSession(addressSpace);
+                verbose_log("Batch writing " + nodesToWrite.length + " nodes");
+                session.write(nodesToWrite, function (err, statusCodes) {
+                    if (err) {
+                        node.error("Batch write error: " + err);
+                    } else {
+                        verbose_log("Batch write succeeded for " + statusCodes.length + " nodes");
                     }
-                    else {
-                        node.error("Variable not found from server address space: " + payload.namespace + ":" + payload.variableName);
-                    }
-                    verbose_log("AFTER : " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[variableId]));
-                    break;
-                default:
-                    break;
+                });
             }
         }
 
