@@ -348,8 +348,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.343",
-                buildDate: "2025-10-31T11:22:00"
+                buildNumber: "0.2.344",
+                buildDate: "2025-11-03T18:10:00"
             };
             
             var hostname = os.hostname();
@@ -1163,11 +1163,13 @@
                         var init = msg.topic.indexOf("value=");
                         if (init > 0) {
                             var initialValue = msg.topic.substring(init+6);
+                            // Only up to ";". 
+                            if (initialValue.indexOf(";") >= 0) {
+                                initialValue = initialValue.substring(0, initialValue.indexOf(";"));
+                            }
                             verbose_log("BrowseName: " + ns + ":" + browseName + " initial value: " + initialValue);
                             variables[variableId] = opcuaBasics.build_new_value_by_datatype(datatype, initialValue);
                         }
-
-                        
                         if (datatype === "ExtensionObject") {
                             var typeId = msg.topic.substring(msg.topic.indexOf("typeId=") + 7);
                             verbose_log("ExtensionObject typeId: " + typeId);
