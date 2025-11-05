@@ -588,7 +588,11 @@
 
         //######################################################################################
         node.on("input", function (msg) {
-            verbose_log(JSON.stringify(msg));
+            try {
+                verbose_log(JSON.stringify(msg));
+            } catch (e) {
+                verbose_log(JSON.stringify(msg.payload));
+            }
             if (!node.server || !initialized) {
                 node_error("Server is not running");
                 return false;
