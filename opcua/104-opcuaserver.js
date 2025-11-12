@@ -348,8 +348,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.344",
-                buildDate: "2025-11-03T18:10:00"
+                buildNumber: "0.2.345",
+                buildDate: "2025-11-12T10:07:00"
             };
             
             var hostname = os.hostname();
@@ -773,7 +773,7 @@
                                 verbose_log("Timestamp: " + ts.toISOString());
                                 verbose_log("Set variable, newValue:" + JSON.stringify(newValue) + " statusCode: " + statusCode.description + " sourceTimestamp: " + ts);
                                 vnode.setValueFromSource(newValue, statusCode, ts);
-                                // Dummy & quick fix for statusCode & timeStamp, look timestamped_get
+                                // Dummy & quick fix for statusCode & timeStamp
                                 variablesStatus[variableId] = statusCode;
                                 variablesTs[variableId] = ts;
 
@@ -1229,8 +1229,11 @@
                             minimumSamplingInterval: 500,
                             valueRank,
                             arrayDimensions: dimensions,
-                            value: {
-                                timestamped_get: function() {
+                            value: new opcua.Variant({arrayType, dataType: opcuaDataType, value: variables[variableId]}) 
+                            // {
+                                /*
+                                // Needs TypeScript? Caused by node-opcua updates?
+                                timestamped_get: () => {
                                     var ts = new Date();
                                     if (variablesTs[variableId]) {
                                         ts = variablesTs[variableId];
@@ -1256,7 +1259,7 @@
                                         });
                                     } 
 
-                                    const myDataValue = new opcua.DataValue({
+                                    return new opcua.DataValue({
                                             serverPicoseconds: 0,
                                             serverTimestamp: new Date(),
                                             sourcePicoseconds: 0,
@@ -1264,9 +1267,10 @@
                                             statusCode: st,
                                             value: value // new opcua.Variant({arrayType, dataType: opcuaDataType, value: variables[variableId]})
                                     });
-                                    return myDataValue;
                                 },
-                                /*
+                                */
+                               /*
+                               // Needs TypeScript? Caused by node-opcua updates?
                                 get: function () {
                                     if (valueRank>=2) {
                                         return new opcua.Variant({
@@ -1285,25 +1289,10 @@
                                     } 
                                 },
                                 */
+                               /*
                                 set: function (variant) {
                                     verbose_log(chalk.yellow("Server set new variable value : ") + chalk.cyan(variables[variableId]) + chalk.yellow(" browseName: ") + chalk.cyan(ns) + ":" + chalk.cyan(browseName) + chalk.yellow(" new: ") + chalk.cyan(stringify(variant)));
-                                    /*
-                                    // TODO Array partial write need some more studies
-                                    if (msg.payload.range) {
-                                        verbose_log(chalk.red("SERVER WRITE RANGE: " + range));
-                                        var startIndex = 2; // parseInt(range);
-                                        var endIndex = 4; // parseInt(range.substring(1))
-                                        var newIndex = 0;
-                                        var oldValues = variables[variableId].split(",");
-                                        for (var i=startIndex; i<endIndex; i++) {
-                                            oldValues[i] = variant.value[newIndex.toString()];
-                                            newIndex++;
-                                        }
-                                        verbose_log(chalk.red("NEW ARRAY with range values: " + oldValues));
-                                    }
-                                    else {
-                                        */
-                                        variables[variableId] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
+                                    variables[variableId] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
                                     // }
                                     // variables[variableId] = Object.assign(variables[variableId], opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value));
                                     verbose_log(chalk.yellow("Server variable: ") + chalk.cyan(variables[variableId]) + chalk.yellow(" browseName: ") + chalk.cyan(ns) + ":" + chalk.cyan(browseName));
@@ -1312,7 +1301,8 @@
                                     node.send(SetMsg);
                                     return opcua.StatusCodes.Good;
                                 }
-                            }
+                                */
+                            // }
                         });
                   
                         var newvar = { "payload" : { "messageType" : "Variable", "variableName": ns + ":" + browseName, "nodeId": newVAR.nodeId.toString() }};
@@ -1700,10 +1690,15 @@
                             const variableId = `${variable.namespaceIndex}:${browseName}`;
 
                             var options = {
+                                /*
+                                // Needs TypeScript? Caused by node-opcua updates?
                                 get: function() {
                                     return new opcua.Variant({ dataType: opcuaBasics.convertToString(variable.dataType.toString()), value: variables[variableId]});
                                 },
-                                timestamped_get: function() {
+                                */
+                                /*
+                                // Needs TypeScript? Caused by node-opcua updates?
+                                timestamped_get: () => {
                                     var ts = new Date();
                                     if (variablesTs[variableId]) {
                                         ts = variablesTs[variableId];
@@ -1712,7 +1707,7 @@
                                     if (variablesStatus[variableId]) {
                                         st = variablesStatus[variableId];
                                     }
-                                    const myDataValue = new opcua.DataValue({
+                                    return new opcua.DataValue({
                                         serverPicoseconds: 0,
                                         serverTimestamp: new Date(),
                                         sourcePicoseconds: 0,
@@ -1720,20 +1715,10 @@
                                         statusCode: st,
                                         value: opcua.Variant({dataType: opcuaBasics.convertToString(variable.dataType.toString()), 
                                                               value: variables[variableId]})
-                                        //value: new opcua.Variant({
-                                        //    arrayType,
-                                        //    dataType: opcuaDataType,
-                                        //    value: variables[variableId]})
                                     });
-                                    return myDataValue;
-                                    /*
-                                    return new opcua.DataValue({ value: opcua.Variant({dataType: opcuaBasics.convertToString(variable.dataType.toString()), value: variables[variableId]}),
-                                                                statusCode: opcua.StatusCodes.Good,
-                                                                serverTimestamp: new Date(),
-                                                                sourceTimestamp: new Date()
-                                    });
-                                    */
                                 },
+                                */
+                               /*
                                 set: (variant) => {
                                     // Store value
                                     variables[variableId] = variant.value;
@@ -1745,6 +1730,7 @@
                                     node.send(SetMsg);
                                     return opcua.StatusCodes.Good;
                                 }
+                                */
                             };
                             if (variable.nodeClass.toString() === "2") {
                                 variable.bindVariable(options, true); // overwrite
