@@ -93,6 +93,7 @@ module.exports = function (RED) {
 
             // new OPC UA Client and browse from Objects ns=0;s=Objects
             const client = opcua.OPCUAClient.create(connectionOption);
+            client.clientCertificateManager = connectionOption.clientCertificateManager; // FIX connection issue
             try
             {
                 // step 0 : init clientCertificateManager
