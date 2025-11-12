@@ -230,6 +230,7 @@ module.exports = function (RED) {
         node.client.on("connection_reestablished", reestablish);
         node.client.on("backoff", backoff);
         node.client.on("start_reconnection", reconnection);
+        client.clientCertificateManager = connectionOption.clientCertificateManager; // FIX connection issue
         set_node_status_to("create client");
       }
       catch(err) {
@@ -241,6 +242,8 @@ module.exports = function (RED) {
     create_opcua_client();
 
     try {
+        node.client = opcua.OPCUAClient.create(connectionOption);
+        client.clientCertificateManager = connectionOption.clientCertificateManager; // FIX connection issue
         node.client.clientCertificateManager.initialize();
     }
     catch (error1) {
