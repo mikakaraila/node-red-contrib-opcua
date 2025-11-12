@@ -68,7 +68,7 @@ module.exports = function (RED) {
     let currentStatus = ''; // the status value set set by node.status(). Didn't find a way to read it back.
     let multipleItems = []; // Store & read multiple nodeIds
     let writeMultipleItems = []; // Store & write multiple nodeIds & values
-
+    let options;
     connectionOption.securityPolicy = opcuaEndpoint.securityPolicy
     connectionOption.securityMode = opcua.MessageSecurityMode[opcuaEndpoint.securityMode] || opcua.MessageSecurityMode.None;
     let userCertificate = opcuaEndpoint.userCertificate;
@@ -175,7 +175,7 @@ module.exports = function (RED) {
     }
 
     function verbose_warn(logMessage) {
-      if (opcuaEndpoint.name && node.name) {
+      if (opcuaEndpoint?.name && node.name) { // Optional name
         console.warn(chalk.cyan(`${opcuaEndpoint?.name}`) + chalk.yellow(":") + chalk.cyan(node.name) ? chalk.cyan(node.name) + chalk.yellow(': ') + chalk.cyan(logMessage) : chalk.yellow('OpcUaClientNode: ') + chalk.cyan(logMessage));
       }
       node.warn(logMessage);
@@ -301,7 +301,7 @@ module.exports = function (RED) {
 
     function create_opcua_client(callback) {
       node.client = null;
-      let options = {
+      options = {
           securityMode: connectionOption.securityMode,
           securityPolicy: connectionOption.securityPolicy,
           defaultSecureTokenLifetime: connectionOption.defaultSecureTokenLifetime,
@@ -345,6 +345,7 @@ module.exports = function (RED) {
         node.client.on("connection_reestablished", reestablish);
         node.client.on("backoff", backoff);
         node.client.on("start_reconnection", reconnection);
+        node.client.clientCertificateManager = connectionOption.clientCertificateManager; // FIX connection issue
       }
       catch (err) {
         node_error("Cannot create client, check connection options: " + stringify(options)); // connectionOption
@@ -508,6 +509,7 @@ module.exports = function (RED) {
       if (opcuaEndpoint?.endpoint?.indexOf("opc.tcp://0.0.0.0") === 0) {
         set_node_status_to("no client")
       }
+      /*
       else {
         set_node_status_to("connecting");
       }
@@ -515,9 +517,12 @@ module.exports = function (RED) {
         verbose_log("No client to connect...");
         return;
       }
+      */
       verbose_log(chalk.yellow("Exact endpointUrl: ") + chalk.cyan(opcuaEndpoint?.endpoint) + chalk.yellow(" hostname: ") + chalk.cyan(os.hostname()));
       try {
-        await node.client.clientCertificateManager.initialize();
+          node.client = opcua.OPCUAClient.create(options);
+          node.client.clientCertificateManager = connectionOption.clientCertificateManager;
+          await node.client.clientCertificateManager.initialize();
       }
       catch (error1) {
         set_node_status_to("invalid certificate");
