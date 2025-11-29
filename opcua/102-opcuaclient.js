@@ -338,9 +338,9 @@ module.exports = function (RED) {
         verbose_log(chalk.yellow("Keep session alive: ") + chalk.cyan(node.keepsessionalive));
         if (node.useTransport === true) {
           options["transportSettings"] = JSON.parse(JSON.stringify(connectionOption.transportSettings));
-          verbose_log(chalk.red("NOTE: Using transport settings: " + chalk.cyan(JSON.stringify(options))));
+          verbose_log(chalk.red("NOTE: Using transport settings: " + chalk.cyan(stringify(options))));
         }
-        verbose_log(chalk.green("1) CREATE CLIENT: ") + chalk.cyan(JSON.stringify(options)));
+        verbose_log(chalk.green("1) CREATE CLIENT: ") + chalk.cyan(stringify(options)));
         node.client = opcua.OPCUAClient.create(options);
         node.client.on("connection_reestablished", reestablish);
         node.client.on("backoff", backoff);
