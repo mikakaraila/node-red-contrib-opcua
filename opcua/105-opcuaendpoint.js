@@ -41,7 +41,7 @@ module.exports = function (RED) {
         this.usercert = n.usercert;
         this.userCertificate = n.usercertificate;
         this.userPrivatekey = n.userprivatekey;
-
+        this.name = n.name; // Added, issue #842
         if (this.credentials) {
 			// from node-opcua version 2.0.0 and onwards empty strings are not allowed anymore, so use null instead
             this.user = this.credentials.user && this.credentials.user.length > 0 ? this.credentials.user : null;
