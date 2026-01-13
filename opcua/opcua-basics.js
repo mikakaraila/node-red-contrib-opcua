@@ -275,13 +275,16 @@ module.exports.get_node_status = function (statusValue) {
             fillValue = "green";
             shapeValue = "ring";
             break;
-        
+        // issue #837
+        case "connecting":
+            fillValue = "yellow";
+            shapeValue = "ring";
+            break;
         case "reconnect":
         case "closed":
             fillValue = "yellow";
             shapeValue = "dot";
             break;
-
         case "active":
         case "active reading":
         case "value written":
