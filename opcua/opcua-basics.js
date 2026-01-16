@@ -1034,7 +1034,7 @@ module.exports.build_new_dataValue = function (datatype, value) {
                 arrayValues = getArrayValues(datatype, Array.from(raw));
             }
             else {
-                arrayValues = getArrayValues(datatype, Object.values(raw));
+                arrayValues = getArrayValues(datatype, raw);
             }
         }
         else if (Array.isArray(value)) {
@@ -1045,7 +1045,7 @@ module.exports.build_new_dataValue = function (datatype, value) {
         }
         else if (typeof value === "string") {
             var items = value.split(",");
-            arrayValues = getArrayValues(datatype, Object.values(items));
+            arrayValues = getArrayValues(datatype, items);
         }
         else {
             arrayValues = getArrayValues(datatype, [value]);
