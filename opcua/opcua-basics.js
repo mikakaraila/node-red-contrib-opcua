@@ -855,7 +855,7 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
     //console.log("value: " + value);
 
     // Issue #806 FIX
-    var m = datatype?.indexOf("Array") | -1;  // Returns -1 if undefined (or "Array" not found)
+    var m = (datatype ?? "").indexOf("Array");
     if (m > 0) {
         var arrayValues = [];
         var items;
@@ -1020,7 +1020,7 @@ module.exports.build_new_dataValue = function (datatype, value) {
     }
 
     // Issue #806 FIX
-    var m = datatype?.indexOf("Array") | -1;  // Returns -1 if undefined (or "Array" not found)
+    var m = (datatype ?? "").indexOf("Array");
     if (m > 0) {
         var uaType = getArrayType(datatype);
         var arrayValues;
