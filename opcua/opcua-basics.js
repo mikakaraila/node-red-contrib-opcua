@@ -1026,11 +1026,29 @@ module.exports.build_new_dataValue = function (datatype, value) {
         var arrayValues;
         //console.log("ARRAY: " + JSON.stringify({"uaType":uaType,"value":value}));
         if (value && value.value) {
-            arrayValues = getArrayValues(datatype, Object.values(value.value));
+            var raw = value.value;
+            if (Array.isArray(raw)) {
+                arrayValues = getArrayValues(datatype, raw);
+            }
+            else if (ArrayBuffer.isView(raw)) {
+                arrayValues = getArrayValues(datatype, Array.from(raw));
+            }
+            else {
+                arrayValues = getArrayValues(datatype, Object.values(raw));
+            }
         }
-        else {
+        else if (Array.isArray(value)) {
+            arrayValues = getArrayValues(datatype, value);
+        }
+        else if (ArrayBuffer.isView(value)) {
+            arrayValues = getArrayValues(datatype, Array.from(value));
+        }
+        else if (typeof value === "string") {
             var items = value.split(",");
             arrayValues = getArrayValues(datatype, Object.values(items));
+        }
+        else {
+            arrayValues = getArrayValues(datatype, [value]);
         }
 
         nValue = {
