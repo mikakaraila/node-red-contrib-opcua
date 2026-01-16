@@ -19,7 +19,14 @@ limitations under the License.
 <script type="text/javascript">
     RED.nodes.registerType('OpcUa-Endpoint', {
         category: 'config',
+        label: function () {
+            return this.name || "OPC UA Endpoint";
+        },
+        labelStyle: function () {
+            return this.name ? "node_label_italic" : "";
+        },
         defaults: {
+            name: {value: "", required: false},
             endpoint: {value: "", required: true},
             secpol: {value: "None"},
             secmode: {value: "None"},
@@ -33,9 +40,9 @@ limitations under the License.
             user: {type: "text"},
             password: {type: "password"}
         },
-        label: function () {
-            return this.endpoint || "OPC UA Endpoint";
-        },
+        // label: function () {
+        //     return this.endpoint || "OPC UA Endpoint";
+        // },
         oneditprepare: function () {
             var node = this;
             try {
@@ -149,9 +156,14 @@ limitations under the License.
             }
         }
     });
+    
 </script>
 
 <script type="text/x-red" data-template-name="OpcUa-Endpoint">
+    <div class="form-row">
+        <label for="node-config-input-name"><i class="icon-tasks"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="">
+    </div>
     <div class="form-row">
         <label for="node-config-input-endpoint"><i class="icon-link"></i> Endpoint</label>
         <input type="text" id="node-config-input-endpoint">
