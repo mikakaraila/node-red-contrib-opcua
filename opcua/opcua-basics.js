@@ -855,7 +855,7 @@ module.exports.build_new_value_by_datatype = function (datatype, value) {
     //console.log("value: " + value);
 
     // Issue #806 FIX
-    var m = datatype?.indexOf("Array") | -1;  // Returns -1 if undefined (or "Array" not found)
+    var m = (datatype ?? "").indexOf("Array");
     if (m > 0) {
         var arrayValues = [];
         var items;
@@ -1020,17 +1020,35 @@ module.exports.build_new_dataValue = function (datatype, value) {
     }
 
     // Issue #806 FIX
-    var m = datatype?.indexOf("Array") | -1;  // Returns -1 if undefined (or "Array" not found)
+    var m = (datatype ?? "").indexOf("Array");
     if (m > 0) {
         var uaType = getArrayType(datatype);
         var arrayValues;
         //console.log("ARRAY: " + JSON.stringify({"uaType":uaType,"value":value}));
         if (value && value.value) {
-            arrayValues = getArrayValues(datatype, Object.values(value.value));
+            var raw = value.value;
+            if (Array.isArray(raw)) {
+                arrayValues = getArrayValues(datatype, raw);
+            }
+            else if (ArrayBuffer.isView(raw)) {
+                arrayValues = getArrayValues(datatype, Array.from(raw));
+            }
+            else {
+                arrayValues = getArrayValues(datatype, raw);
+            }
+        }
+        else if (Array.isArray(value)) {
+            arrayValues = getArrayValues(datatype, value);
+        }
+        else if (ArrayBuffer.isView(value)) {
+            arrayValues = getArrayValues(datatype, Array.from(value));
+        }
+        else if (typeof value === "string") {
+            var items = value.split(",");
+            arrayValues = getArrayValues(datatype, items);
         }
         else {
-            var items = value.split(",");
-            arrayValues = getArrayValues(datatype, Object.values(items));
+            arrayValues = getArrayValues(datatype, [value]);
         }
 
         nValue = {
