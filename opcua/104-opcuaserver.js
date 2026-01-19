@@ -19,6 +19,7 @@
  module.exports = function (RED) {
     "use strict";
     var opcua = require('node-opcua');
+    const DataValue = opcua.DataValue;
     const ObjectIds = require("node-opcua-constants");
     var fileTransfer = require("node-opcua-file-transfer");
     const { NodeCrawler  } = require("node-opcua-client-crawler");
@@ -348,8 +349,8 @@
             };
             
             node.server_options.buildInfo = {
-                buildNumber: "0.2.347",
-                buildDate: "2026-01-16T10:31:00"
+                buildNumber: "0.2.348",
+                buildDate: "2026-01-19T10:43:00"
             };
             
             var hostname = os.hostname();
@@ -1215,6 +1216,40 @@
                             permissions = msg.permissions;
                         }
                         verbose_log(chalk.yellow("Using access level: ") + chalk.cyan(accessLevel) + chalk.yellow(" user access level: ") + chalk.cyan(userAccessLevel) + chalk.yellow(" permissions: ") + chalk.cyan(JSON.stringify(permissions)));
+
+                        var ts = new Date();
+                        if (variablesTs[variableId]) {
+                            ts = variablesTs[variableId];
+                        }
+                        var st = opcua.StatusCodes.Good;
+                        if (variablesStatus[variableId]) {
+                            st = variablesStatus[variableId];
+                        }
+                        let value;
+                        if (valueRank>=2) {
+                            value = new opcua.Variant({
+                                arrayType,
+                                dimensions,
+                                dataType: opcuaDataType,
+                                value: variables[variableId]
+                            });
+                        }
+                        else {
+                            value = new opcua.Variant({
+                                arrayType,
+                                dataType: opcuaDataType,
+                                value: variables[variableId]
+                            });
+                        } 
+
+                        const newValue = new DataValue({
+                                serverPicoseconds: 0,
+                                serverTimestamp: new Date(),
+                                sourcePicoseconds: 0,
+                                sourceTimestamp: ts,
+                                statusCode: st,
+                                value: value // new opcua.Variant({arrayType, dataType: opcuaDataType, value: variables[variableId]})
+                        });
                         var newVAR = namespace.addVariable({
                             organizedBy: addressSpace.findNode(parentFolder.nodeId),
                             nodeId: name,
@@ -1229,67 +1264,11 @@
                             minimumSamplingInterval: 500,
                             valueRank,
                             arrayDimensions: dimensions,
-                            value: new opcua.Variant({arrayType, dataType: opcuaDataType, value: variables[variableId]}) 
-                            // {
-                                /*
-                                // Needs TypeScript? Caused by node-opcua updates?
+                            value: // new opcua.Variant({arrayType, dataType: opcuaDataType, value: variables[variableId]}) 
+                            {
                                 timestamped_get: () => {
-                                    var ts = new Date();
-                                    if (variablesTs[variableId]) {
-                                        ts = variablesTs[variableId];
-                                    }
-                                    var st = opcua.StatusCodes.Good;
-                                    if (variablesStatus[variableId]) {
-                                        st = variablesStatus[variableId];
-                                    }
-                                    let value;
-                                    if (valueRank>=2) {
-                                        value = new opcua.Variant({
-                                            arrayType,
-                                            dimensions,
-                                            dataType: opcuaDataType,
-                                            value: variables[variableId]
-                                        });
-                                    }
-                                    else {
-                                        value = new opcua.Variant({
-                                            arrayType,
-                                            dataType: opcuaDataType,
-                                            value: variables[variableId]
-                                        });
-                                    } 
-
-                                    return new opcua.DataValue({
-                                            serverPicoseconds: 0,
-                                            serverTimestamp: new Date(),
-                                            sourcePicoseconds: 0,
-                                            sourceTimestamp: ts,
-                                            statusCode: st,
-                                            value: value // new opcua.Variant({arrayType, dataType: opcuaDataType, value: variables[variableId]})
-                                    });
+                                    return newValue;
                                 },
-                                */
-                               /*
-                               // Needs TypeScript? Caused by node-opcua updates?
-                                get: function () {
-                                    if (valueRank>=2) {
-                                        return new opcua.Variant({
-                                            arrayType,
-                                            dimensions,
-                                            dataType: opcuaDataType,
-                                            value: variables[variableId]
-                                        });
-                                    }
-                                    else {
-                                        return new opcua.Variant({
-                                            arrayType,
-                                            dataType: opcuaDataType,
-                                            value: variables[variableId]
-                                        });
-                                    } 
-                                },
-                                */
-                               /*
                                 set: function (variant) {
                                     verbose_log(chalk.yellow("Server set new variable value : ") + chalk.cyan(variables[variableId]) + chalk.yellow(" browseName: ") + chalk.cyan(ns) + ":" + chalk.cyan(browseName) + chalk.yellow(" new: ") + chalk.cyan(stringify(variant)));
                                     variables[variableId] = opcuaBasics.build_new_value_by_datatype(variant.dataType.toString(), variant.value);
@@ -1301,8 +1280,8 @@
                                     node.send(SetMsg);
                                     return opcua.StatusCodes.Good;
                                 }
-                                */
-                            // }
+                                
+                            }
                         });
                   
                         var newvar = { "payload" : { "messageType" : "Variable", "variableName": ns + ":" + browseName, "nodeId": newVAR.nodeId.toString() }};
@@ -1688,37 +1667,28 @@
 
                         function bindCallbacks(variable, browseName) {
                             const variableId = `${variable.namespaceIndex}:${browseName}`;
+                            var ts = new Date();
+                            if (variablesTs[variableId]) {
+                                ts = variablesTs[variableId];
+                            }
+                            var st = opcua.StatusCodes.Good;
+                            if (variablesStatus[variableId]) {
+                                st = variablesStatus[variableId];
+                            }
+                            const newValue = new DataValue({
+                                serverPicoseconds: 0,
+                                serverTimestamp: new Date(),
+                                sourcePicoseconds: 0,
+                                sourceTimestamp: ts,
+                                statusCode: st,
+                                value: opcua.Variant({dataType: opcuaBasics.convertToString(variable.dataType.toString()), 
+                                                        value: variables[variableId]})
+                            });
 
                             var options = {
-                                /*
-                                // Needs TypeScript? Caused by node-opcua updates?
-                                get: function() {
-                                    return new opcua.Variant({ dataType: opcuaBasics.convertToString(variable.dataType.toString()), value: variables[variableId]});
-                                },
-                                */
-                                /*
-                                // Needs TypeScript? Caused by node-opcua updates?
                                 timestamped_get: () => {
-                                    var ts = new Date();
-                                    if (variablesTs[variableId]) {
-                                        ts = variablesTs[variableId];
-                                    }
-                                    var st = opcua.StatusCodes.Good;
-                                    if (variablesStatus[variableId]) {
-                                        st = variablesStatus[variableId];
-                                    }
-                                    return new opcua.DataValue({
-                                        serverPicoseconds: 0,
-                                        serverTimestamp: new Date(),
-                                        sourcePicoseconds: 0,
-                                        sourceTimestamp: ts,
-                                        statusCode: st,
-                                        value: opcua.Variant({dataType: opcuaBasics.convertToString(variable.dataType.toString()), 
-                                                              value: variables[variableId]})
-                                    });
+                                    return newValue;
                                 },
-                                */
-                               /*
                                 set: (variant) => {
                                     // Store value
                                     variables[variableId] = variant.value;
@@ -1730,7 +1700,7 @@
                                     node.send(SetMsg);
                                     return opcua.StatusCodes.Good;
                                 }
-                                */
+                                
                             };
                             if (variable.nodeClass.toString() === "2") {
                                 variable.bindVariable(options, true); // overwrite
