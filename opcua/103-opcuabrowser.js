@@ -124,24 +124,34 @@ module.exports = function (RED) {
                 
                 // step 3 : browse
                 node.debug("nodeIdBrowse:" + nodeIdToBrowse);
-                const browseResult = await session.browse(nodeIdToBrowse);
-        
-                
-                // step 4 : Read Value and Datatypes
-                for(const reference of browseResult.references)
-                {
-                    var ref_obj = Object.assign({}, reference);
-                    const dataValue = await session.read({nodeId: ref_obj.nodeId, attributeId: opcua.AttributeIds.Value});
-                    ref_obj["value"] = dataValue.value.value;
-                    ref_obj["dataType"] = opcua.DataType[dataValue.value.dataType];
-                    node.add_item(ref_obj);
+                try {
+                    const browseResult = await session.browse(nodeIdToBrowse);
+            
+                    
+                    // step 4 : Read Value and Datatypes
+                    for(const reference of browseResult.references)
+                    {
+                        var ref_obj = Object.assign({}, reference);
+                        const dataValue = await session.read({nodeId: ref_obj.nodeId, attributeId: opcua.AttributeIds.Value});
+                        ref_obj["value"] = dataValue.value.value;
+                        ref_obj["dataType"] = opcua.DataType[dataValue.value.dataType];
+                        node.add_item(ref_obj);
+                    }
+                    node.status({
+                                fill: "green",
+                                shape: "dot",
+                                text: "Items: " + node.items.length,
+                                source: { id: node.id, type: node.type, name: "OPC UA Browser"}
+                            });
+                } catch (err) {
+                    node_error(err);
+                    node.status({
+                      fill: "yellow",
+                      shape: "ring",
+                      text: "browse error",
+                      source: { id: node.id, type: node.type, name: "OPC UA Browser" }
+                    });
                 }
-                node.status({
-                            fill: "green",
-                            shape: "dot",
-                            text: "Items: " + node.items.length,
-                            source: { id: node.id, type: node.type, name: "OPC UA Browser"}
-                        });
                         
                 //step 5 close session                
                 node.debug("close browse session");
