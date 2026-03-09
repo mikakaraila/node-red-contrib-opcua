@@ -2411,53 +2411,61 @@ module.exports = function (RED) {
       }
     }
 
-    // OLD
+    node.add_item = function (item) {
+        if (item) {
+            if (!node.items) {
+                node.items = new Array();
+            }
+            node.items.push({
+                'item': item
+            });
+        }
+    };
+
+    function node_error(err) {
+        node.error("Browse node error!", err);
+    }
+
     async function browse_action_input(msg) {
       verbose_log("browsing");
-      let allInOne = [];
+      node.items = [];
 
       if (node.session) {
-        const crawler = new NodeCrawler(node.session);
+        const client = opcua.OPCUAClient.create(connectionOption);
         set_node_status_to("active browsing");
-        crawler.on("browsed", function (element) {
-          if (msg.collect === undefined || (msg.collect && msg.collect === false)) {
-            let item = {};
-            item.payload = { ...element }; // Clone element
-            let dataType = "";
-            item.topic = element.nodeId.toString();
-            if (element?.dataType) {
-              dataType = opcuaBasics.convertToString(element.dataType.toString());
-            }
-            if (dataType && dataType.length > 0) {
-              item.datatype = dataType;
-            }
-            node.send([item, null, null]);
-          }
-          else {
-            let item = { ...element }; // Clone element
-            allInOne.push(item);
-          }
-        });
-        // Browse from given topic
-        const nodeId = msg.topic;
-        crawler.read(nodeId, function (err, obj) {
-          if (!err) {
-            // Crawling done
-            if (msg.collect && msg.collect === true) {
-              verbose_log("Send all in one, items: " + allInOne.length);
-              let all = {};
-              all.topic = "AllInOne";
-              all.payload = allInOne;
-              all.objects = JSON.stringify(obj); // Added extra result
-              set_node_status_to("browse done");
-              node.send([all, null, null]);
-              return;
-            }
 
-            set_node_status_to("browse done");
-          }
-          crawler.dispose();
-        });
+        const nodeId = msg.topic;
+        node.debug("nodeId: " + nodeId);
+		
+		try {
+			const browseResult = await node.session.browse(nodeId);
+
+			for(const reference of browseResult.references)
+			{
+				var ref_obj = Object.assign({}, reference);
+				const dataValue = await node.session.read({nodeId: ref_obj.nodeId, attributeId: opcua.AttributeIds.Value});
+				ref_obj["value"] = dataValue.value.value;
+				ref_obj["dataType"] = opcua.DataType[dataValue.value.dataType];
+				node.add_item(ref_obj);
+			}
+			msg.payload = node.items
+			node.send([msg, null, null]);
+			node.status({
+						fill: "green",
+						shape: "dot",
+						text: "Items: " + node.items.length,
+						source: { id: node.id, type: node.type, name: "OPC UA Browser"}
+					});
+		} catch (err) {
+			node_error("Browse error: " + err.message);
+			verbose_log(err);
+			node.status({
+			  fill: "yellow",
+			  shape: "ring",
+			  text: "browse error",
+			  source: { id: node.id, type: node.type, name: "OPC UA Browser" }
+			});
+		}
       } else {
         node_error("Session is not active!");
         set_node_status_to("invalid session");
