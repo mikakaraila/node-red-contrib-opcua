@@ -38,7 +38,7 @@
         this.name = n.name;
         this.port = n.port;
         this.endpoint = n.endpoint;
-        this.users = n.users;
+        this.usersFile = n.usersFile;
         this.nodesetDir = n.nodesetDir;
         this.autoAcceptUnknownCertificate = n.autoAcceptUnknownCertificate;
         this.allowAnonymous = n.allowAnonymous;
@@ -98,33 +98,33 @@
         let users = [{ username: "", password: "", roles: "" }]; // Empty as default
         let savedAddressSpace = "";
 
-        if (node.users && node.users.length > 0) {
-            verbose_log(chalk.yellow("Trying to load default users from file: ") + chalk.cyan(node.users) + chalk.yellow(" folder: ") + chalk.cyan(__dirname));
-            if (fs.existsSync(node.users)) {
-                users = JSON.parse(fs.readFileSync(node.users));
+        if (node.usersFile && node.usersFile.length > 0) {
+            verbose_log(chalk.yellow("Trying to load default users from file: ") + chalk.cyan(node.usersFile) + chalk.yellow(" folder: ") + chalk.cyan(__dirname));
+            if (fs.existsSync(node.usersFile)) {
+                users = JSON.parse(fs.readFileSync(node.usersFile, "utf8"));
                 verbose_log(chalk.green("Loaded users: ") + chalk.cyan(JSON.stringify(users)));
-                setUsers(users);
+                setUsers();
             }
             else {
                 // Current working directory
-                let fileName = path.join(process.cwd(), node.users);
-                verbose_log(chalk.yellow("Trying to load default users from file: ") + chalk.cyan(node.users) + chalk.yellow(" folder: ") + chalk.cyan(fileName));
+                let fileName = path.join(process.cwd(), node.usersFile);
+                verbose_log(chalk.yellow("Trying to load default users from file: ") + chalk.cyan(node.usersFile) + chalk.yellow(" folder: ") + chalk.cyan(fileName));
                 if (fs.existsSync(fileName)) {
-                    users = JSON.parse(fs.readFileSync(fileName));
+                    users = JSON.parse(fs.readFileSync(fileName, "utf8"));
                     verbose_log(chalk.green("Loaded users: ") + chalk.cyan(JSON.stringify(users)));
-                    setUsers(users);
+                    setUsers();
                 }
                 else {
-                    let fileName = path.join(process.cwd(), ".node-red", node.users);
-                    verbose_log(chalk.yellow("Trying to load default users from file: ") + chalk.cyan(node.users) + chalk.yellow(" folder: ") + chalk.cyan(fileName));
+                    let fileName = path.join(process.cwd(), ".node-red", node.usersFile);
+                    verbose_log(chalk.yellow("Trying to load default users from file: ") + chalk.cyan(node.usersFile) + chalk.yellow(" folder: ") + chalk.cyan(fileName));
                     if (fs.existsSync(fileName)) {
-                        users = JSON.parse(fs.readFileSync(fileName));
+                        users = JSON.parse(fs.readFileSync(fileName, "utf8"));
                         verbose_log(chalk.green("Loaded users: ") + chalk.cyan(JSON.stringify(users)));
-                        setUsers(users);
+                        setUsers();
                     }
                     else {
-                        verbose_log(chalk.red("File: " + node.users + " not found! You can inject users to server or add file to folder: " + fileName));
-                        node.error("File: " + node.users + " not found! You can inject users to server or add file to folder: " + fileName);
+                        verbose_log(chalk.red("File: " + node.usersFile + " not found! You can inject users to server or add file to folder: " + fileName));
+                        node.error("File: " + node.usersFile + " not found! You can inject users to server or add file to folder: " + fileName);
                     }
                 }
             }
