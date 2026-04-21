@@ -193,7 +193,7 @@ module.exports = function (RED) {
         nodeId
       });
       if (dataValue.statusCode.isGood()) {
-        const browseName = dataValue.value.value.name;
+        const browseName = dataValue?.value?.value?.name || "UnknownEvent";
         return browseName;
       } else {
         return "???";
