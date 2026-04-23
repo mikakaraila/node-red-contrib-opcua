@@ -193,7 +193,7 @@ module.exports = function (RED) {
         nodeId
       });
       if (dataValue.statusCode.isGood()) {
-        const browseName = dataValue.value.value.name;
+        const browseName = dataValue?.value?.value?.name || "UnknownEvent";
         return browseName;
       } else {
         return "???";
@@ -1478,7 +1478,9 @@ module.exports = function (RED) {
               set_node_status_to("active multiple reading");
 
               if (msg.payload === "ALL") {
-                node.send([{ "topic": "ALL", "payload": dataValues, "items": multipleItems }, null, null]);
+                msg.payload = dataValues;
+                msg.items = multipleItems;
+                node.send([msg, null, null]);// node.send([{ "topic": "ALL", "payload": dataValues, "items": multipleItems }, null, null]);
                 return;
               }
 
@@ -1512,13 +1514,12 @@ module.exports = function (RED) {
                     // Use nodeId in topic, arrays are same length
                     // Output pin 1 for each value by value
                     // verbose_log("Output pin1, topic: " + JSON.stringify(multipleItems[i]) + " payload: " + value);
-                    node.send([{
-                      topic: multipleItems[i],
-                      payload: value,
-                      statusCode: dataValue.statusCode,
-                      serverTimestamp: serverTs,
-                      sourceTimestamp: sourceTs
-                    }, null, null]);
+                    msg.topic = multipleItems[i].nodeId.toString();
+                    msg.payload = value;
+                    msg.statusCode = dataValue.statusCode;
+                    msg.serverTimestamp = serverTs;
+                    msg.sourceTimestamp = sourceTs;
+                    node.send([msg, null, null]);//node.send([{topic: multipleItems[i], payload: value, statusCode: dataValue.statusCode, serverTimestamp: serverTs, sourceTimestamp: sourceTs}, null, null]);
                   } catch (e) {
                     if (dataValue != null) {
                       node_error("Bad read, statusCode: " + (dataValue.statusCode.toString(16)));
@@ -1527,7 +1528,7 @@ module.exports = function (RED) {
                       node_error(e.message);
                       // Output pin 2 for errors
                       // verbose_log("Output pin2, error: " + e.message);
-                      node.send([null, { error: e.message, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
+                      node.send([msg, { error: e.message, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
                       return;
                     }
                   }
@@ -1535,11 +1536,9 @@ module.exports = function (RED) {
               }
               // Send all values in one msg to output 3
               // verbose_log("Output pin3, topic: " + multipleItems + " payload: " + dataValues);
-              node.send([null, null, 
-                {
-                  topic: multipleItems,
-                  payload: dataValues
-                }]); 
+              msg.topic = multipleItems;
+              msg.payload = dataValues;
+              node.send([null, null, msg]); // node.send([null, null, {topic: multipleItems, payload: dataValues}]); 
             }
           });
       } else {
