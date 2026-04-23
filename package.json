@@ -46,9 +46,9 @@
     "flatted": "3.2.2",
     "get-user-locale": "2.3.0",
     "lodash.clonedeep": "4.5.0",
-    "node-opcua": "2.160.0",
+    "node-opcua": "2.169.0",
     "node-opcua-client-crawler": "2.127.1",
-    "node-opcua-file-transfer": "2.160.0",
+    "node-opcua-file-transfer": "2.169.0",
     "node-opcua-crypto": "4.16.0",
     "os-locale": "6.0.2"
   },
