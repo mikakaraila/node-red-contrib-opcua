@@ -603,7 +603,7 @@
             if (contains_necessaryProperties(msg)) {
                 // Always process as array - wrap single objects
                 var payloadArray = Array.isArray(payload) ? payload : [payload];
-                read_messages(payloadArray);
+                read_messages(payloadArray, msg);
             } else {
                 if (Array.isArray(payload)) {
                     node.warn('warning: one or more items in the array are missing properties like messageType, namespace, variableName or variableValue.');
@@ -703,9 +703,9 @@
             }
         }
 
-        function read_messages(payloadArray) {
+        function read_messages(payloadArray, msg) {
             if (!Array.isArray(payloadArray)) {
-                node.error("read_messages expects an array");
+                node.error("read_messages expects an array", msg);
                 return;
             }
 
@@ -792,7 +792,7 @@
                             
                             verbose_log("AFTER : " + ns + ":" + payload.variableName + " value: " + JSON.stringify(variables[variableId]));
                         } else {
-                            node.error("Variable not found from server address space: " + payload.namespace + ":" + payload.variableName);
+                            node.error("Variable not found from server address space: " + payload.namespace + ":" + payload.variableName, msg);
                         }
                         break;
                     default:
@@ -806,7 +806,7 @@
                 verbose_log("Batch writing " + nodesToWrite.length + " nodes");
                 session.write(nodesToWrite, function (err, statusCodes) {
                     if (err) {
-                        node.error("Batch write error: " + err);
+                        node.error("Batch write error: " + err, msg);
                     } else {
                         verbose_log("Batch write succeeded for " + statusCodes.length + " nodes");
                     }
