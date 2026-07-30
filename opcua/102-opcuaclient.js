@@ -1969,12 +1969,14 @@ module.exports = function (RED) {
           if (err) {
             set_node_error_status_to("error", err);
             node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
-            node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
+			msg.payload = err;
+            node.send([msg, { error: `${err}`, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
 
           } else {
             set_node_status_to("active writing");
             verbose_log("Values written!");
-            node.send([{ payload: statusCode }, null, null]);
+			msg.payload = statusCode;
+            node.send([msg, null, null]);
             set_node_status_to("values written");
             return; // Do not try to run old way
           }
@@ -2011,11 +2013,13 @@ module.exports = function (RED) {
             if (err) {
               set_node_error_status_to("error", err);
               node_error(node.name + " Cannot write values (" + msg.payload + ") to msg.topic:" + msg.topic + " error:" + err);
-              node.send([{ payload: err }, { error: `${err}`, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
+			  msg.payload = err;
+              node.send([msg, { error: `${err}`, endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
             } else {
               set_node_status_to("active writing");
               verbose_log("Values written!");
-              node.send([{ payload: statusCode }, null, null]);
+			  msg.payload = statusCode;
+              node.send([msg, null, null]);
               set_node_status_to("values written");
             }
           });
