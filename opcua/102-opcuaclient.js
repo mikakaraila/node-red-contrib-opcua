@@ -94,7 +94,7 @@ module.exports = function (RED) {
     if (node.applicationName) connectionOption.applicationName = node.applicationName;
     if (node.applicationUri) connectionOption.applicationUri = node.applicationUri;
     // Moved needed options to client create
-    connectionOption.requestedSessionTimeout = opcuaBasics.calc_milliseconds_by_time_and_unit(300, "s");
+    connectionOption.requestedSessionTimeout = 10000; // 10s for faster disconnect detection (was 300s)
     // DO NOT USE must be NodeOPCUA-Client !! connectionOption.applicationName = node.name; // Application name
     connectionOption.clientName = node.name; // This is used for the session names
     connectionOption.endpointMustExist = false;
@@ -294,9 +294,21 @@ module.exports = function (RED) {
       // node.error("reconnect", msg);
       verbose_log(chalk.red("reconnect")) //  + chalk.cyan(stringify(msg))); // msg is TOO big to show
       set_node_status2_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
+      // Send reconnect status on third output (error)
+      let endpoint = "";
+      if (opcuaEndpoint?.endpoint) {
+        endpoint = opcuaEndpoint.endpoint;
+      }
+      node.send([null, null, { error: "reconnecting", message: "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec", endpoint: endpoint, status: "reconnect" }]);
     };
     const reconnection = function () {
       set_node_status2_to("reconnect", "starting...");
+      // Send reconnect status on third output (error)
+      let endpoint = "";
+      if (opcuaEndpoint?.endpoint) {
+        endpoint = opcuaEndpoint.endpoint;
+      }
+      node.send([null, null, { error: "reconnecting", message: "starting...", endpoint: endpoint, status: "reconnect" }]);
     };
 
     function create_opcua_client(callback) {
@@ -310,7 +322,7 @@ module.exports = function (RED) {
           clientCertificateManager: connectionOption.clientCertificateManager,
           clientName: node.name, // Fix for #664 sessionName
           keepSessionAlive: node.keepsessionalive,
-          requestedSessionTimeout: 60000 * 5, // 5min, default 1min
+          requestedSessionTimeout: 10000, // 10s for faster disconnect detection (was 5min)
           automaticallyAcceptUnknownCertificate: true,
           // transportSettings: transportSettings // Some 
           applicationName: connectionOption.applicationName,
@@ -594,6 +606,13 @@ module.exports = function (RED) {
           return;
         }
         node.session = session;
+        session.on("keepalive_failure", function () {
+          verbose_log(chalk.red("Session keepalive failed"));
+          set_node_status2_to("reconnect", "session keepalive failed");
+          let endpoint = "";
+          if (opcuaEndpoint?.endpoint) endpoint = opcuaEndpoint.endpoint;
+          node.send([null, null, { error: "reconnecting", message: "session keepalive failed", endpoint, status: "reconnect" }]);
+        });
         set_node_status_to("session active");
         for (let i in cmdQueue) {
           processInputMsg(cmdQueue[i]);
@@ -622,6 +641,7 @@ module.exports = function (RED) {
       verbose_log("Publishing interval " + stringify(parameters));
       newSubscription = opcua.ClientSubscription.create(node.session, parameters);
       verbose_log("Subscription " + newSubscription.toString());
+
       newSubscription.on("initialized", function () {
         verbose_log("Subscription initialized");
         set_node_status_to("initialized");
