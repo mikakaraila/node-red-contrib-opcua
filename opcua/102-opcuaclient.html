@@ -245,8 +245,11 @@ limitations under the License.
     <p>Use unregister to unregisterNodeIds, if server supports unregisteredNodes then it will release earlier registered nodeIds</p>
     <p>Acknowledge can be used to acknowledge event/condition, msg must contain topic (alarm nodeId), conditionId (nodeId of eventId) and comment</p>
     <p>The value to Write should be injected by an OpcUa-Item.</p>
-    <p>Inject the Topic only once on Subscribe or Event for subscription and you got the changing value on every Interval.
-        Every inject subscribes a new monitored Item.</p>
+    <p>Inject the Topic on Subscribe or Event for subscription and you got the changing value on every Interval.</p>
+    <p>Injecting the same Topic again is ignored: an already subscribed topic does not create a duplicate monitored item.</p>
+    <p>If the server connection is lost (for example the PLC is powered off) the node detects it within about a minute,
+        shows the status "reconnect" and keeps retrying until the server is reachable again.
+        All previously subscribed topics are subscribed automatically again - no flow action needed.</p>
     <p>Interval is setting for Client <strong>requestedPublishingInterval</strong> (default: 100ms).</p>
     <p>Input <strong>msg.payload</strong> can bring an samplingInterval for monitored Items/Events in subscription (default: 100ms).</p>
     <p>Monitor will ask additional parameters like Absolute or Percent and deadband value</p>
