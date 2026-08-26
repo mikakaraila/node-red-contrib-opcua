@@ -527,7 +527,6 @@ module.exports = function (RED) {
       */
       verbose_log(chalk.yellow("Exact endpointUrl: ") + chalk.cyan(opcuaEndpoint?.endpoint) + chalk.yellow(" hostname: ") + chalk.cyan(os.hostname()));
       try {
-          node.client = opcua.OPCUAClient.create(options);
           node.client.clientCertificateManager = connectionOption.clientCertificateManager;
           await node.client.clientCertificateManager.initialize();
       }
