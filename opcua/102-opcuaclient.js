@@ -736,6 +736,10 @@ module.exports = function (RED) {
         verbose_warn("can't work without OPC UA NodeId - msg.topic empty");
         node.send([null, { error: "can't work without OPC UA NodeId", endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
         return;
+      } else if (typeof msg.topic !== 'string') {
+        verbose_warn("can't work without OPC UA NodeId - msg.topic must be a string");
+        node.send([null, { error: "can't work without OPC UA NodeId as a string", endpoint: `${opcuaEndpoint?.endpoint}`, status: currentStatus }, null]);
+        return;
       }
 
       verbose_log(chalk.yellow("Action on input: ") + chalk.cyan(node.action) +
