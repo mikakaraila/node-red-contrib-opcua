@@ -188,14 +188,19 @@ module.exports = function (RED) {
     }
 
     async function getBrowseName(_session, nodeId) {
-      const dataValue = await _session.read({
-        attributeId: AttributeIds.BrowseName,
-        nodeId
-      });
-      if (dataValue.statusCode.isGood()) {
-        const browseName = dataValue?.value?.value?.name || "UnknownEvent";
-        return browseName;
-      } else {
+      try {
+        const dataValue = await _session.read({
+          attributeId: AttributeIds.BrowseName,
+          nodeId
+        });
+        if (dataValue.statusCode.isGood()) {
+          const browseName = dataValue?.value?.value?.name || "UnknownEvent";
+          return browseName;
+        } else {
+          return "???";
+        }
+      } catch (err) {
+        verbose_log(chalk.red("getBrowseName read failed: ") + chalk.cyan(err.message));
         return "???";
       }
     }
@@ -269,7 +274,11 @@ module.exports = function (RED) {
     }
 
     let eventQueue = new async.queue(function (task, callback) {
-      __dumpEvent(task.node, task.session, task.fields, task.eventFields, callback);
+      __dumpEvent(task.node, task.session, task.fields, task.eventFields, callback)
+        .catch(function (err) {
+          node_error(err);
+          callback();
+        });
     });
 
     function dumpEvent(node, session, fields, eventFields, _callback) {
