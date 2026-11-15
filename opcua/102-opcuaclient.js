@@ -1863,14 +1863,30 @@ module.exports = function (RED) {
         // TODO write to node-red server still work to do
       }
 
+      // A value that does not match the datatype (e.g. a number for a String) makes the Variant
+      // constructor throw an assertion without a message. Report it clearly instead. The Variant
+      // is built where it is used, so range checks that adjust the value first keep working.
+      function build_variant() {
+        try {
+          return new opcua.Variant(opcuaDataValue);
+        } catch (err) {
+          const reason = "value " + stringify(msg.payload) + " does not match datatype " + msg.datatype;
+          node.error("Cannot write to " + msg.topic + ": " + reason, msg);
+          set_node_error_status_to("error", reason);
+          return null;
+        }
+      }
+
       let nodeToWrite;
       if (node.session && !node.session.isReconnecting && node.session.isChannelValid()) {
         if (range) {
+          const rangeVariant = build_variant();
+          if (!rangeVariant) return;
           nodeToWrite = {
             nodeId: nodeid.toString(),
             attributeId: opcua.AttributeIds.Value,
             indexRange: range,
-            value: new opcua.DataValue({ value: new opcua.Variant(opcuaDataValue) })
+            value: new opcua.DataValue({ value: rangeVariant })
           };
         }
         else {
@@ -1979,11 +1995,13 @@ module.exports = function (RED) {
             }
           }
 
+          const valueVariant = build_variant();
+          if (!valueVariant) return;
           nodeToWrite = {
             nodeId: nodeid.toString(),
             attributeId: opcua.AttributeIds.Value,
             value: new opcua.DataValue({
-              value: new opcua.Variant(opcuaDataValue),
+              value: valueVariant,
               // sourceTimestamp: new Date(),            // NOTE: Some servers do NOT accept time writing
               // statusCode: opcua.StatusCodes.Good      // NOTE: Same with status writing, NOT accepted always
             })
