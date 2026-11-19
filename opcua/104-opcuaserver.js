@@ -582,7 +582,6 @@
                 var msg = {};
                 msg.error = {};
                 msg.error.message = "Disconnect error: " + err;
-                msg.error.source = this;
                 node.error("Disconnect error: ", msg);
             }
         })();

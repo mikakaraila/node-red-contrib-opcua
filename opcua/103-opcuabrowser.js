@@ -105,7 +105,6 @@ module.exports = function (RED) {
                     let msg = {};
                     msg.error = {};
                     msg.error.message = "Certificate error: " + error1.message;
-                    msg.error.source = this;
                     node.error("Certificate error", msg);
                 }
                 node.debug(chalk.yellow("Trusted folder:      ") + chalk.cyan(client?.clientCertificateManager?.trustedFolder));

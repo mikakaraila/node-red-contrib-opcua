@@ -3,8 +3,10 @@ const { EventEmitter } = require("node:events");
 const Module = require("node:module");
 const test = require("node:test");
 
-test("the connected OPC UA client retains its reconnection listeners", async () => {
+async function createClientNode({ connectionError } = {}) {
   const clients = [];
+  const errors = [];
+  let closeNode;
   const certificateManager = {
     async initialize() {},
     trustedFolder: "trusted",
@@ -21,11 +23,12 @@ test("the connected OPC UA client retains its reconnection listeners", async () 
     }
 
     async connect() {
+      if (connectionError) throw connectionError;
       this.connected = true;
     }
 
     async createSession() {
-      return { sessionId: "active" };
+      return { sessionId: "active", async close() {} };
     }
   }
 
@@ -80,8 +83,15 @@ test("the connected OPC UA client retains its reconnection listeners", async () 
         createNode(node) {
           Object.assign(node, {
             debug() {},
-            error() {},
-            on() {},
+            error(message, msg) {
+              if (msg?.error && Object.hasOwn(msg.error, "source")) {
+                assert.ok(msg.error.source, "error source must not be undefined");
+              }
+              errors.push({ message, msg });
+            },
+            on(event, handler) {
+              if (event === "close") closeNode = handler;
+            },
             send() {},
             status() {},
             warn() {}
@@ -118,9 +128,30 @@ test("the connected OPC UA client retains its reconnection listeners", async () 
 
   await new Promise((resolve) => setImmediate(resolve));
 
-  assert.equal(clients.length, 1, "connect must reuse the client that owns reconnection listeners");
-  assert.strictEqual(node.client, clients[0]);
-  assert.equal(node.client.listenerCount("backoff"), 1);
-  assert.equal(node.client.listenerCount("start_reconnection"), 1);
-  assert.equal(node.client.listenerCount("connection_reestablished"), 1);
+  return { node, clients, errors, close: () => closeNode(() => {}) };
+}
+
+test("the connected OPC UA client retains its reconnection listeners", async () => {
+  const { node, clients, close } = await createClientNode();
+  try {
+    assert.equal(clients.length, 1, "connect must reuse the client that owns reconnection listeners");
+    assert.strictEqual(node.client, clients[0]);
+    assert.equal(node.client.listenerCount("backoff"), 1);
+    assert.equal(node.client.listenerCount("start_reconnection"), 1);
+    assert.equal(node.client.listenerCount("connection_reestablished"), 1);
+  } finally {
+    await close();
+  }
+});
+
+test("an unavailable endpoint reports a catchable error without an invalid source", async () => {
+  const { errors, close } = await createClientNode({ connectionError: new Error("device offline") });
+  try {
+    const error = errors.find((entry) => entry.message === "Invalid endpoint");
+    assert.ok(error, "connection failure must be reported to Node-RED");
+    assert.match(error.msg.error.message, /device offline/);
+    assert.equal(Object.hasOwn(error.msg.error, "source"), false);
+  } finally {
+    await close();
+  }
 });
