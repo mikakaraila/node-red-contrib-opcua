@@ -374,7 +374,6 @@ module.exports = function (RED) {
       let msg = {};
       msg.error = {};
       msg.error.message = "reconnect";
-      msg.error.source = this;
       // node.error("reconnect", msg);
       verbose_log(chalk.red("reconnect")) //  + chalk.cyan(stringify(msg))); // msg is TOO big to show
       set_node_status2_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
@@ -411,7 +410,7 @@ module.exports = function (RED) {
           node.items = items;
           set_node_status_to("no client");
           if (callback) {
-            callback();
+            run_callback_safely(callback);
           }
           return;
         }
@@ -439,7 +438,24 @@ module.exports = function (RED) {
       node.items = items;
       set_node_status_to("create client");
       if (callback) {
-        callback();
+        run_callback_safely(callback);
+      }
+    }
+
+    // Prevent rejections from async callbacks (e.g. connect_opcua_client) from crashing Node-RED
+    function run_callback_safely(callback) {
+      try {
+        const result = callback();
+        if (result && typeof result.catch === "function") {
+          result.catch(function (err) {
+            connectingInFlight = false;
+            node_error("Connection failed: " + (err && err.message ? err.message : err));
+            set_node_status_to("invalid endpoint");
+          });
+        }
+      }
+      catch (err) {
+        node_error("Connection failed: " + (err && err.message ? err.message : err));
       }
     }
 
@@ -610,7 +626,6 @@ module.exports = function (RED) {
         let msg = {};
         msg.error = {};
         msg.error.message = "Certificate error: " + error1.message;
-        msg.error.source = this;
         node.error("Certificate error", msg);
       }
       node.debug(chalk.yellow("Trusted folder:      ") + chalk.cyan(node.client?.clientCertificateManager?.trustedFolder));
@@ -644,7 +659,6 @@ module.exports = function (RED) {
           let msg = {};
           msg.error = {};
           msg.error.message = "Invalid endpoint: " + err;
-          msg.error.source = this;
           node.error("Invalid endpoint", msg);
           return;
       }
@@ -1130,7 +1144,6 @@ module.exports = function (RED) {
           let msg = {};
           msg.error = {};
           msg.error.message = "Invalid NodeId: " + err;
-          msg.error.source = this;
           node.error("Invalid argument: ", tmp);
           return opcua.StatusCodes.BadNodeIdUnknown;
         }

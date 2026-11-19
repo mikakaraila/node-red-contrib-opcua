@@ -200,7 +200,6 @@ module.exports = function (RED) {
       var msg = {};
       msg.error = {};
       msg.error.message = "reconnect";
-      msg.error.source = this;
       // node.error("reconnect", msg);
       verbose_log(chalk.red("reconnect") + chalk.cyan(msg));
       set_node_status_to("reconnect", "attempt #" + attempt + " retry in " + delay / 1000.0 + " sec");
@@ -251,7 +250,6 @@ module.exports = function (RED) {
         let msg = {};
         msg.error = {};
         msg.error.message = "Certificate error: " + error1.message;
-        msg.error.source = this;
         node.error("Certificate error", msg);
     }
     node.debug(chalk.yellow("Trusted folder:      ") + chalk.cyan(node.client?.clientCertificateManager?.trustedFolder));
@@ -308,7 +306,6 @@ module.exports = function (RED) {
         var msg = {};
         msg.error = {};
         msg.error.message = "Cannot connect to " + JSON.stringify(opcuaEndpoint);
-        msg.error.source = this;
         node.error("Cannot connect to ", msg);
         callback(err);
       }
@@ -354,7 +351,6 @@ module.exports = function (RED) {
       var msg = {};
       msg.error = {};
       msg.error.message = "Client node error: " + stringify(err);
-      msg.error.source = this;
       node.error("Method node error on node: ", msg);
     }
 
@@ -399,7 +395,6 @@ module.exports = function (RED) {
           var msg = {};
           msg.error = {};
           msg.error.message = "Invalid NodeId: " + err;
-          msg.error.source = this;
           node.error("Invalid NodeId: ", msg);
           return opcua.StatusCodes.BadNodeIdUnknown;
         }
@@ -420,7 +415,6 @@ module.exports = function (RED) {
           var msg = {};
           msg.error = {};
           msg.error.message = "Build method request failed, error: " + err;
-          msg.error.source = this;
           node.error("Build method request failed, error: ", msg);
         }
 
@@ -461,7 +455,6 @@ module.exports = function (RED) {
           var msg = {};
           msg.error = {};
           msg.error.message = "Method execution error: " + err;
-          msg.error.source = this;
           node.error("Method execution error: ", msg);
           return opcua.StatusCodes.BadMethodInvalid;
         }
