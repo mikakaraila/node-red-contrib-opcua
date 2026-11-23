@@ -44,6 +44,7 @@ module.exports = function (RED) {
 
     const server_options = {
       port: 4840,
+      serverCertificateManager: certificateManager,
       // resourcePath: "UADiscovery", // Do not use this, most of servers / client expect discovery is on port 4840 directly
       nodeset_filename: xmlFiles,
       buildInfo: {

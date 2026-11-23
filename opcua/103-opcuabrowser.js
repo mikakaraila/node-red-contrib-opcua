@@ -22,7 +22,7 @@ module.exports = function (RED) {
     var uaclient = require('node-opcua-client');
     var path = require("path");
     var chalk = require("chalk");
-    const { createClientCertificateManager } = require("./utils");
+    const { createClientCertificateManager, initializeClientCertificateManager } = require("./utils");
     function OpcUaBrowserNode(config) {
 
         RED.nodes.createNode(this, config);
@@ -98,7 +98,7 @@ module.exports = function (RED) {
             {
                 // step 0 : init clientCertificateManager
                 try {
-                    await client.clientCertificateManager.initialize();
+                    await initializeClientCertificateManager();
                 }
                 catch (error1) {
                     set_node_status_to("invalid certificate");

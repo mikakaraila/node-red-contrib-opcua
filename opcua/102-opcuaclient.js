@@ -35,7 +35,7 @@ module.exports = function (RED) {
   let AttributeIds = opcua.AttributeIds;
   let TimestampsToReturn = opcua.TimestampsToReturn;
 
-  const { createClientCertificateManager } = require("./utils");
+  const { createClientCertificateManager, initializeClientCertificateManager } = require("./utils");
 
   const { stringify } = require('flatted');
 
@@ -603,7 +603,7 @@ module.exports = function (RED) {
       verbose_log(chalk.yellow("Exact endpointUrl: ") + chalk.cyan(opcuaEndpoint?.endpoint) + chalk.yellow(" hostname: ") + chalk.cyan(os.hostname()));
       try {
           node.client.clientCertificateManager = connectionOption.clientCertificateManager;
-          await node.client.clientCertificateManager.initialize();
+          await initializeClientCertificateManager();
       }
       catch (error1) {
         set_node_status_to("invalid certificate");

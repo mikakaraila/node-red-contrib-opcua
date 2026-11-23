@@ -22,6 +22,18 @@ function createClientCertificateManager() {
     return createCertificateManager();
 }
 
+let _g_CertificateManagerReady = null;
+
+function initializeClientCertificateManager() {
+    if (!_g_CertificateManagerReady) {
+        _g_CertificateManagerReady = createClientCertificateManager().initialize().catch((err) => {
+            _g_CertificateManagerReady = null;
+            throw err;
+        });
+    }
+    return _g_CertificateManagerReady;
+}
+
 function createServerCertificateManager() {
     return createServerCertificateManager();
 }
@@ -51,5 +63,6 @@ function createServerCertificateManager(autoAcceptUnknownCertificate = true) {
     return _g_ServerCertificateManager;
 }
 exports.createClientCertificateManager = createClientCertificateManager;
+exports.initializeClientCertificateManager = initializeClientCertificateManager;
 exports.createServerCertificateManager = createServerCertificateManager;
 exports.createUserCertificateManager = createUserCertificateManager;
